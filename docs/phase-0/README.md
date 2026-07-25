@@ -84,7 +84,7 @@ integration/release dependencies.
 | [Audio and offline contract](./AUDIO_AND_OFFLINE_CONTRACT.md) | Catalog, rights, manifest, integrity, cache, playback, and offline behavior | Three roles approved; final rights/device evidence pending |
 | [Commercial access and permissions](./COMMERCIAL_ACCESS_AND_PERMISSIONS.md) | StoreKit products, access states, trial, permissions, and entitlements | Product/Finance approved; App Store/Sandbox/device evidence pending |
 | [Threat model and standards](./THREAT_MODEL_AND_STANDARDS.md) | Assets, boundaries, threats, mitigations, standards, owners, and sign-off | Satyam Shree assigned; evidence-backed approvals pending |
-| [Platform feasibility report](./PLATFORM_FEASIBILITY_REPORT.md) | Deployment-target options, disposable-spike protocol, physical-device matrix | Protocol complete; execution blocked on Apple hardware |
+| [Platform feasibility report](./PLATFORM_FEASIBILITY_REPORT.md) | Deployment-target options, disposable-spike protocol, physical-device matrix | Package published at `7fa790a`; hosted Xcode/TestFlight/device execution pending |
 | [Decision and conflict register](./OPEN_DECISIONS_AND_CONFLICTS.md) | Adopted decisions, proposals awaiting approval, retired conflicts, blockers | Current |
 | [Gate 0 review](./GATE_0_REVIEW.md) | Pass/fail record, exact blockers, owner actions, and Phase 1A handoff | **NOT PASSED** |
 

@@ -112,6 +112,9 @@ Because any `FAIL` prevents passage, Gate 0 is **NOT PASSED**.
 ### `G0-B-005` — Execute isolated physical spike
 
 - **Owner:** iOS + QA/Accessibility + Design/Privacy.
+- **Closed prerequisite:** the validated disposable package is published on
+  `origin/main` at commit
+  `7fa790a0b46b457144531319337d73cc1b0a45f2`.
 - **Action:** run `FEAS-P1-001` on the proposed matrix using an isolated
   disposable target.
 - **Prepared:** `spikes/phase0-platform-feasibility/` and `codemagic.yaml`

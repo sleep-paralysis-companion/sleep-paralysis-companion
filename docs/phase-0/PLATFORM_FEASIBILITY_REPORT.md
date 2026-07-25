@@ -32,9 +32,12 @@ been compiled, signed, uploaded, installed, or run; those states remain
 
 The selected Git remote is
 `https://github.com/sleep-paralysis-companion/sleep-paralysis-companion.git`.
-Reachability was verified against the empty remote on 25 July 2026. Repository
-publication, hosted build configuration, and Codemagic execution are separate
-evidence steps.
+Reachability was verified against the empty remote on 25 July 2026. The
+validated baseline was then published to `origin/main` at commit
+`7fa790a0b46b457144531319337d73cc1b0a45f2`. Repository publication is
+therefore complete. Codemagic project connection, App Store Connect
+integration, hosted compilation/signing/upload, and physical execution remain
+separate evidence steps.
 
 ### 1.1 Physical iPhone requirement
 

@@ -10,9 +10,14 @@ Security approval pending
 - Project reference: `nfzvlvukbeapcnlmyecf`
 - Intended use: development/test evidence for approved account-scoped sync,
   Auth, RLS, Storage, export, and deletion behavior.
-- Current evidence status: reference supplied by Satyam Shree on 25 July 2026;
-  project region, schema, Auth providers, callbacks, policies, storage, and
-  runtime isolation have **not** been inspected from this task.
+- Current evidence status: reference supplied by Satyam Shree on 25 July 2026.
+  Credential-free requests reached the Supabase gateway, returned the expected
+  `401 UNAUTHORIZED_MISSING_API_KEY`, and echoed
+  `sb-project-ref: nfzvlvukbeapcnlmyecf`. This proves endpoint/reference
+  reachability only.
+- The available dashboard browser requires sign-in. Project region, schema,
+  Auth providers, callbacks, policies, storage, and runtime isolation have
+  **not** been inspected from this task.
 - Authority boundary: the reference is not a credential and does not authorize
   a production migration or policy change. Region and configuration must be
   read from the connected project/dashboard rather than inferred.
