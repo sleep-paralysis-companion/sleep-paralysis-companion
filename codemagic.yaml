@@ -1,0 +1,51 @@
+# DISPOSABLE PHASE 0 SPIKE ONLY - NOT A PRODUCTION PIPELINE
+workflows:
+  phase0-platform-feasibility:
+    name: Phase 0 iOS 26 Feasibility Spike
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.satyamshree.spc.phase0spike
+      vars:
+        XCODE_PROJECT: SPCPhase0Spike.xcodeproj
+        XCODE_SCHEME: SPCPhase0Spike
+        SPIKE_DIR: spikes/phase0-platform-feasibility
+      xcode: latest
+    scripts:
+      - name: Install XcodeGen
+        script: brew install xcodegen
+      - name: Generate disposable Xcode project
+        script: |
+          cd "$CM_BUILD_DIR/$SPIKE_DIR"
+          xcodegen generate
+      - name: Confirm excluded capabilities are absent
+        script: |
+          cd "$CM_BUILD_DIR/$SPIKE_DIR"
+          if grep -R -n -E 'import (Supabase|HealthKit)|NSMicrophoneUsageDescription|AVAudioRecorder|requestRecordPermission' Sources Resources; then
+            echo "Excluded capability reference found"
+            exit 1
+          fi
+      - name: Apply App Store signing profiles
+        script: |
+          cd "$CM_BUILD_DIR/$SPIKE_DIR"
+          xcode-project use-profiles \
+            --custom-export-options='{"testFlightInternalTestingOnly": true}'
+      - name: Build signed internal-TestFlight IPA
+        script: |
+          cd "$CM_BUILD_DIR/$SPIKE_DIR"
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - spikes/phase0-platform-feasibility/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

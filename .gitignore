@@ -1,0 +1,34 @@
+# Apple / Xcode
+.DS_Store
+DerivedData/
+build/
+*.xcarchive
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.mobileprovision
+*.cer
+*.p12
+*.p8
+xcuserdata/
+*.xcuserstate
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Supabase local state
+.supabase/
+supabase/.temp/
+
+# Tool and editor state
+.idea/
+.vscode/
+*.swp
+*.tmp
+*.log
+
