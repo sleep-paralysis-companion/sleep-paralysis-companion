@@ -38,6 +38,12 @@ jobs:
           uname -m
           env | grep '^Image' | sort || true
 
+      - name: Restore verified build tools
+        uses: actions/cache@v5
+        with:
+          path: .build-tools
+          key: phase-1a-tools-${{ runner.os }}-${{ runner.arch }}-xcodegen-2.45.4-swiftlint-0.65.0
+
       - name: Verify full Phase 1A foundation
         run: bash scripts/verify_ci.sh
 

@@ -35,7 +35,10 @@ stops on the first error. Checks never silently skip a missing tool.
 
 `bootstrap.sh` obtains XcodeGen 2.45.4 from its upstream tag, verifies commit
 `8d3d3476a69ae3e5d68e1adccc701c410c05eb36`, builds it from source, generates
-the project, and asks `xcodebuild` to enumerate targets and schemes.
+the project, and asks `xcodebuild` to enumerate targets and schemes. It also
+downloads SwiftLint 0.65.0 from the official release and verifies SHA-256
+`d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6`
+before the linter can run.
 
 ## Later Apple-team signing
 

@@ -16,8 +16,9 @@ reporting dependency.
 | Swift | Apple/Swift project, bundled with Xcode | 6.3.3; language mode 6 | Compiler/standard library |
 | XcodeGen | `github.com/yonaskolb/XcodeGen` | 2.45.4, commit `8d3d3476a69ae3e5d68e1adccc701c410c05eb36` | Build-time project generation only; source-built after commit verification |
 | SwiftFormat | `github.com/nicklockwood/SwiftFormat` | 0.62.1 | CI formatting check only |
-| SwiftLint | `github.com/realm/SwiftLint` | 0.65.0 | CI static lint only |
+| SwiftLint | `github.com/realm/SwiftLint` | 0.65.0 portable release; SHA-256 `d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6` | CI static lint only |
 | `actions/checkout` | GitHub | major tag `v6` | CI source checkout; read-only token permission |
+| `actions/cache` | GitHub | major tag `v5` | CI cache for checksum/commit-verified build tools |
 | `actions/upload-artifact` | GitHub | major tag `v4` | Uploads generated project and test results only |
 | GitHub runner image | `github.com/actions/runner-images` | `macos-26`; tool versions verified at runtime | Hosted build/test environment |
 
