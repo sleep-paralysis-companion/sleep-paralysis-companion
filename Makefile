@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap format lint static privacy secrets build unit ui verify
+.PHONY: bootstrap format lint static privacy secrets simulator build unit ui verify
 
 bootstrap:
 	bash scripts/bootstrap.sh
@@ -19,6 +19,9 @@ privacy:
 
 secrets:
 	bash scripts/secret_scan.sh
+
+simulator:
+	bash scripts/prepare_simulator.sh
 
 build:
 	bash scripts/build.sh

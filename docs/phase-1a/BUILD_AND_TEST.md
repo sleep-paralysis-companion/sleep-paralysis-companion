@@ -25,6 +25,7 @@ bash scripts/lint_check.sh
 bash scripts/static_check.sh
 bash scripts/privacy_manifest_check.sh
 bash scripts/secret_scan.sh
+bash scripts/prepare_simulator.sh
 bash scripts/build.sh
 bash scripts/unit_tests.sh
 bash scripts/ui_tests.sh
@@ -32,6 +33,12 @@ bash scripts/ui_tests.sh
 
 `bash scripts/verify_ci.sh` (or `make verify`) runs the complete sequence and
 stops on the first error. Checks never silently skip a missing tool.
+
+`prepare_simulator.sh` validates the pinned iOS 26.5 runtime and iPhone 17
+device type, creates and boots a dedicated simulator when needed, and records
+its generated UDID under the ignored `ios/.generated/` directory. Build and
+test commands address that exact device instead of depending on a runner's
+pre-created simulator inventory.
 
 `bootstrap.sh` obtains the official XcodeGen 2.45.4 release archive, verifies
 SHA-256 `090ec29491aad50aec10631bf6e62253fed733c50f3aab0f5ffc86bc170bdbef`,
