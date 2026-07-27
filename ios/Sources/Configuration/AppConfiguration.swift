@@ -35,13 +35,15 @@ struct AppConfiguration: Equatable, Sendable, ExternalResourceResolving {
 
         let isNonProduction = environment != .production
         let productionHosts = values.productionHosts.map { $0.lowercased() }
-        if isNonProduction && productionHosts.contains(host) {
-            return .unavailable(SafeDiagnostic(code: .productionResourceRejected))
-        }
-
         let allowedHosts = values.allowedHosts.map { $0.lowercased() }
-        if isNonProduction && !allowedHosts.contains(host) {
-            return .unavailable(SafeDiagnostic(code: .configurationUnavailable))
+        if isNonProduction {
+            if productionHosts.contains(host) {
+                return .unavailable(SafeDiagnostic(code: .productionResourceRejected))
+            }
+
+            if !allowedHosts.contains(host) {
+                return .unavailable(SafeDiagnostic(code: .configurationUnavailable))
+            }
         }
 
         guard url.scheme == "https" else {

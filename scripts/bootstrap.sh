@@ -27,30 +27,27 @@ fi
 SWIFTLINT_BIN="$(cat "$SWIFTLINT_BIN_RECORD")"
 [[ "$("$SWIFTLINT_BIN" version)" == "$SWIFTLINT_VERSION" ]]
 
-TOOL_ROOT="$REPOSITORY_ROOT/.build-tools/xcodegen-$XCODEGEN_VERSION"
-SOURCE_ROOT="$TOOL_ROOT/source"
-BIN_RECORD="$TOOL_ROOT/bin-path"
-
-if [[ ! -f "$BIN_RECORD" ]] || [[ ! -x "$(cat "$BIN_RECORD" 2>/dev/null || true)/xcodegen" ]]; then
-  rm -rf "$TOOL_ROOT"
-  mkdir -p "$TOOL_ROOT"
-  git clone \
-    --branch "$XCODEGEN_VERSION" \
-    --depth 1 \
-    https://github.com/yonaskolb/XcodeGen.git \
-    "$SOURCE_ROOT"
-
-  ACTUAL_COMMIT="$(git -C "$SOURCE_ROOT" rev-parse HEAD)"
-  [[ "$ACTUAL_COMMIT" == "$XCODEGEN_COMMIT" ]] || {
-    echo "XcodeGen provenance mismatch: $ACTUAL_COMMIT" >&2
+XCODEGEN_ROOT="$REPOSITORY_ROOT/.build-tools/xcodegen-$XCODEGEN_VERSION"
+XCODEGEN_BIN_RECORD="$XCODEGEN_ROOT/bin-path"
+if [[ ! -f "$XCODEGEN_BIN_RECORD" ]] || [[ ! -x "$(cat "$XCODEGEN_BIN_RECORD" 2>/dev/null || true)" ]]; then
+  rm -rf "$XCODEGEN_ROOT"
+  mkdir -p "$XCODEGEN_ROOT/extracted"
+  XCODEGEN_ARCHIVE="$XCODEGEN_ROOT/xcodegen.zip"
+  curl --fail --location --retry 3 \
+    "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip" \
+    --output "$XCODEGEN_ARCHIVE"
+  echo "$XCODEGEN_SHA256  $XCODEGEN_ARCHIVE" | shasum --algorithm 256 --check
+  ditto -x -k "$XCODEGEN_ARCHIVE" "$XCODEGEN_ROOT/extracted"
+  XCODEGEN_BIN="$(find "$XCODEGEN_ROOT/extracted" -type f -name xcodegen | head -n 1)"
+  [[ -n "$XCODEGEN_BIN" ]] || {
+    echo "Pinned XcodeGen archive did not contain the expected binary." >&2
     exit 1
   }
-
-  swift build --package-path "$SOURCE_ROOT" --configuration release --product xcodegen
-  swift build --package-path "$SOURCE_ROOT" --configuration release --show-bin-path >"$BIN_RECORD"
+  chmod +x "$XCODEGEN_BIN"
+  printf '%s\n' "$XCODEGEN_BIN" >"$XCODEGEN_BIN_RECORD"
 fi
 
-XCODEGEN_BIN="$(cat "$BIN_RECORD")/xcodegen"
+XCODEGEN_BIN="$(cat "$XCODEGEN_BIN_RECORD")"
 [[ "$("$XCODEGEN_BIN" --version)" == "Version: $XCODEGEN_VERSION" ]]
 
 (
