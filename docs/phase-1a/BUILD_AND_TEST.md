@@ -4,7 +4,7 @@
 
 - GitHub runner: `macos-26`
 - Xcode: `26.6` (`17F113`)
-- Swift: `6.3`, project language mode `6`
+- Swift: `6.3.3`, project language mode `6`
 - iOS Simulator SDK: `26.5`
 - Destination: `iPhone 17`, iOS `26.5`
 - Deployment target: centralized at iOS `26.0`

@@ -1,6 +1,6 @@
 import Foundation
-import XCTest
 @testable import SleepParalysisCompanion
+import XCTest
 
 final class EnvironmentConfigurationTests: XCTestCase {
     func testEnvironmentRawValuesAreStable() {
@@ -19,7 +19,7 @@ final class EnvironmentConfigurationTests: XCTestCase {
             values: .empty
         )
 
-        guard case .ready(let configuration) = result else {
+        guard case let .ready(configuration) = result else {
             return XCTFail("Expected an endpoint-free configuration.")
         }
 
@@ -68,7 +68,7 @@ final class EnvironmentConfigurationTests: XCTestCase {
             .unavailable(SafeDiagnostic(code: .configurationUnavailable))
         )
 
-        guard case .unavailable(let diagnostic) = result else {
+        guard case let .unavailable(diagnostic) = result else {
             return XCTFail("Expected a safe diagnostic.")
         }
         XCTAssertFalse(diagnostic.userMessage.contains("http"))

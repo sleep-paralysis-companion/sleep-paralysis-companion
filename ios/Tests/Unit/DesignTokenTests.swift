@@ -1,5 +1,5 @@
-import XCTest
 @testable import SleepParalysisCompanion
+import XCTest
 
 final class DesignTokenTests: XCTestCase {
     func testCriticalControlsMeetMinimumTouchTarget() {

@@ -13,7 +13,7 @@ reporting dependency.
 | Dependency | Provenance | Pin | Runtime/privacy impact |
 |---|---|---|---|
 | Xcode | Apple | 26.6 / 17F113 | Build tool only |
-| Swift | Apple/Swift project, bundled with Xcode | 6.3; language mode 6 | Compiler/standard library |
+| Swift | Apple/Swift project, bundled with Xcode | 6.3.3; language mode 6 | Compiler/standard library |
 | XcodeGen | `github.com/yonaskolb/XcodeGen` | 2.45.4, commit `8d3d3476a69ae3e5d68e1adccc701c410c05eb36` | Build-time project generation only; source-built after commit verification |
 | SwiftFormat | `github.com/nicklockwood/SwiftFormat` | 0.62.1 | CI formatting check only |
 | SwiftLint | `github.com/realm/SwiftLint` | 0.65.0 | CI static lint only |

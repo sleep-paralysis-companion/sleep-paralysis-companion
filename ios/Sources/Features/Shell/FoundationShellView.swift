@@ -48,11 +48,7 @@ struct FoundationShellView: View {
                 .font(AppTypographyRole.sectionTitle)
                 .accessibilityAddTraits(.isHeader)
 
-            Text(
-                isReady
-                    ? String(localized: "shell.status.value")
-                    : String(localized: "shell.status.preparing")
-            )
+            Text(statusText)
                 .font(AppTypographyRole.body)
 
             LabeledContent {
@@ -72,5 +68,11 @@ struct FoundationShellView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("foundation.status.card")
+    }
+
+    private var statusText: String {
+        isReady
+            ? String(localized: "shell.status.value")
+            : String(localized: "shell.status.preparing")
     }
 }

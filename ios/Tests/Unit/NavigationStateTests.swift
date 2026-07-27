@@ -1,5 +1,5 @@
-import XCTest
 @testable import SleepParalysisCompanion
+import XCTest
 
 @MainActor
 final class NavigationStateTests: XCTestCase {

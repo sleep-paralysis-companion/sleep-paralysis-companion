@@ -46,7 +46,7 @@ final class AppModel {
         case .showFoundationDetails:
             path.append(.foundationDetails)
             logger.record(.routeChanged, category: .navigation)
-        case .setPath(let newPath):
+        case let .setPath(newPath):
             path = newPath
             logger.record(.routeChanged, category: .navigation)
         }
