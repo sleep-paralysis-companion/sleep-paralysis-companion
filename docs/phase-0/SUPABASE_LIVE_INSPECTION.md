@@ -38,6 +38,12 @@
 This is not the approved Phase 1 synchronization schema. No evidence currently
 links `public.waitlist` to the native iPhone data model.
 
+Satyam Shree confirmed on 28 July 2026 that the table serves a live website.
+Existing submissions must be preserved and the form must remain operational.
+The website URL/source and exact request/response contract are not present in
+this repository. A staged, review-only remediation is recorded in
+[`SUPA-P0-002`](./SUPABASE_WAITLIST_REMEDIATION_PLAN.md).
+
 ## 3. RLS and privacy findings
 
 The live table has two policies:
@@ -50,6 +56,17 @@ The live table has two policies:
 The public-select policy is a direct privacy exposure even though the Supabase
 advisor intentionally does not flag public `SELECT USING (true)` policies.
 Phase 0 cannot accept this table as a model for any app-owned record.
+
+The table ACL also grants all table privileges to `anon`, `authenticated`, and
+`service_role`. `anon` can currently supply all three columns, including
+server-owned `id` and `created_at`. Default privileges for new `public` tables,
+sequences, and functions also grant broad access to `anon` and
+`authenticated`. RLS reduces current row access but does not make those grants
+least privilege.
+
+Privacy-safe aggregate preflight checks found that all four existing rows meet
+the proposed minimal length/control-character/`@`/normalization checks, with no
+lowercase-and-trim collision. No email value was read or copied.
 
 Advisor reference:
 [Permissive RLS policy remediation](https://supabase.com/docs/guides/database/database-linter?lint=0024_permissive_rls_policy).
@@ -84,6 +101,10 @@ to invoke it.
   expose Auth provider configuration.
 - Recent Auth logs contained normal startup/reload activity and two platform
   deprecation notices for unsupported legacy GoTrue group-name settings.
+- The available 24-hour API log showed one browser
+  `HEAD /rest/v1/waitlist?select=*` request. It does not prove the live form
+  contract and may have been a manual check; no website deployment identity
+  was available.
 - No application sign-in, callback, linking, revocation, or deletion evidence
   exists.
 
@@ -91,23 +112,26 @@ to invoke it.
 
 Before Backend/Security approval:
 
-1. Identify the owner and purpose of `public.waitlist`.
-2. Remove anonymous read access to waitlist email addresses unless a documented
-   purpose and privacy approval explicitly require it.
+1. `CLOSED AS PURPOSE`: Satyam Shree confirmed that `public.waitlist` serves a
+   live website; preserve its submissions.
+2. Verify the website source/deployment contract, then remove anonymous read
+   access without interrupting the form.
 3. Replace unrestricted inserts with the minimum intended write contract plus
    abuse controls; RLS alone is not rate limiting or bot protection.
 4. Revoke direct API-role execution of `public.rls_auto_enable()` or replace
    the design through a reviewed migration.
-5. Capture the existing database state in version-controlled migration history
+5. Correct broad current/default privileges and prove that future objects
+   receive no unintended API-role access.
+6. Capture the existing database state in version-controlled migration history
    or replace it in an isolated development branch; do not mutate the remote
    project ad hoc.
-6. Configure and verify only Sign in with Apple and Sign in with Google,
+7. Configure and verify only Sign in with Apple and Sign in with Google,
    including callbacks, linking/collision, reauthentication, revocation, and
    account deletion.
-7. Implement the approved Phase 1 tables and storage through versioned
+8. Implement the approved Phase 1 tables and storage through versioned
    migrations with owner-positive and anonymous/other-user/forged-owner/
    expired-session/over-post/deletion negative tests.
-8. Verify the project region from an authoritative dashboard or account
+9. Verify the project region from an authoritative dashboard or account
    metadata surface.
 
 No item above authorizes a remote migration. A proposed remediation must be

@@ -30,7 +30,10 @@ on 25 July 2026.
 AlarmKit, system entry, locked/offline audio, RevenueCat/StoreKit behavior, and
 accessibility still have no required runtime/device evidence. Supabase live
 inspection now exists, but it found unversioned schema plus concrete
-RLS/privacy/security failures rather than approval evidence. The supplied
+RLS/privacy/security failures rather than approval evidence. The waitlist is
+confirmed as a live-website dependency and a staged remediation is documented,
+but its deployed client contract and isolated test evidence remain unavailable.
+The supplied
 privacy PDF is not publishable; a product-accurate replacement draft now
 exists but still needs the identified legal/contact/region values and approval.
 
@@ -54,8 +57,8 @@ permission, entitlement, or remote policy was implemented in Phase 0.
 | `G0-C-005` | Complete onboarding truth table and field-purpose inventory | `SPEC-P1-001 §§7–8`; minimal check-in copy/date/uniqueness/draft rules approved | `PASS — OWNER APPROVED` |
 | `G0-C-006` | Claims/copy matrix across every surface; no prohibited claims | `CLAIMS-P1-001`; Figma/user-flow/privacy conflicts superseded; `PRIV-P1-002` and `LEGAL-P1-003` provide product-accurate replacement drafts | **FAIL:** factual/legal placeholders, final audio/store metadata, legal approval, and release evidence remain |
 | `G0-C-007` | Complete navigation, screen, state, error, destructive, permission, purchase, sync, offline inventory | `NAV-P1-001`; legacy Figma superseded by canonical contract | `PASS — OWNER APPROVED PLAN` |
-| `G0-C-008` | Data inventory, data flow, retention, export, deletion, analytics/privacy contract | `DATA-P1-001`; `SUPA-P0-001` verifies the project URL and current live inventory; Supabase plus Apple/Google-only direction and retention defaults approved; diagnostics off; `PRIV-P1-002` drafted | **FAIL:** region/provider/legal values remain; live `waitlist` anonymously exposes email rows and is not the approved Phase 1 schema |
-| `G0-C-009` | Guest-to-account ownership, conversion, conflicts, retry, tombstones, sign-out, reinstall, deletion are deterministic | `DATA-P1-001 §§5–7, 11–12`; `SUPA-P0-001` found no migration history/Auth identities and three Security Advisor warnings | **FAIL:** no Phase 1 migrations, callbacks, storage policies, isolation/recovery/deletion tests, or provider evidence; existing waitlist policies and public `SECURITY DEFINER` execution require remediation |
+| `G0-C-008` | Data inventory, data flow, retention, export, deletion, analytics/privacy contract | `DATA-P1-001`; `SUPA-P0-001` verifies the project URL and current live inventory; `SUPA-P0-002` preserves the confirmed live-website dependency while staging least-privilege remediation; Supabase plus Apple/Google-only direction and retention defaults approved; diagnostics off; `PRIV-P1-002` drafted | **FAIL:** region/provider/legal values remain; live `waitlist` anonymously exposes email rows and is not the approved Phase 1 schema |
+| `G0-C-009` | Guest-to-account ownership, conversion, conflicts, retry, tombstones, sign-out, reinstall, deletion are deterministic | `DATA-P1-001 §§5–7, 11–12`; `SUPA-P0-001` found no migration history/Auth identities, broad current/default privileges, and three Security Advisor warnings; `SUPA-P0-002` defines the staged fix and tests | **FAIL:** no Phase 1 migrations, callbacks, storage policies, isolation/recovery/deletion tests, provider evidence, verified website contract, or applied waitlist remediation |
 | `G0-C-010` | Audio roles, delivery/offline/playback contract, placeholder boundary, and shipping-content gate are explicit | `AUDIO-P1-001`; user authorized placeholders and owned synthetic spike audio; candidate assets reported available 28 July but not delivered to intake | `PASS — PLACEHOLDER CONTRACT`; actual files, rights/content records, hashes, and approvals are required before production content integration and release |
 | `G0-C-011` | Commercial model, access matrix, trial/offline/cutoff/reminder/restore/refund/revoke behavior | `COM-P1-001` and `RC-P1-004`: monthly USD 8.99, annual USD 59.99, lifetime USD 149.99, Apple three-day offer, RevenueCat `premium_access`, Family Sharing off, billing/custom grace off, immediate cutoff, 72-hour known-expiration reminder | **FAIL — PRODUCT APPROVED:** RevenueCat account/project/collaborator, App Store Connect products/banking prerequisites, Sandbox, and physical evidence absent |
 | `G0-C-012` | Permission/entitlement register; excluded capabilities absent | `COM-P1-001 §6` | **FAIL:** target/system surface/background capability still depends on physical spike |
@@ -147,6 +150,10 @@ Because any `FAIL` prevents passage, Gate 0 is **NOT PASSED**.
 - **Action:** review RLS/storage/Auth/Edge Function designs, threat mitigations,
   RevenueCat/StoreKit administration, environment isolation, deletion, content
   revocation, incident response, and residual risk.
+- **Prepared:** `SUPA-P0-002` records a backward-compatible waitlist rollout,
+  candidate migration shape, and isolation matrix after the owner confirmed the
+  table serves a live website. The website URL/source contract is still needed
+  before anonymous reads can be removed safely.
 - **Evidence:** test plan/results appropriate to Phase 0 spike/design, named
   residual acceptances, and production change-control runbooks.
 - **Assigned reviewer:** Satyam Shree accepted accountability for the
@@ -175,6 +182,7 @@ Because any `FAIL` prevents passage, Gate 0 is **NOT PASSED**.
 | Navigation and states | [Navigation and state map](./NAVIGATION_AND_STATE_MAP.md) |
 | Data/sync/lifecycle | [Data lifecycle and sync](./DATA_LIFECYCLE_AND_SYNC_CONTRACT.md) |
 | Live Supabase project evidence | [Supabase live inspection](./SUPABASE_LIVE_INSPECTION.md) |
+| Live waitlist remediation plan | [Supabase waitlist remediation](./SUPABASE_WAITLIST_REMEDIATION_PLAN.md) |
 | Supplied privacy asset disposition | [Privacy-policy asset review](./PRIVACY_POLICY_ASSET_REVIEW.md) |
 | Product-accurate replacement policy draft | [Phase 1 privacy-policy draft](./PRIVACY_POLICY_PHASE_1_DRAFT.md) |
 | Wellness, Terms, support, commerce, and deletion copy draft | [Legal and support copy draft](./LEGAL_AND_SUPPORT_COPY_DRAFT.md) |

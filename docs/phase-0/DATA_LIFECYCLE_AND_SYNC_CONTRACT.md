@@ -16,12 +16,16 @@ Security approval pending
   recorded in [`SUPA-P0-001`](./SUPABASE_LIVE_INSPECTION.md).
 - The live project currently contains only `public.waitlist` in the public
   schema, has no recorded migrations, Edge Functions, Storage buckets, or Auth
-  identities, and is not the approved Phase 1 synchronization schema.
+  identities, and is not the approved Phase 1 synchronization schema. Satyam
+  Shree confirmed that the table serves a separate live website; it is not an
+  app data entity.
 - Live inspection found anonymous read access to waitlist email rows,
-  unrestricted anonymous inserts, and a public `SECURITY DEFINER`
-  `rls_auto_enable()` function executable by `anon` and `authenticated`.
-  Backend/Security approval is blocked until a versioned remediation and
-  isolation tests exist.
+  unrestricted anonymous inserts, broad current/default API-role privileges,
+  and a public `SECURITY DEFINER` `rls_auto_enable()` function executable by
+  `anon` and `authenticated`. The staged remediation is
+  [`SUPA-P0-002`](./SUPABASE_WAITLIST_REMEDIATION_PLAN.md).
+  Backend/Security approval is blocked until the website contract is verified
+  and a versioned remediation passes isolation tests.
 - Project region and Apple/Google provider configuration remain unverified
   because the available MCP tools do not expose those account settings.
 - Authority boundary: OAuth access and read-only inspection do not authorize a
