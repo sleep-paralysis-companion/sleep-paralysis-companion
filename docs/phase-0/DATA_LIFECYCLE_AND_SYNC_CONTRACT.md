@@ -10,20 +10,23 @@ Security approval pending
 - Project reference: `nfzvlvukbeapcnlmyecf`
 - Intended use: development/test evidence for approved account-scoped sync,
   Auth, RLS, Storage, export, and deletion behavior.
-- Current evidence status: reference supplied by Satyam Shree on 25 July 2026.
-  Credential-free requests reached the Supabase gateway, returned the expected
-  `401 UNAUTHORIZED_MISSING_API_KEY`, and echoed
-  `sb-project-ref: nfzvlvukbeapcnlmyecf`. This proves endpoint/reference
-  reachability only.
-- The preferred Codex connection is the project-scoped, read-only Supabase MCP
-  endpoint
-  `https://mcp.supabase.com/mcp?project_ref=nfzvlvukbeapcnlmyecf&read_only=true`.
-  It has not yet been connected/authenticated in this task. Project region,
-  schema, Auth providers, callbacks, policies, storage, and runtime isolation
-  therefore remain **uninspected**.
-- Authority boundary: the reference is not a credential and does not authorize
-  a production migration or policy change. Region and configuration must be
-  read from the connected project/dashboard rather than inferred.
+- Current evidence status: the repository-scoped `supabase_spc` MCP is
+  OAuth-authenticated and returned
+  `https://nfzvlvukbeapcnlmyecf.supabase.co`. Read-only inspection evidence is
+  recorded in [`SUPA-P0-001`](./SUPABASE_LIVE_INSPECTION.md).
+- The live project currently contains only `public.waitlist` in the public
+  schema, has no recorded migrations, Edge Functions, Storage buckets, or Auth
+  identities, and is not the approved Phase 1 synchronization schema.
+- Live inspection found anonymous read access to waitlist email rows,
+  unrestricted anonymous inserts, and a public `SECURITY DEFINER`
+  `rls_auto_enable()` function executable by `anon` and `authenticated`.
+  Backend/Security approval is blocked until a versioned remediation and
+  isolation tests exist.
+- Project region and Apple/Google provider configuration remain unverified
+  because the available MCP tools do not expose those account settings.
+- Authority boundary: OAuth access and read-only inspection do not authorize a
+  remote migration or policy change. Region and provider configuration must be
+  read from an authoritative account/dashboard surface rather than inferred.
 
 ## 1. Principles
 

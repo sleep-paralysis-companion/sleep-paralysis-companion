@@ -23,8 +23,11 @@ reactions remain unavailable because hierarchy calls time out or fail. Satyam
 Shree approved superseding that legacy discovery source with the canonical
 specification. Product-accurate replacement privacy/legal/support drafts now
 exist. Gate 0 remains blocked by their factual/legal verification and approval,
-Supabase/RLS evidence, RevenueCat/StoreKit/App Store configuration evidence, and the
-physical-device feasibility matrix.
+Supabase remediation/isolation evidence, RevenueCat/StoreKit/App Store
+configuration evidence, and the physical-device feasibility matrix. A
+repository-scoped live Supabase inspection now confirms the selected project
+but found anonymous email-row exposure, unrestricted inserts, a publicly
+executable privileged function, and no recorded migration history.
 
 On 24 July, the exact `Phase 1 Userflow` wording tab was reread. On 28 July,
 Apple/Google-only account methods and RevenueCat entitlement orchestration
@@ -82,6 +85,7 @@ integration/release dependencies.
 | [Claims and copy matrix](./CLAIMS_AND_COPY_MATRIX.md) | Allowed, conditional, prohibited, and approved copy direction | Owner direction approved; legal/release evidence pending |
 | [Navigation and state map](./NAVIGATION_AND_STATE_MAP.md) | Route inventory, state inventory, transitions, and screen acceptance criteria | Canonical text contract controls |
 | [Data lifecycle and sync contract](./DATA_LIFECYCLE_AND_SYNC_CONTRACT.md) | Field inventory, flows, retention, export, deletion, diagnostics, and sync | Owner defaults approved; Supabase evidence pending |
+| [Supabase live inspection](./SUPABASE_LIVE_INSPECTION.md) | Project identity, live schema/policies/functions, advisors, logs, and exact remediation blockers | Read-only evidence complete; remediation and isolation tests pending |
 | [Legal, wellness, and support copy draft](./LEGAL_AND_SUPPORT_COPY_DRAFT.md) | Product-accurate wellness, alarm, purchase, account, deletion, support, and Terms drafting copy | Factual/legal values and approval pending |
 | [Audio and offline contract](./AUDIO_AND_OFFLINE_CONTRACT.md) | Catalog, rights, manifest, integrity, cache, playback, and offline behavior | Three roles approved; final rights/device evidence pending |
 | [Commercial access and permissions](./COMMERCIAL_ACCESS_AND_PERMISSIONS.md) | StoreKit products, access states, trial, permissions, and entitlements | Product/Finance approved; App Store/Sandbox/device evidence pending |
