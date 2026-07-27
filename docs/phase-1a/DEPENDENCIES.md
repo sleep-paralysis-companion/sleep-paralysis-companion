@@ -12,11 +12,11 @@ reporting dependency.
 
 | Dependency | Provenance | Pin | Runtime/privacy impact |
 |---|---|---|---|
-| Xcode | Apple | 26.4.1 / 17E202 | Build tool only |
+| Xcode | Apple | 26.6 / 17F113 | Build tool only |
 | Swift | Apple/Swift project, bundled with Xcode | 6.3; language mode 6 | Compiler/standard library |
 | XcodeGen | `github.com/yonaskolb/XcodeGen` | 2.45.4, commit `8d3d3476a69ae3e5d68e1adccc701c410c05eb36` | Build-time project generation only; source-built after commit verification |
-| SwiftFormat | `github.com/nicklockwood/SwiftFormat` | 0.61.1 | CI formatting check only |
-| SwiftLint | `github.com/realm/SwiftLint` | 0.63.2 | CI static lint only |
+| SwiftFormat | `github.com/nicklockwood/SwiftFormat` | 0.62.1 | CI formatting check only |
+| SwiftLint | `github.com/realm/SwiftLint` | 0.65.0 | CI static lint only |
 | `actions/checkout` | GitHub | major tag `v6` | CI source checkout; read-only token permission |
 | `actions/upload-artifact` | GitHub | major tag `v4` | Uploads generated project and test results only |
 | GitHub runner image | `github.com/actions/runner-images` | `macos-26`; tool versions verified at runtime | Hosted build/test environment |

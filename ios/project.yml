@@ -8,7 +8,7 @@ options:
   generateEmptyDirectories: true
   groupSortPosition: top
   minimumXcodeGenVersion: "2.45.4"
-  xcodeVersion: "26.4.1"
+  xcodeVersion: "26.6"
 
 configs:
   Development: debug

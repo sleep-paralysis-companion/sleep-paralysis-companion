@@ -3,15 +3,15 @@
 ## Pinned host
 
 - GitHub runner: `macos-26`
-- Xcode: `26.4.1` (`17E202`)
+- Xcode: `26.6` (`17F113`)
 - Swift: `6.3`, project language mode `6`
-- iOS Simulator SDK: `26.4`
-- Destination: `iPhone 17`, iOS `26.4`
+- iOS Simulator SDK: `26.5`
+- Destination: `iPhone 17`, iOS `26.5`
 - Deployment target: centralized at iOS `26.0`
 
 The App Store upload floor has required Xcode 26 and the iOS 26 SDK or later
-since 28 April 2026. Xcode 26.4.1 is the latest stable release recorded for
-this foundation; prerelease Xcode 26.5 is not used.
+since 28 April 2026. Apple released stable Xcode 26.6 build 17F113 on
+25 June 2026; prerelease Xcode 27 is not used.
 
 ## Clean-checkout commands
 
