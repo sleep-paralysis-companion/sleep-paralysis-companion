@@ -17,6 +17,14 @@ mark Gate 0 passed and does not authorize Phase 1B, live Supabase changes,
 RevenueCat/App Store product creation, Figma mutation, feature implementation,
 or unsupported platform, medical, privacy, or commercial claims.
 
+### Verified outcome — 28 July 2026
+
+Gate 1A passed for candidate
+`bd239116df78f4616006cd38fd46ea5a3970107e` in
+[hosted macOS run 30312994016](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30312994016).
+Gate 0 remains `NOT PASSED`; the implementation exception does not carry into
+Phase 1B.
+
 ## Objective
 
 Establish a reproducible, secure native Swift/SwiftUI foundation that later feature sessions can extend without bypassing privacy, accessibility, concurrency, testing, or environment boundaries.

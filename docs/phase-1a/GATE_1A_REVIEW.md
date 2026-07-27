@@ -1,9 +1,16 @@
 # Gate 1A Review
 
-**Decision:** NOT PASSED — hosted macOS evidence pending
+**Decision:** PASS
+
 **Review date:** 28 July 2026
+
 **Owner:** Satyam Shree
+
 **Candidate branch:** `codex/phase-1a-foundation`
+
+**Verified candidate:** `bd239116df78f4616006cd38fd46ea5a3970107e`
+
+**Hosted evidence:** [GitHub Actions run 30312994016](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30312994016) — `success`
 
 ## Authorization boundary
 
@@ -13,12 +20,35 @@ Gate 0 remains `NOT PASSED`. No Phase 1B work, live Supabase mutation,
 RevenueCat/App Store product configuration, Figma mutation, signing, TestFlight,
 or product feature implementation is authorized by this exception.
 
-## Current verdict
+## Evidence-backed verdict
 
-Repository-owned implementation and Windows-available static review are in
-progress. Gate 1A cannot pass until the committed branch is built and tested on
-the pinned hosted macOS/Xcode environment and the resulting run is recorded in
-`CI_EVIDENCE.md`.
+- A clean hosted checkout downloaded checksum-pinned build tools and generated
+  deterministic targets and schemes.
+- Xcode 26.6 built the unsigned Development app for an iPhone 17 simulator
+  using Swift 6 strict concurrency and warnings-as-errors.
+- All 19 unit tests and both UI tests passed.
+- Development and staging production-resource rejection, fail-closed
+  configuration, feature/access policy, mandatory-free utilities, typed
+  navigation, logging redaction, and design-token invariants passed.
+- The UI automation passed in explicit light mode and in dark mode with
+  accessibility XXXL text, increased contrast, and Reduce Motion.
+- Format, lint, static boundary checks, privacy-manifest validation,
+  built-app manifest inclusion, worktree secret scan, and full-history secret
+  scan passed.
+- No runtime third-party SDK, backend endpoint, credential, entitlement,
+  unnecessary permission, Phase 1B integration, or live external-system change
+  is present.
+
+The complete immutable evidence, toolchain, artifact digest, commands, and
+known limitations are recorded in `CI_EVIDENCE.md`. Gate 1A is passed for the
+repository and simulator platform foundation only. Gate 0 remains
+`NOT PASSED`.
+
+## Remaining external limitations
+
+Apple-team signing, a physical-device build, TestFlight, production
+configuration, and later feature/platform integrations were not required or
+authorized for Phase 1A and remain unverified.
 
 ## Phase 1B boundary
 

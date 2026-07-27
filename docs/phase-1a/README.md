@@ -1,7 +1,9 @@
 # Phase 1A Evidence Index
 
-**Status:** Hosted verification pending
+**Status:** Gate 1A PASS — hosted macOS verification complete
+
 **Owner authorization:** Satyam Shree, 28 July 2026
+
 **Scope:** Repository and platform foundation only
 
 The owner authorized this foundation implementation as a narrow exception
@@ -33,3 +35,7 @@ signing, TestFlight, Figma mutation, or unsupported claims.
 | `P1A-PRIV` privacy/dependency review | `PrivacyInfo.xcprivacy`, registers, validation script |
 | `P1A-ACCESS` centralized access seam | `AccessPolicy.swift` and invariant tests |
 | `P1A-CI` reproducible hosted proof | Scripts, workflow, `CI_EVIDENCE.md` |
+
+The passing candidate is
+`bd239116df78f4616006cd38fd46ea5a3970107e`, verified by
+[GitHub Actions run 30312994016](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30312994016).
