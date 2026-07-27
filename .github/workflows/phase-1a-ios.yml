@@ -49,6 +49,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           path: |
+            scripts/versions.env
             ios/TestResults/*.xcresult
             ios/SleepParalysisCompanion.xcodeproj/project.pbxproj
             ios/SleepParalysisCompanion.xcodeproj/xcshareddata/xcschemes/*.xcscheme
