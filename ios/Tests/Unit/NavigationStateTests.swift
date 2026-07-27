@@ -1,8 +1,8 @@
 @testable import SleepParalysisCompanion
 import XCTest
 
-@MainActor
 final class NavigationStateTests: XCTestCase {
+    @MainActor
     func testNavigationUsesTypedRouteValues() {
         let model = makeModel()
 
@@ -11,6 +11,7 @@ final class NavigationStateTests: XCTestCase {
         XCTAssertEqual(model.path, [.foundationDetails])
     }
 
+    @MainActor
     func testNavigationPathCanBeRestoredDeterministically() {
         let model = makeModel()
 
@@ -21,6 +22,7 @@ final class NavigationStateTests: XCTestCase {
         XCTAssertTrue(model.path.isEmpty)
     }
 
+    @MainActor
     private func makeModel() -> AppModel {
         AppModel(
             environment: .development,

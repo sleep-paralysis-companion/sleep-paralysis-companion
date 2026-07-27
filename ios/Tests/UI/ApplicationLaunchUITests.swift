@@ -5,6 +5,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    @MainActor
     func testApplicationLaunchAndBasicNavigation() {
         let app = XCUIApplication()
         app.launch()
@@ -20,6 +21,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertEqual(detailsTitle.label, "Foundation ready")
     }
 
+    @MainActor
     func testShellAtAccessibilityTextSizeDarkContrastAndReducedMotion() {
         let app = XCUIApplication()
         app.launchArguments += [
