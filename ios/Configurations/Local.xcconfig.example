@@ -1,0 +1,6 @@
+// Copy to Local.xcconfig for developer-only public configuration.
+// Local.xcconfig is ignored. Never place passwords, tokens, service-role keys,
+// Apple signing secrets, or other credentials in an xcconfig or Info.plist.
+SPC_PUBLIC_API_BASE_URL =
+SPC_ALLOWED_API_HOSTS =
+SPC_PRODUCTION_API_HOSTS =

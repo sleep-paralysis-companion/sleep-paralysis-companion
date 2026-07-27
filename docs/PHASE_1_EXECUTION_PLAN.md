@@ -254,6 +254,12 @@ state, component/variable, and prototype mapping remains blocked.
 
 **Objective:** Establish a reproducible, secure foundation before feature development.
 
+**Limited implementation authorization — 28 July 2026:** Satyam Shree
+authorized Phase 1A repository/application foundation implementation while
+Gate 0 remains `NOT PASSED`. This narrow exception does not change Gate 0,
+authorize Phase 1B/features, or authorize live Supabase, RevenueCat/App Store,
+Figma, signing, or production-service changes.
+
 #### Entry conditions
 
 - Gate 0 passed.

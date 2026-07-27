@@ -1,0 +1,54 @@
+name: Phase 1A iOS Foundation
+
+on:
+  push:
+    branches:
+      - codex/phase-1a-foundation
+  pull_request:
+    paths:
+      - ".github/workflows/phase-1a-ios.yml"
+      - ".swiftformat"
+      - ".swiftlint.yml"
+      - "ios/**"
+      - "scripts/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-1a-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Xcode 26.4.1 / iPhone 17 / iOS 26.4
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Record runner and toolchain
+        run: |
+          sw_vers
+          uname -m
+          env | grep '^Image' | sort || true
+
+      - name: Verify full Phase 1A foundation
+        run: bash scripts/verify_ci.sh
+
+      - name: Retain test results and generated project
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-1a-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            ios/TestResults/*.xcresult
+            ios/SleepParalysisCompanion.xcodeproj/project.pbxproj
+            ios/SleepParalysisCompanion.xcodeproj/xcshareddata/xcschemes/*.xcscheme

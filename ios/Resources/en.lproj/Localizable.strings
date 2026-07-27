@@ -1,0 +1,9 @@
+"shell.title" = "Sleep Paralysis Companion";
+"shell.summary" = "A calm place to prepare for future support tools.";
+"shell.details.button" = "View foundation details";
+"shell.details.title" = "Foundation ready";
+"shell.details.body" = "The app’s core structure is ready for carefully reviewed features.";
+"shell.environment.label" = "Build environment";
+"shell.status.label" = "Foundation status";
+"shell.status.value" = "Ready";
+"shell.status.preparing" = "Preparing";

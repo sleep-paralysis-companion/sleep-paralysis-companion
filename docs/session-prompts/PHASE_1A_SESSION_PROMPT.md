@@ -8,6 +8,15 @@ Before changing production code, read `docs/PHASE_1_EXECUTION_PLAN.md`, both eng
 
 If Gate 0 has not passed, do not create the production app foundation. Report the specific unmet entry conditions and continue only with safe Phase 0 documentation/evidence work if it is within scope. Do not silently waive the gate.
 
+### Owner-authorized Phase 1A exception — 28 July 2026
+
+Satyam Shree explicitly authorized the repository/application foundation work
+for Phase 1A before the remaining external Gate 0 evidence is complete. This
+exception authorizes only Phase 1A foundation code and evidence. It does not
+mark Gate 0 passed and does not authorize Phase 1B, live Supabase changes,
+RevenueCat/App Store product creation, Figma mutation, feature implementation,
+or unsupported platform, medical, privacy, or commercial claims.
+
 ## Objective
 
 Establish a reproducible, secure native Swift/SwiftUI foundation that later feature sessions can extend without bypassing privacy, accessibility, concurrency, testing, or environment boundaries.

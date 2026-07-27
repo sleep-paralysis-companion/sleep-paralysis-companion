@@ -12,11 +12,18 @@ build/
 *.p8
 xcuserdata/
 *.xcuserstate
+.build-tools/
+ios/.generated/
+ios/TestResults/
+ios/*.xcodeproj/
 
 # Secrets and local environment
 .env
 .env.*
 !.env.example
+*.xcconfig.local
+Local.xcconfig
+Secrets.xcconfig
 *.pem
 *.key
 secrets/
@@ -31,4 +38,3 @@ supabase/.temp/
 *.swp
 *.tmp
 *.log
-

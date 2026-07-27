@@ -1,0 +1,5 @@
+#include "Base.xcconfig"
+
+SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc
+SPC_ENVIRONMENT = production
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) SPC_ENV_PRODUCTION
