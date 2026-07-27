@@ -84,8 +84,8 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - path: Sources
-    resources:
       - path: Resources
+        buildPhase: resources
     settings:
       base:
         INFOPLIST_FILE: Resources/Info.plist

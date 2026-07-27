@@ -13,3 +13,14 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO \
   GCC_TREAT_WARNINGS_AS_ERRORS=YES \
   clean build
+
+BUILT_APP="$REPOSITORY_ROOT/ios/.generated/DerivedData/Build/Products/Development-iphonesimulator/SleepParalysisCompanion.app"
+[[ -f "$BUILT_APP/PrivacyInfo.xcprivacy" ]] || {
+  echo "Built app is missing PrivacyInfo.xcprivacy." >&2
+  exit 1
+}
+
+[[ -f "$BUILT_APP/en.lproj/Localizable.strings" ]] || {
+  echo "Built app is missing the development localization." >&2
+  exit 1
+}

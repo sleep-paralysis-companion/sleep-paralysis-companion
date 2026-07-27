@@ -15,9 +15,11 @@ disk-capacity, system-uptime, or user-defaults behavior. The manifest does not
 copy broad declarations for future features.
 
 `scripts/privacy_manifest_check.sh` validates plist syntax, exact empty
-declarations, tracking state, and source absence of the current required-reason
-API families. Every new Apple API or third-party binary must rerun the review
-against Apple's current required-reason API list before merge.
+declarations, tracking state, generated app-target membership, and source
+absence of the current required-reason API families. The simulator build also
+fails unless the built `.app` contains `PrivacyInfo.xcprivacy`. Every new Apple
+API or third-party binary must rerun the review against Apple's current
+required-reason API list before merge.
 
 ## Permission and entitlement review
 
