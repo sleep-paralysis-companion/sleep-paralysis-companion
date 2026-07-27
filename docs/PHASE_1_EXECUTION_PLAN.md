@@ -253,8 +253,8 @@ state, component/variable, and prototype mapping remains blocked.
 ### Phase 1A — Repository and platform foundation
 
 **Verified status — 28 July 2026:** Gate 1A passed for candidate
-`bd239116df78f4616006cd38fd46ea5a3970107e` in
-[hosted macOS run 30312994016](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30312994016).
+`0a3046e3a1e12e6024fe244466d374cfcb12e772` in
+[hosted macOS run 30313980331](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30313980331).
 This does not pass Gate 0 or authorize Phase 1B.
 
 **Objective:** Establish a reproducible, secure foundation before feature development.

@@ -8,9 +8,9 @@
 
 **Candidate branch:** `codex/phase-1a-foundation`
 
-**Verified candidate:** `bd239116df78f4616006cd38fd46ea5a3970107e`
+**Verified candidate:** `0a3046e3a1e12e6024fe244466d374cfcb12e772`
 
-**Hosted evidence:** [GitHub Actions run 30312994016](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30312994016) — `success`
+**Hosted evidence:** [GitHub Actions run 30313980331](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30313980331) — `success`
 
 ## Authorization boundary
 
@@ -26,6 +26,8 @@ or product feature implementation is authorized by this exception.
   deterministic targets and schemes.
 - Xcode 26.6 built the unsigned Development app for an iPhone 17 simulator
   using Swift 6 strict concurrency and warnings-as-errors.
+- CI created and booted the pinned simulator device instead of relying on
+  mutable runner device inventory.
 - All 19 unit tests and both UI tests passed.
 - Development and staging production-resource rejection, fail-closed
   configuration, feature/access policy, mandatory-free utilities, typed

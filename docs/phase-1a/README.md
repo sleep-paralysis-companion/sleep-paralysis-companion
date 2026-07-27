@@ -37,5 +37,5 @@ signing, TestFlight, Figma mutation, or unsupported claims.
 | `P1A-CI` reproducible hosted proof | Scripts, workflow, `CI_EVIDENCE.md` |
 
 The passing candidate is
-`bd239116df78f4616006cd38fd46ea5a3970107e`, verified by
-[GitHub Actions run 30312994016](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30312994016).
+`0a3046e3a1e12e6024fe244466d374cfcb12e772`, verified by
+[GitHub Actions run 30313980331](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30313980331).
