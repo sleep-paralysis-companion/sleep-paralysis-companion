@@ -8,7 +8,7 @@ xcodebuild \
   -project "$REPOSITORY_ROOT/ios/SleepParalysisCompanion.xcodeproj" \
   -scheme SPC-Development \
   -configuration Development \
-  -destination "platform=iOS Simulator,name=$SIMULATOR_NAME,OS=$SIMULATOR_OS" \
+  -destination "platform=iOS Simulator,name=$SIMULATOR_NAME,OS=$SIMULATOR_OS,arch=$SIMULATOR_ARCH" \
   -derivedDataPath "$REPOSITORY_ROOT/ios/.generated/DerivedData" \
   CODE_SIGNING_ALLOWED=NO \
   GCC_TREAT_WARNINGS_AS_ERRORS=YES \

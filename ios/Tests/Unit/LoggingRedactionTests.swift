@@ -2,13 +2,16 @@
 import XCTest
 
 final class LoggingRedactionTests: XCTestCase {
+    @MainActor
     func testSensitiveStringIsAlwaysRedacted() {
         let value = SensitiveLogValue("person@example.test")
+        let description = value.description
 
-        XCTAssertEqual(value.description, "<redacted>")
-        XCTAssertFalse(value.description.contains("person@example.test"))
+        XCTAssertEqual(description, "<redacted>")
+        XCTAssertFalse(description.contains("person@example.test"))
     }
 
+    @MainActor
     func testSensitiveStructuredValueIsAlwaysRedacted() {
         struct Payload: Sendable {
             let token: String
@@ -18,9 +21,10 @@ final class LoggingRedactionTests: XCTestCase {
         let value = SensitiveLogValue(
             Payload(token: "not-a-real-token", note: "private note")
         )
+        let description = value.description
 
-        XCTAssertEqual(value.description, "<redacted>")
-        XCTAssertFalse(value.description.contains("private note"))
+        XCTAssertEqual(description, "<redacted>")
+        XCTAssertFalse(description.contains("private note"))
     }
 
     func testLogEventsContainOnlyFixedCodes() {
