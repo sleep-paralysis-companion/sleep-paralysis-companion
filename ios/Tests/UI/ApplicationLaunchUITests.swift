@@ -8,6 +8,10 @@ final class ApplicationLaunchUITests: XCTestCase {
     @MainActor
     func testApplicationLaunchAndBasicNavigation() {
         let app = XCUIApplication()
+        app.launchArguments += [
+            "-AppleInterfaceStyle",
+            "Light",
+        ]
         app.launch()
 
         let detailsButton = app.buttons["foundation.details.button"]
