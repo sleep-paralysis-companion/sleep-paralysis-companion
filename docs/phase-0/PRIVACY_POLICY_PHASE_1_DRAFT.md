@@ -47,8 +47,8 @@ you export data to a destination you choose.
 
 If you enable synchronization, Supabase provides authentication, database, API,
 and storage services in the configured `[SUPABASE REGION]` region. Account
-options are Sign in with Apple, Sign in with Google, and passwordless email
-one-time code.
+options are Sign in with Apple and Sign in with Google. Email/password,
+passwordless email, phone, and OTP login are not offered.
 
 The app may synchronize the approved profile mapping, settings, alarm
 preference, submitted check-ins, revisions, conflicts, and deletion tombstones.
@@ -60,9 +60,12 @@ diagnostics or notification text.
 
 ### Purchases
 
-Apple processes monthly, annual, trial, grace-period, and lifetime In-App
-Purchases through StoreKit. We receive verified product and transaction status
-needed to provide access; we do not receive your payment-card details.
+Apple processes monthly, annual, trial, and lifetime In-App Purchases through
+StoreKit. RevenueCat processes pseudonymous product, transaction, entitlement,
+renewal, and expiration state needed to provide Premium access and purchase
+support. Billing Grace Period is disabled. We do not receive your payment-card
+details, and RevenueCat is not given check-ins, private notes, alarm times, or
+audio-listening history.
 
 The alarm and privacy, support, export, deletion, restore, and purchase-
 management utilities remain available without Premium. Deleting a Sleep

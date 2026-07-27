@@ -220,7 +220,7 @@ run on every matrix cell.
 | `T-SET-007-DEVICE-TRIAL` | Eligible/ineligible, start, trial-to-paid conversion, cancel, and expiry | StoreKit eligibility/state and paywall copy are exact; alarm always remains |
 | `T-SET-007-DEVICE-CLOCK` | Wall clock ±days, time zone/DST | Access follows verified signed StoreKit state, not device-clock manipulation |
 | `T-SET-007-DEVICE-REBOOT-OFFLINE` | Verified unexpired trial/subscription, reboot, stay offline | Signed expiration behavior and copy match `COM-P1-001`; no custom grace |
-| `T-SET-008-DEVICE-STOREKIT` | Monthly/annual/lifetime/paid grace/expired/refunded/revoked/restore | Verified state maps to the commercial matrix |
+| `T-SET-008-DEVICE-STOREKIT` | Monthly/annual/lifetime, no-grace retry, known-expiration reminder, immediate cutoff, expired/refunded/revoked/restore | RevenueCat/StoreKit verified state maps to the commercial matrix |
 
 ## 7. Performance and reliability gates
 

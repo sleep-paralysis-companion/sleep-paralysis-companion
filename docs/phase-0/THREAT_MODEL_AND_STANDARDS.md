@@ -31,10 +31,10 @@ acceptance pending
 | `AST-001` | Check-in occurrence, intensity, present state, dates, notes | Highly sensitive wellness/free text |
 | `AST-002` | Alarm schedule/preferences | Sensitive personal routine |
 | `AST-003` | Local profile/settings | Pseudonymous personal configuration |
-| `AST-004` | Supabase session plus Apple, Google, and email authentication state | Account takeover |
+| `AST-004` | Supabase session plus Apple and Google authentication state | Account takeover |
 | `AST-005` | Sync queue/revisions/tombstones | Integrity and deletion correctness |
-| `AST-006` | StoreKit entitlement state | Revenue/access integrity |
-| `AST-007` | StoreKit trial/subscription/lifetime configuration | Revenue/access and customer trust |
+| `AST-006` | RevenueCat entitlement/customer-information state backed by Apple transactions | Revenue/access integrity |
+| `AST-007` | RevenueCat offering/entitlement plus App Store trial/subscription/lifetime configuration | Revenue/access and customer trust |
 | `AST-008` | Audio assets, scripts, rights, manifest, hashes | Safety, IP, supply chain |
 | `AST-009` | Privacy/legal/support copy and public URLs | App Review, legal, trust |
 | `AST-010` | RLS/storage policies, Edge Functions, deployment credentials | Cross-user/system compromise |
@@ -68,7 +68,7 @@ Assumptions:
 1. Person ↔ app UI/system surfaces.
 2. Main app ↔ extension/App Group.
 3. App process ↔ GRDB/protected files/Keychain.
-4. App ↔ Apple AlarmKit/StoreKit.
+4. App ↔ Apple AlarmKit/StoreKit and RevenueCat.
 5. App ↔ network/TLS.
 6. Public client ↔ Supabase Auth/API/Storage/Edge Functions.
 7. Authenticated API ↔ Postgres/RLS.
@@ -95,7 +95,7 @@ a boundary as authority.
 | `THR-009` | Crafted/repeated deep link or intent creates duplicate record/audio/session | Medium | Route validation, no private parameters, idempotent current session, explicit Save for entry | Fuzz/malformed/repeated/terminated action tests | Low |
 | `THR-010` | Malicious/corrupt/unlicensed audio is downloaded or played | High | Approved host/schema/status/rights; size/type/hash; temp + atomic install; revocation | Tamper, redirect, wrong-type/hash/size, expiry/revocation tests | Low |
 | `THR-011` | Promotion extended/reopened or ended via clock/policy rollback | High | Server time; monotonic policy version; same-boot bounded cache; no wall-clock authority; audited writes | Clock, reboot, replay, old-policy, outage and boundary tests | Medium |
-| `THR-012` | Premium unlock via local flag/unverified receipt/account claim | High | Pure access evaluator; verified StoreKit current entitlement; server account irrelevant | Local tamper, unverified, refund/revoke/expiry, restore tests | Low |
+| `THR-012` | Premium unlock via local flag/unverified receipt/account claim | High | Pure access evaluator; active RevenueCat `premium_access` backed by Apple state; Supabase account claims are irrelevant; no client-writable premium field | Local tamper, unverified, refund/revoke/expiry, webhook replay, restore tests | Low |
 | `THR-013` | Paywall or copy exploits a stressed user with fear/false urgency | High safety | Claims matrix; closable paywall; utility access; no countdown/streak/outcome claim; Product/UX approval | Content review and stressed-use usability test | Medium |
 | `THR-014` | Export archive persists, leaks, or omits data while claiming completeness | High | Protected temp file, manifest/hash/scope, user-selected share, bounded cleanup | Field reconciliation, cancel/crash/relaunch/temp inspection | Low |
 | `THR-015` | Local/account deletion partially completes or subscription consequence is misrepresented | High | Coordinator/status, idempotency, separate scopes, reauth, completion notice, Apple management route | Interrupted/offline/multi-device/account/StoreKit tests | Medium |
@@ -120,7 +120,7 @@ accept or lower every Medium residual before Gate 0/Release as assigned.
   standards.
 - SwiftUI feature ownership with explicit unidirectional state/actions.
 - `@MainActor` only for UI state; no blocking I/O on main actor.
-- protocol boundaries for database, clock, UUID, network, StoreKit, AlarmKit,
+- protocol boundaries for database, clock, UUID, network, RevenueCat/StoreKit, AlarmKit,
   audio, auth, and policy clients.
 - structured concurrency; cancellation and stale-response handling.
 - typed errors and state machines; no Boolean soup for permission, sync,
@@ -179,7 +179,7 @@ accept or lower every Medium residual before Gate 0/Release as assigned.
 - clean-install, migration, offline, interruption, retry, cancellation,
   deletion, clock/time-zone/locale, full storage, corrupt data, and backend
   outage coverage;
-- StoreKit Sandbox and TestFlight lifecycle coverage;
+- RevenueCat, StoreKit Sandbox, and TestFlight lifecycle coverage;
 - archive with current accepted stable Xcode/SDK;
 - binary/manifest/permission/SDK/secret scan;
 - App Store metadata/screenshots/privacy/review-notes reconciliation; and
@@ -193,7 +193,7 @@ accept or lower every Medium residual before Gate 0/Release as assigned.
 | Content/rights issue | Content/Legal revocation process and catalog policy; minimum safe bundle plan |
 | Promotion-policy error | Product/Finance/Release dual approval, audit, extend-free safe response, rollback |
 | Backend outage | Backend on-call, monitoring, status, recovery; local core remains useful |
-| StoreKit incident | iOS/Product support runbook; no custom entitlement guess |
+| RevenueCat/StoreKit incident | iOS/Product support runbook; refresh authoritative state and never invent or extend entitlement |
 | Privacy incident | Privacy/Security assessment, containment, notification process |
 | Harmful/misleading copy | Content/Product emergency removal or app update path |
 | Release regression | Versioned database migrations, feature containment, app rollback where Apple permits, data-preserving recovery |
@@ -242,7 +242,7 @@ Named people are required; role labels alone do not pass Gate 0.
 | `APP-LEGAL` | Privacy/Legal Owner | Positioning, policies, data/retention/processors, rights, commercial disclosures | Satyam Shree | `OWNER-APPROVED 25 JULY 2026` lifecycle direction; attached PDF rejected; replacement policy/entity/contact pending |
 | `APP-SEC` | Security Owner | Threat mitigations, residual risk, secrets, supply chain, incident controls | Satyam Shree | `ASSIGNED 25 JULY 2026`; Medium residual acceptance waits for test evidence |
 | `APP-A11Y` | Accessibility/QA Owner | Screen-state coverage, AT/device matrix, evidence quality | Satyam Shree | `ASSIGNED 25 JULY 2026`; physical AT evidence pending |
-| `APP-COMM` | Finance/Commerce Owner | Products, prices, trial, grace/refund presentation | Satyam Shree | `APPROVED 25 JULY 2026` product model; App Store Connect/Sandbox evidence pending |
+| `APP-COMM` | Finance/Commerce Owner | Products, prices, trial, immediate cutoff/reminder, refund presentation, RevenueCat/App Store configuration | Satyam Shree | `APPROVED 28 JULY 2026` product model; RevenueCat/App Store Connect/Sandbox evidence pending |
 | `APP-REL` | Release Owner | Toolchain, metadata, production configuration, review package, rollback/on-call | Satyam Shree | `ASSIGNED 25 JULY 2026`; hosted build/TestFlight/App Store configuration pending |
 
 No one person should approve both a high-risk production policy change and its
@@ -259,7 +259,7 @@ Each approver receives:
 - RLS/security/test results;
 - physical-device evidence;
 - audio rights/content records;
-- StoreKit trial/subscription/lifetime Sandbox and boundary evidence;
+- RevenueCat and StoreKit trial/subscription/lifetime Sandbox and boundary evidence;
 - public legal/support URLs and App Store metadata draft;
 - residual-risk list; and
 - Gate record with no unowned blocker.
@@ -270,7 +270,7 @@ without version/evidence is not sign-off.
 
 Satyam Shree accepted accountability for all listed small-team roles on
 25 July 2026. Role assignment and product approval do not substitute for
-independent physical, StoreKit, RLS, security, accessibility, or release
+independent physical, RevenueCat/StoreKit, RLS, security, accessibility, or release
 evidence. `APP-BE`, `APP-IOS`, `APP-SEC`, `APP-A11Y`, and `APP-REL` close only
 after their linked evidence is reviewed and the residual risks are accepted.
 Closure occurs only after the actual migrations/policies and positive/negative

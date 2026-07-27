@@ -7,10 +7,10 @@ physical evidence pending
 
 ## 1. Commercial model
 
-### Adopted by Satyam Shree on 25 July 2026
+### Adopted by Satyam Shree; updated 28 July 2026
 
 - The bedtime alarm remains free at all times.
-- Every other product feature requires one logical StoreKit entitlement:
+- Every other product feature requires one logical RevenueCat entitlement:
   `premium_access`.
 - Eligible customers may start one Apple-managed **three-day introductory free
   trial** in the subscription group. Customer-facing copy says `three-day
@@ -27,8 +27,13 @@ physical evidence pending
 - The paywall fetches localized prices and eligibility from StoreKit; the USD
   amounts in this contract are not hardcoded UI strings.
 - Family Sharing is disabled for Phase 1.
-- Billing Grace Period is approved at **16 days for paid-to-paid renewals
-  only**. A failed conversion from the free trial receives no custom grace.
+- Apple Billing Grace Period and any RevenueCat/custom grace are **disabled**.
+  When the verified `premium_access` entitlement becomes inactive at
+  expiration, refund, or revocation, premium access ends immediately.
+- A noncoercive in-app expiration reminder begins at most 72 hours before a
+  known expiration only when the subscription/trial is not expected to renew.
+  It appears no more than once per local day and links to subscription
+  management. It is not a push/local notification unless separately approved.
 - Privacy, legal, support, data export/deletion, applicable account deletion,
   purchase restoration, subscription management, refund help, and accurate
   access status remain available regardless of entitlement.
@@ -42,7 +47,7 @@ open product decisions.
 
 ## 2. Feature access matrix
 
-| Feature | No verified premium | Verified trial/subscription/grace/lifetime | Expired/refunded/revoked/unknown |
+| Feature | No verified premium | Verified trial/subscription/lifetime | Expired/refunded/revoked/unknown |
 |---|---:|---:|---:|
 | View/configure/edit/remove bedtime alarm | Yes | Yes | Yes |
 | View actual alarm/permission state | Yes | Yes | Yes |
@@ -75,17 +80,31 @@ claim that payment is needed for safety.
 
 ### 3.1 Authority and eligibility
 
-StoreKit is the sole commercial authority. Supabase does not start a trial,
-store a premium Boolean, or grant entitlement. The app:
+Apple App Store Connect and StoreKit remain the payment, product, transaction,
+renewal, refund, and banking authorities. RevenueCat is the approved
+entitlement-orchestration layer over those Apple transactions. Supabase does
+not start a trial, store a client-writable premium Boolean, or grant
+entitlement. The app:
 
-1. loads monthly, annual, and lifetime product metadata from StoreKit;
-2. checks introductory-offer eligibility before showing trial copy;
-3. grants access only from a verified current StoreKit transaction or verified
-   renewal state;
-4. observes transaction updates and handles restore on every supported device;
-5. treats a verified lifetime non-consumable as non-expiring premium; and
-6. never infers trial or entitlement from install date, account date, a
+1. configures the RevenueCat Purchases SDK with the iOS app's **public SDK
+   key only**;
+2. loads monthly, annual, and lifetime packages through the approved
+   RevenueCat Offering, whose product/price facts come from StoreKit;
+3. shows trial copy only when the Apple/RevenueCat product state confirms the
+   introductory offer is applicable;
+4. grants premium only when RevenueCat `CustomerInfo` reports the
+   `premium_access` entitlement active;
+5. observes RevenueCat customer-information updates and provides restore on
+   every supported device;
+6. treats the lifetime non-consumable mapped to `premium_access` as
+   non-expiring unless Apple reports revocation/refund; and
+7. never infers trial or entitlement from install date, account date, a
    Supabase row, or device wall clock.
+
+RevenueCat secret API keys and Apple credentials are server/dashboard secrets.
+They never ship in the app or enter this repository. A verified RevenueCat
+webhook may update a server-side audit/mirror for support or server
+enforcement, but a client-writable Supabase row can never grant access.
 
 ### 3.2 Paywall UX
 
@@ -104,7 +123,7 @@ store a premium Boolean, or grant entitlement. The app:
 - Renewal, cancellation, billing, and trial eligibility use Apple-supplied
   facts; deleting a Sleep Paralysis Companion account does not cancel billing.
 
-### 3.3 Offline and grace behavior
+### 3.3 Offline, cutoff, and reminder behavior
 
 The former `global-promotion UTC interval and offline grace` question meant:
 when a server-defined public launch window starts and ends, and how long cached
@@ -113,14 +132,29 @@ free access continues without a network. That mechanism is now retired.
 For the approved model:
 
 - an unexpired, cryptographically verified StoreKit trial/subscription
-  transaction remains authoritative offline through its signed expiration;
+  transaction represented by RevenueCat's trusted cached customer state may
+  remain active offline through its known expiration;
 - lifetime remains active from its verified non-consumable transaction;
-- a 16-day Apple Billing Grace Period is honored only when StoreKit reports the
-  verified grace state for a paid-to-paid renewal;
-- the app invents no additional 24-hour or device-clock grace;
+- App Store Connect Billing Grace Period is disabled and the app invents no
+  custom, RevenueCat, 24-hour, or device-clock grace;
 - after verified expiry, revocation, refund, or an unverifiable state beyond
   the signed period, only the alarm and utility routes remain; and
-- a Supabase outage never changes StoreKit access.
+- a Supabase outage never changes RevenueCat/StoreKit access.
+
+The three-day reminder is defined precisely:
+
+- calculate from the store-provided expiration instant, never from device
+  install/account dates;
+- show only when 72 hours or less remain and auto-renewal is known to be off,
+  or when a trial has a known nonrenewing end;
+- show at most once per local day on an ordinary app surface, never inside an
+  active grounding sequence;
+- include `Manage subscription` or an honest resubscribe action;
+- do not schedule a local/push notification without a separately approved
+  permission, copy, and device test; and
+- a payment failure discovered at renewal cannot be pre-announced. With grace
+  disabled, access ends when the entitlement becomes inactive and the next
+  app-open message explains the billing issue and recovery route.
 
 ## 4. StoreKit state machine
 
@@ -133,7 +167,7 @@ For the approved model:
 | `failed` | StoreKit failure | Preserve prior state; recoverable message |
 | `unverified` | Transaction verification fails | Never unlock; security/error handling |
 | `active` | Verified current entitlement | Premium |
-| `in_grace_period` | Verified renewal state and grace enabled | Premium through Apple's grace end |
+| `in_grace_period_unexpected` | Store reports grace despite approved disabled configuration | Do not extend access through app logic; flag configuration mismatch and use the verified active/inactive RevenueCat entitlement result |
 | `billing_retry_no_grace` | No verified entitled grace state | Utility-free access; billing help |
 | `expired` | Verified expiration | Utility-free access; retain data |
 | `refunded` | Verified revocation/refund | Remove premium access; retain data |
@@ -141,14 +175,17 @@ For the approved model:
 
 Rules:
 
-- observe StoreKit transaction updates for the app lifecycle;
-- call `finish()` only after verified processing;
-- use verified current entitlements for restoration/current access;
-- fetch product display data from StoreKit and never hardcode localized price;
+- observe RevenueCat customer-information updates for the app lifecycle;
+- let the supported RevenueCat SDK/StoreKit integration finish verified
+  transactions according to the pinned integration contract;
+- use active RevenueCat entitlements for current access and the supported
+  restore flow for restoration;
+- fetch product display data from RevenueCat/StoreKit and never hardcode
+  localized price;
 - prevent two simultaneous products in the same subscription group;
 - test purchase, Ask to Buy/pending, cancel, failure, unverified, renewal,
-  expiry, retry, grace, refund, revoke, restore, reinstall, multiple devices,
-  and absence of Family Sharing;
+  expiry, retry without grace, refund, revoke, restore, reinstall, multiple
+  devices, reminder boundaries, and absence of Family Sharing;
 - do not require Supabase login to purchase or restore;
 - show Apple's manage-subscription surface and refund-request route;
 - explain that app account deletion does not cancel Apple billing; and
@@ -159,18 +196,20 @@ Rules:
 Evaluate in this order:
 
 1. Always-free alarm or utility route? Grant.
-2. Verified StoreKit trial, subscription, approved grace, or lifetime
+2. Active RevenueCat `premium_access` from an Apple trial, subscription, or
+   lifetime
    entitlement? Grant premium.
 3. Otherwise deny the premium route with `SCR-015`.
 
 Server account claims, a database Boolean, install date, onboarding date,
-device clock, analytics flag, receipt string not verified by StoreKit, or
+device clock, analytics flag, unverified receipt string, or
 client-side debug override cannot grant production premium access.
 
 The app keeps one pure access decision function whose inputs are:
 
 - feature ID;
-- verified StoreKit state;
+- active/inactive RevenueCat `premium_access` state plus known expiration and
+  renewal facts;
 - network/freshness state; and
 - build environment.
 
@@ -195,16 +234,17 @@ string needs Content/Claims approval and physical validation.
 | ID | Capability/entitlement | State | Constraint |
 |---|---|---|---|
 | `PERM-010` | In-App Purchase / StoreKit | `REQUIRED` | One approved subscription group and verified transactions |
+| `PERM-021` | RevenueCat Purchases SDK | `REQUIRED` | Public iOS SDK key only; pinned dependency; privacy manifest/SDK signature/provenance review; no wellness content or secret key |
 | `PERM-011` | App Intents | `CONDITIONAL REQUIRED` | Only the surface selected by device spike; no private parameter exposed |
 | `PERM-012` | Widget/Control extension | `CONDITIONAL` | Include only if selected surface proves useful; shared data minimized |
 | `PERM-013` | App Group | `CONDITIONAL` | Only if an approved extension needs minimal route/state; no full history/note database |
 | `PERM-014` | Live Activities / Alarm presentation support | `CONDITIONAL` | Only the selected AlarmKit configuration; neutral content and lifecycle test |
 | `PERM-015` | Background audio mode | `CONDITIONAL` | Enable only if approved locked/background playback requires it and physical/privacy review passes |
-| `PERM-016` | Sign in with Apple | `REQUIRED FOR ACCOUNT MODE` | Offered alongside Google and email for optional sync; Apple branding/nonce/reauth/linking and token revocation on deletion |
-| `PERM-017` | Associated Domains | `CONDITIONAL` | Only if the approved OAuth/email callback or universal-link flow needs it |
+| `PERM-016` | Sign in with Apple | `REQUIRED FOR ACCOUNT MODE` | Offered alongside Google for optional sync; Apple branding/nonce/reauth/linking and token revocation on deletion |
+| `PERM-017` | Associated Domains | `CONDITIONAL` | Only if the approved OAuth callback or universal-link flow needs it |
 | `PERM-018` | Keychain access group | `CONDITIONAL` | Only if an approved extension/auth design requires sharing; least privilege |
-| `PERM-019` | Sign in with Google / OAuth callback | `REQUIRED FOR ACCOUNT MODE` | Offered alongside Apple and email; approved SDK or browser flow, nonce/state/PKCE as applicable, privacy manifest, callback, reauth, linking, and revocation behavior |
-| `PERM-020` | Email account creation/sign-in | `REQUIRED FOR ACCOUNT MODE` | Exact password or passwordless method, verification, recovery, rate limits, abuse controls, reauth, and deletion behavior require Security/Privacy approval |
+| `PERM-019` | Sign in with Google / OAuth callback | `REQUIRED FOR ACCOUNT MODE` | Offered alongside Apple; approved SDK or browser flow, nonce/state/PKCE as applicable, privacy manifest, callback, reauth, linking, and revocation behavior |
+| `PERM-020` | Email/password, passwordless email, phone, or OTP account authentication | `EXCLUDED` | Phase 1 optional account mode offers only Sign in with Apple and Sign in with Google |
 
 ### Explicitly absent
 
@@ -261,8 +301,12 @@ Before release:
 - product IDs, group, durations, prices, territories, review screenshots, and
   localization are approved in App Store Connect;
 - monthly/annual/lifetime products, United States prices, one subscription
-  group, three-day introductory offer, family-sharing setting, and 16-day
-  paid-to-paid grace are configured exactly as approved;
+  group, three-day introductory offer, Family Sharing off, and Billing Grace
+  Period disabled are configured exactly as approved;
+- RevenueCat project/app, `premium_access` entitlement, default Offering,
+  monthly/annual/lifetime package mappings, restore behavior, Apple
+  credentials, webhook security, collaborator access, and SDK public key are
+  reviewed and evidenced;
 - Sandbox and TestFlight pass every state/boundary;
 - Billing Grace Period setting exactly matches app logic and tests;
 - production policy cannot be changed by the client or staging credentials;
@@ -276,7 +320,7 @@ Before release:
 | Decision | Owner required | Gate impact |
 |---|---|---|
 | App Store Connect product IDs, localized metadata, storefront price-point confirmation, and review screenshots | Release + Product | Blocks StoreKit configuration evidence, not the product decision |
-| StoreKit Sandbox coverage for trial eligibility/conversion, monthly/annual switching, lifetime, paid-to-paid grace, restore, refund, and revoke | iOS + QA | Blocks commercial acceptance evidence |
+| RevenueCat plus StoreKit Sandbox coverage for trial eligibility/conversion, monthly/annual switching, lifetime, immediate cutoff, reminder boundary, restore, refund, and revoke | iOS + QA | Blocks commercial acceptance evidence |
 | Minimum iOS target and notification fallback | Product + iOS + QA | Blocks permission set |
 | App Intent/control/widget/background audio capabilities | iOS + Design + Privacy + QA | Blocks entitlements/binary manifest |
-| Supabase email one-time-code callback, provider linking/collision, reauthentication, recovery, and abuse-control test evidence | Backend + Security + Privacy | UX direction is approved; blocks implementation acceptance evidence |
+| Supabase Apple/Google callbacks, provider linking/collision, reauthentication, recovery, and abuse-control test evidence | Backend + Security + Privacy | UX direction is approved; blocks implementation acceptance evidence |

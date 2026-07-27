@@ -17,7 +17,7 @@ Deliver a coherent, accessible app shell and the shortest safe guest-first path 
 - Guest/local-first core use; account creation appears only when approved sync value is explained.
 - Ultra-light check-in exists later but must not be front-loaded into onboarding.
 - No microphone, HealthKit, Watch, tracking, or other excluded permission.
-- Only the alarm and mandatory utilities are free; other features use the shared StoreKit access-policy boundary. Do not lead onboarding with a paywall or purchase request, and show three-day trial copy only when StoreKit confirms eligibility.
+- Only the alarm and mandatory utilities are free; other features use the shared RevenueCat/StoreKit access-policy boundary. Do not lead onboarding with a paywall or purchase request, and show three-day trial copy only when RevenueCat, backed by Apple, confirms eligibility.
 - Privacy/legal/support, export/deletion, applicable account deletion, purchase restoration, and subscription-management controls remain reachable regardless of entitlement.
 
 ## Required implementation

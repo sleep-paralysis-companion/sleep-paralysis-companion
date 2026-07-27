@@ -67,12 +67,12 @@ data, a waiver of rights, or acceptance of a medical risk.
 | `CLM-015` | History | “View the entries you submitted.” | No derived risk, cause, prediction, or treatment content |
 | `CLM-016` | Sync | “Sync approved app data across your devices.” | Exact data list is shown before account creation and RLS/isolation evidence passes |
 | `CLM-017` | Offline | “Bundled grounding content is available without an internet connection.” | Physical offline test passes for the named content and app state |
-| `CLM-018` | Commerce | “3 days free, then [localized StoreKit price]/[period] until canceled.” | Show only when StoreKit confirms introductory-offer eligibility for the selected monthly/annual product |
+| `CLM-018` | Commerce | “3 days free, then [localized StoreKit price]/[period] until canceled.” | Show only when RevenueCat, backed by Apple, confirms introductory-offer eligibility for the selected monthly/annual product |
 | `CLM-019` | Commerce | “The alarm stays available without a subscription.” | Commercial access tests prove it in every entitlement/account/network state |
 | `CLM-019A` | Commerce | “Lifetime - one-time purchase.” | Verified non-consumable product; never describe it as a subscription or trial |
 | `CLM-020` | Data | “Export a copy of the app data listed here.” | Export format and field list match actual output |
 | `CLM-021` | Data | “Delete this entry,” “Delete local app data,” or “Delete account” | Each label maps to the distinct lifecycle described before confirmation |
-| `CLM-022` | Optional account | “Continue with Apple,” “Continue with Google,” and “Create account with email” | Guest use remains available; provider branding, email flow, account linking, recovery, and deletion behavior pass review |
+| `CLM-022` | Optional account | “Continue with Apple” and “Continue with Google” | Guest use remains available; provider branding, account linking, reauthentication, recovery, and deletion behavior pass review |
 
 “Private” never means anonymous, zero-data, encrypted end-to-end, medically
 confidential, HIPAA-compliant, or invisible to processors unless each narrower
@@ -88,7 +88,9 @@ statement has separate verified evidence and legal approval.
 | `CLM-033` | “Your data syncs across devices.” | Conversion, RLS, conflicts, retries, deletion, sign-out, and reinstall pass | “When you create an account and enable sync”; list exclusions |
 | `CLM-034` | “Your alarm is set.” | Reconciled system schedule exists | Otherwise use “Couldn’t schedule,” “Permission needed,” or “Checking” |
 | `CLM-035` | “Download for offline use.” | Rights, manifest, integrity, atomic install, eviction, and playback pass | Show download state, size, and removal control |
-| `CLM-036` | “Premium active until [date].” | Verified StoreKit transaction/renewal state | Use Apple's localized product/renewal facts; distinguish grace/expired/refunded |
+| `CLM-036` | “Premium active until [date].” | Active RevenueCat entitlement backed by verified Apple transaction/renewal state | Use Apple's localized product/renewal facts; do not imply grace |
+| `CLM-036A` | “Premium ends on [date].” | A verified nonrenewing expiration is known and is at most 72 hours away | In-app reminder only, no more than once per local day; never warn a normally auto-renewing subscription as expiring |
+| `CLM-036B` | “Premium access ended. Check your subscription or restore purchases.” | RevenueCat reports `premium_access` inactive after expiration, refund, revoke, or failed renewal | Immediate cutoff; billing failure is not knowable three days in advance |
 | `CLM-037` | “Account deleted.” | Backend completion and local cleanup are confirmed | While pending, state the deadline and what remains |
 
 The app must not generalize a passing test on one device, OS, locale, or
@@ -118,7 +120,7 @@ scope. Satyam Shree approved the minimal completion below on 25 July 2026.
 | `CLM-052` | Breathing/visual instruction | “If it feels comfortable, follow the pace on screen.” | Provides choice; not treatment instruction |
 | `CLM-053` | Exit | “Stop” / “Done for now” | Clear, non-evaluative exit |
 | `CLM-054` | No audio | “Audio isn’t available. You can continue with silent instructions.” | Honest recovery without danger language |
-| `CLM-055` | Premium unavailable | “Grounding and the other companion features require Premium. Your alarm and account/data controls remain available.” | No safety coercion; exact StoreKit details follow |
+| `CLM-055` | Premium unavailable | “Grounding and the other companion features require Premium. Your alarm and account/data controls remain available.” | No safety coercion; exact RevenueCat/StoreKit details follow |
 
 Satyam Shree accepted the documented stressed-moment paywall risk on
 25 July 2026. The paywall remains dismissible, never blocks the alarm or data

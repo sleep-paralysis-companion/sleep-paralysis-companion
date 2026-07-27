@@ -1,9 +1,9 @@
 # Audio Catalog and Offline Contract
 
 **Contract ID:** `AUDIO-P1-001`  
-**Status:** Delivery/lifecycle contract complete; placeholders authorized for
-planning/spike; shipping content and device evidence pending  
-**Updated:** 24 July 2026
+**Status:** Delivery/lifecycle contract complete; candidate assets reported
+available but not yet received, hashed, rights-reviewed, or approved
+**Updated:** 28 July 2026
 
 ## 1. Boundary
 
@@ -33,6 +33,12 @@ clearly labeled placeholders for current documentation and the disposable
 physical-feasibility spike. That spike may use only owned synthetic local
 audio and neutral placeholder instructions. A placeholder cannot support a
 content, benefit, rights, provenance, or production-offline claim.
+
+On 28 July 2026 Satyam Shree reported that candidate audio assets are
+available. The files have not yet entered the repository intake, so this report
+does not close any content, rights, provenance, mastering, accessibility, or
+device-evidence requirement. Originals must be delivered through
+`assets/audio/incoming/` with the accompanying manifest described there.
 
 | Slot ID | Required role | Delivery | Maximum target | Status |
 |---|---|---|---|---|
@@ -139,7 +145,7 @@ expired/revoked rights, and path traversal are hard failures.
 | `AUD-CACHE-005` | Do not redownload automatically on cellular unless Product explicitly approves the setting and copy. Default is user initiation. |
 | `AUD-CACHE-006` | A catalog revocation prevents new starts and schedules safe removal after current playback; a security-critical revocation may stop playback with approved neutral copy. |
 | `AUD-CACHE-007` | Entitlement expiry prevents new premium starts but does not silently delete bytes until normal cleanup; bytes are not directly user-accessible. |
-| `AUD-CACHE-008` | Account sign-out does not control audio entitlement; StoreKit does. |
+| `AUD-CACHE-008` | Account sign-out does not control audio entitlement; RevenueCat maps Apple purchase state to the app entitlement. |
 | `AUD-CACHE-009` | Delete local app data removes all optional cached bytes and index/temp files. |
 | `AUD-CACHE-010` | Backup inclusion/exclusion and iOS file-protection class are selected and verified against locked playback; no assumption is accepted without physical evidence. |
 
@@ -202,8 +208,8 @@ Physical tests must cover every supported device/OS with:
 - network online/offline/poor, backend unavailable, and download interruption;
 - storage pressure, corrupt/truncated/wrong-type file, catalog update/revocation;
 - Dynamic Type, VoiceOver, Reduce Motion, and silent visual equivalent;
-- trial, subscription, lifetime, grace, expired/refunded/revoked, and authority
-  unknown states; and
+- trial, subscription, lifetime, known-expiration reminder, immediate cutoff,
+  expired/refunded/revoked, and authority-unknown states; and
 - locale/RTL script and supported audio locales.
 
 Record start latency, interruption result, duplicate/overlap, lock behavior,

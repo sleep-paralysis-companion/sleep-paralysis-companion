@@ -14,10 +14,13 @@ Make local persistence, guest ownership, optional accounts, Supabase synchroniza
 
 - SQLite through GRDB is the immediate source for core user-visible data.
 - Guest/local-first use must not upload user data. Synchronization starts only after an explicit approved account transition.
+- Optional authentication offers only Sign in with Apple and Sign in with
+  Google. Do not implement email/password, passwordless email, phone, or OTP
+  login.
 - Supabase is the Phase 1 cloud authority for approved account-scoped sync; every user-owned row/file requires tested least-privilege row-level security (RLS) or private storage policy.
 - Ultra-light check-in data is limited to approved occurrence, perceived intensity, recovery state, and optional note fields.
 - No microphone/voice, HealthKit, AI, tracking, advertising profile, or unapproved free text.
-- Commercial access state must be modeled separately from user data. Alarm and mandatory utilities remain free; all other product functions require verified StoreKit trial, subscription, approved grace, or lifetime access. Privacy/data/account/purchase-management operations are never blocked.
+- Commercial access state must be modeled separately from user data. Alarm and mandatory utilities remain free; all other product functions require active RevenueCat `premium_access` backed by an Apple trial, subscription, or lifetime purchase; no grace. Privacy/data/account/purchase-management operations are never blocked.
 
 ## Required implementation
 

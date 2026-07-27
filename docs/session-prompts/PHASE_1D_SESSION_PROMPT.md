@@ -12,7 +12,7 @@ Make the sleep schedule, free alarm, reminder fallbacks, and approved pre-sleep 
 
 ## Commercial boundary
 
-The alarm feature is always available without payment. Pre-sleep audio requires verified StoreKit trial, subscription, approved grace, or lifetime entitlement. Use the shared injected access-policy interface; do not implement StoreKit/paywall internals or scatter entitlement/time checks through views. Privacy/data/account/purchase-management controls remain accessible.
+The alarm feature is always available without payment. Pre-sleep audio requires active RevenueCat `premium_access` backed by an Apple trial, subscription, or lifetime purchase; no grace. Use the shared injected access-policy interface; do not implement commerce/paywall internals or scatter entitlement/time checks through views. Privacy/data/account/purchase-management controls remain accessible.
 
 ## Required implementation
 

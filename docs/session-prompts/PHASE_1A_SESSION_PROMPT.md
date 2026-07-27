@@ -14,7 +14,7 @@ Establish a reproducible, secure native Swift/SwiftUI foundation that later feat
 
 ## Adopted product constraints
 
-Carry forward the approved Phase 0 contract, including guest/local-first operation, manual episode action, no prohibited medical/detection claims, excluded microphone/HealthKit/Watch/AI capabilities, offline grounding, ultra-light check-in, and the commercial access model: alarm and mandatory utilities free; all other functionality requires verified StoreKit trial, subscription, approved grace, or lifetime access. Mandatory privacy/data/account/purchase-management controls are never entitlement-gated.
+Carry forward the approved Phase 0 contract, including guest/local-first operation, manual episode action, no prohibited medical/detection claims, excluded microphone/HealthKit/Watch/AI capabilities, offline grounding, ultra-light check-in, and the commercial access model: alarm and mandatory utilities free; all other functionality requires active RevenueCat `premium_access` backed by an Apple trial, subscription, or lifetime purchase; no grace. Mandatory privacy/data/account/purchase-management controls are never entitlement-gated.
 
 ## Working method
 

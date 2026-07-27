@@ -32,7 +32,9 @@ action is `Open`. It makes no episode, safety, detection, or medical claim.
      auto-renewable, US price USD 59.99, same subscription group and offer;
    - `com.satyamshree.spc.phase0spike.premium.lifetime` - non-consumable,
      US price USD 149.99;
-   - Family Sharing off; Billing Grace Period 16 days, paid-to-paid renewals
+   - Family Sharing off; Billing Grace Period off; RevenueCat must not add
+     custom grace, and the app must cut premium access immediately when the
+     verified entitlement becomes inactive
      only.
 4. In Codemagic, create an App Store Connect API integration named
    `codemagic` with App Manager access.

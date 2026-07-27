@@ -3,7 +3,7 @@
 **Contract ID:** `DATA-P1-001`  
 **Status:** Complete proposed contract; Product, Privacy/Legal, Backend, and
 Security approval pending  
-**Updated:** 24 July 2026
+**Updated:** 28 July 2026
 
 ### Selected Supabase test project
 
@@ -15,9 +15,12 @@ Security approval pending
   `401 UNAUTHORIZED_MISSING_API_KEY`, and echoed
   `sb-project-ref: nfzvlvukbeapcnlmyecf`. This proves endpoint/reference
   reachability only.
-- The available dashboard browser requires sign-in. Project region, schema,
-  Auth providers, callbacks, policies, storage, and runtime isolation have
-  **not** been inspected from this task.
+- The preferred Codex connection is the project-scoped, read-only Supabase MCP
+  endpoint
+  `https://mcp.supabase.com/mcp?project_ref=nfzvlvukbeapcnlmyecf&read_only=true`.
+  It has not yet been connected/authenticated in this task. Project region,
+  schema, Auth providers, callbacks, policies, storage, and runtime isolation
+  therefore remain **uninspected**.
 - Authority boundary: the reference is not a credential and does not authorize
   a production migration or policy change. Region and configuration must be
   read from the connected project/dashboard rather than inferred.
@@ -158,8 +161,9 @@ fact. See [Audio and offline contract](./AUDIO_AND_OFFLINE_CONTRACT.md).
 ### `DATA-ACCOUNT` — Optional identity/session
 
 Supabase Auth owns account identifiers and authentication factors. Phase 1
-offers Sign in with Apple, Sign in with Google, and passwordless email
-one-time-code sign-in. Guest use never requires an account. The app may hold:
+offers Sign in with Apple and Sign in with Google only. Email/password,
+passwordless email, phone, and OTP login are excluded. Guest use never requires
+an account. The app may hold:
 
 - Supabase user ID;
 - display-safe masked account identifier when needed;
@@ -168,11 +172,10 @@ one-time-code sign-in. Guest use never requires an account. The app may hold:
 - token expiry and reauthentication state; and
 - account deletion request status.
 
-Tokens, full auth payloads, email addresses, and signed links do not enter
-GRDB logs, diagnostics, export, notifications, or crash reports. Email codes
-expire, are single-use, rate-limited, and return the same neutral response for
-known and unknown addresses. Provider
-identifiers are handled by the auth service. Account deletion revokes Supabase
+Tokens, full auth payloads, email addresses, provider authorization codes, and
+signed links do not enter GRDB logs, diagnostics, export, notifications, or
+crash reports. Provider identifiers are handled by the auth service. Account
+deletion revokes Supabase
 sessions, Sign in with Apple tokens when applicable, and any retained Google
 authorization grant or token that the approved implementation can revoke.
 
@@ -194,8 +197,9 @@ duplicate the free-text note in queue logs.
 
 ### `DATA-COMMERCE`
 
-Local commerce state contains only verified StoreKit product/transaction facts
-needed to render trial, subscription, grace, lifetime, and utility-free access.
+Local commerce state contains only RevenueCat customer-information and Apple
+product/transaction facts needed to render trial, subscription, lifetime,
+known-expiration reminder, inactive, and utility-free access.
 Never store payment-card data. Do not copy raw signed transaction payloads into
 analytics or ordinary logs.
 
@@ -219,8 +223,8 @@ restored from sync.
 | `FLOW-006` | Account conversion | Explicit sync choice → Auth → conversion transaction → queue → RLS-protected remote rows |
 | `FLOW-007` | Ongoing sync | Local committed revision → idempotent queue → authenticated RLS API → acknowledgment |
 | `FLOW-008` | Optional audio | Public approved manifest → short-lived authorized download URL → temp file → hash verification → atomic cache install |
-| `FLOW-009` | Commerce | App ↔ StoreKit; verified transaction → local access state; no Sleep Paralysis Companion account required |
-| `FLOW-010` | Promotion policy | App ↔ versioned public server policy with server time; cache contains no person data |
+| `FLOW-009` | Commerce | App ↔ RevenueCat Purchases SDK ↔ StoreKit; active `premium_access` → local access state; no Sleep Paralysis Companion account required |
+| `FLOW-010` | Expiration reminder | Known nonrenewing store expiration → local once-daily in-app reminder during final 72 hours; no push/local notification approved |
 | `FLOW-011` | Export | Local/reconciled data → temporary protected archive → user-selected share destination → cleanup |
 | `FLOW-012` | Local deletion | Confirmation → transactional deletion/cleanup coordinator → first-use state |
 | `FLOW-013` | Account deletion | In-app request → reauth → server deletion workflow → status/completion → local disposition |
@@ -305,7 +309,7 @@ may not mutate view state directly; they reconcile through the database.
 | Check-in delete vs edit | Delete wins only when its base revision includes the edited revision; otherwise conflict requires explicit keep/delete |
 | Draft | Never synced |
 | Audio cache/manifest | Cache is device-local; catalog version is server/content authority, never a user-data conflict |
-| Entitlement | StoreKit controls; never synchronized through Supabase profile |
+| Entitlement | Active RevenueCat `premium_access` backed by Apple controls; never granted through Supabase profile |
 
 No entity uses undocumented last-write-wins. Device wall-clock ordering is not
 conflict authority.
@@ -357,7 +361,7 @@ must disclose any legally required exception.
 | `RET-007` | Bundled audio | App lifetime | N/A | Removed with app only |
 | `RET-008` | Downloaded audio/cache | Until user removal, catalog revocation, integrity failure, or storage eviction | Source object per licensed catalog lifecycle | Minimum bundle never evicted; cache removal has no user-history effect |
 | `RET-009` | Auth tokens | Active session | Auth provider policy | Keychain removal on sign-out/local deletion; server revoke on account deletion |
-| `RET-011` | StoreKit cache | While needed to render verified access; refresh on transaction updates | Apple authority | No payment data; local reset does not cancel transaction |
+| `RET-011` | RevenueCat/StoreKit entitlement cache | While needed to render trustworthy access; refresh on customer-information/transaction updates | RevenueCat over Apple authority | No payment-card data or secret key; local reset does not cancel transaction |
 | `RET-012` | Operational diagnostics | Not collected in Phase 1 until a separately approved provider/configuration exists | Not collected | Diagnostics remain off |
 | `RET-013` | Temporary export | Until share completion/cancel, maximum 24 hours after interrupted flow | Never, unless user chooses a remote destination outside Sleep Paralysis Companion | Protected temp cleanup on launch/background task |
 | `RET-014` | Account deletion audit | No local record after completion | Minimal request ID, completion timestamp, and outcome for 30 days; no content or direct account identifier | Purge at 30 days unless a documented legal hold applies |
@@ -499,8 +503,8 @@ Product/lifecycle defaults are owner-approved. Gate 0 still requires:
 
 - versioned Supabase schema, Auth configuration, RLS/storage policies, and
   positive/negative isolation/deletion test evidence;
-- callback, email-code abuse-control, provider-link/collision, reauthentication,
-  expiry/revocation, and account-deletion evidence;
+- Apple/Google callbacks, provider-link/collision, reauthentication,
+  cancellation, expiry/revocation, and account-deletion evidence;
 - physical Data Protection, sign-out, reinstall, and cross-account evidence;
 - final approved privacy/legal wording aligned with `PRIV-P0-001`,
   `PRIV-P1-002`, and `LEGAL-P1-003`; and

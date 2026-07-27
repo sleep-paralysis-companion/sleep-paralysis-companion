@@ -16,7 +16,7 @@ Prove the complete Phase 1 product is safe, accessible, privacy-consistent, comm
 - Guest/local-first core architecture; approved account-scoped Supabase sync; offline promises honored.
 - No microphone/voice, HealthKit, Watch, AI, tracking, or other excluded capability.
 - Ultra-light optional check-in limited to episode occurrence, perceived intensity, recovery state, and optional note.
-- The alarm remains free; all other product functionality requires a verified StoreKit trial, subscription, approved grace state, or lifetime entitlement.
+- The alarm remains free; all other product functionality requires active RevenueCat `premium_access` backed by an Apple trial, subscription, or lifetime purchase. Billing/custom grace is disabled; verified entitlement loss causes immediate cutoff, with the approved in-app reminder beginning at most 72 hours before a known nonrenewing expiration.
 - Eligible monthly/annual customers may receive Apple's three-day introductory offer; there is no custom or global promotion clock.
 - Privacy/legal/support, export/deletion, applicable account deletion, restoration, and subscription management remain accessible without entitlement.
 
@@ -26,7 +26,7 @@ Prove the complete Phase 1 product is safe, accessible, privacy-consistent, comm
 - Exercise the full core journey on the oldest supported device class and current iPhone hardware.
 - Test clean install, upgrade from every supported schema/app version, reinstall, offline launch, poor/intermittent network, Supabase outage, token expiry/revocation, permission denial/revocation, full storage, corrupt/missing audio, background/termination/restart, time-zone/clock changes, and interrupted deletion.
 - Complete the physical matrix for AlarmKit/fallback, locked/unlocked action, App Intent/control/widget, silent mode, Focus, notification settings, audio routes/interruptions, and app lifecycle.
-- Complete the commercial matrix: introductory-offer eligibility/start/conversion/expiry, offline signed-expiration state, clock tampering, alarm-free behavior, paywall access, StoreKit purchase/pending/cancel/renew/retry/grace/refund/revoke/restore/reinstall/multi-device/lifetime, and data-rights availability.
+- Complete the commercial matrix: introductory-offer eligibility/start/conversion/expiry, offline signed-expiration state, clock tampering, alarm-free behavior, paywall access, RevenueCat/StoreKit purchase/pending/cancel/renew/retry-without-grace/reminder/immediate-cutoff/refund/revoke/restore/reinstall/multi-device/lifetime, and data-rights availability.
 - Audit privacy manifests, required-reason APIs, SDK manifests/signatures/provenance, entitlements, permissions/purpose strings, binary content, network traffic, logs, Keychain/file protection, secrets, Supabase RLS/storage policies, and environment isolation.
 - Resolve crashes, hangs, data loss, semantic duplication, cross-account access, inaccessible critical flows, misleading copy, broken deletion/restoration, and commercial-access errors before release candidacy.
 - Run external TestFlight with reproducible feedback capture and requirement/build traceability.
@@ -53,7 +53,7 @@ Verify the complete core flow with VoiceOver, all Dynamic Type accessibility siz
 
 ## Definition of done
 
-Mark Phase 1 done only when every included requirement maps to passing evidence; no release blocker remains; physical/offline flows pass; StoreKit trial/subscription/grace/lifetime rules are correct; no data crosses account boundaries or appears in logs; accessibility passes; privacy policy/App Store answers/SDK manifests/observed behavior agree; review notes are reproducible; and named product/engineering/QA/privacy/security/content/release owners sign the release record.
+Mark Phase 1 done only when every included requirement maps to passing evidence; no release blocker remains; physical/offline flows pass; RevenueCat/StoreKit trial/subscription/no-grace/lifetime rules are correct; no data crosses account boundaries or appears in logs; accessibility passes; privacy policy/App Store answers/SDK manifests/observed behavior agree; review notes are reproducible; and named product/engineering/QA/privacy/security/content/release owners sign the release record.
 
 ## Required release record
 

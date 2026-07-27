@@ -88,12 +88,12 @@ The following are not Phase 1 and must not be started without an approved scope 
 |---|---|---|
 | iPhone application | Swift and SwiftUI | Native app; follow the repository's supported stable Xcode and Swift versions |
 | Device persistence | SQLite through GRDB | Local-first source for user-visible core data and queued changes |
-| Authentication | Supabase Auth | Optional sync accounts offer Apple, Google, and email; guest/local-first use remains available |
+| Authentication | Supabase Auth | Optional sync accounts offer Sign in with Apple and Sign in with Google only; guest/local-first use remains available |
 | Cloud database | Supabase Postgres | Schema migrations are versioned; all user data is protected by row-level security |
 | File storage | Supabase Storage | Only approved user files; private buckets and short-lived access URLs |
-| Trusted server logic | Supabase Edge Functions | Secrets, entitlement validation, and privileged operations never run in the app |
+| Trusted server logic | Supabase Edge Functions | Secrets, optional verified RevenueCat webhooks, deletion, and privileged operations never run in the app |
 | Public web pages | Vercel | Privacy policy, terms, support, account-deletion information, and product website |
-| Digital purchases | StoreKit 2 | StoreKit is the in-app authority for premium digital access |
+| Digital purchases | StoreKit 2 + RevenueCat Purchases SDK | Apple remains transaction/payment authority; active RevenueCat `premium_access` controls app feature access |
 | Distribution | App Store Connect | Vercel does not host or distribute the native application |
 
 Supabase and SQLite are complementary, not alternatives. SQLite protects the core experience from network failure; Supabase provides account-scoped synchronization and server authority.
@@ -291,9 +291,9 @@ state, component/variable, and prototype mapping remains blocked.
 - Implement Supabase migrations, foreign keys, constraints, indexes, and row-level security.
 - Test row-level security with positive and negative user-isolation cases.
 - Define guest data ownership and the atomic guest-to-account transition.
-- Implement the approved Apple, Google, and email account methods only after
-  email verification/recovery, provider linking/collision, reauthentication,
-  and token-revocation behavior is approved.
+- Implement only Sign in with Apple and Sign in with Google after provider
+  callback, linking/collision, reauthentication, cancellation, token-revocation,
+  and account-deletion behavior is approved. Do not add email/password/OTP.
 - Define synchronization as an explicit state machine: pending, syncing, synced, conflicted, failed, and deleted.
 - Define deterministic conflict resolution per entity; never use an undocumented last-write-wins rule.
 - Make deletion tombstones and server deletion propagation testable.

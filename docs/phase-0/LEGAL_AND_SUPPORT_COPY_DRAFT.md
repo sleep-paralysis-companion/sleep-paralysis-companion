@@ -124,8 +124,8 @@ Required disclosure:
 > Companion account does not cancel an Apple subscription.
 
 Do not hardcode the numeric price in customer-facing runtime copy. Do not show
-trial language unless StoreKit reports the customer as eligible. Do not imply
-that Premium is required for safety.
+trial language unless RevenueCat, backed by Apple eligibility, reports the
+customer as eligible. Do not imply that Premium is required for safety.
 
 ## 5. Account, export, and deletion copy
 
@@ -135,7 +135,7 @@ Title: `Sync across devices`
 
 Body:
 
-> An account is optional. Sign in with Apple, Google, or an email code to sync
+> An account is optional. Sign in with Apple or Google to sync
 > approved settings and entries through Supabase. You can continue on this
 > iPhone without an account.
 
@@ -192,7 +192,8 @@ Body:
 
 > Need help with the app, an alarm, access, sync, export, or deletion? Contact
 > **[SUPPORT EMAIL]**. Do not include private check-in text, health details,
-> passwords, email codes, or purchase credentials in your message.
+> passwords, provider authorization codes, or purchase credentials in your
+> message.
 
 Include:
 
@@ -223,7 +224,9 @@ contain, at minimum:
 5. user ownership/responsibility for private notes and a limited license only
    to process them to provide sync/export/deletion;
 6. Apple-managed monthly, annual, introductory-offer, renewal, cancellation,
-   refund, grace, restoration, and Lifetime purchase terms;
+   refund, retry without grace, restoration, and Lifetime purchase terms;
+   RevenueCat's entitlement-orchestration role; immediate premium cutoff when
+   entitlement becomes inactive; and the known-expiration reminder rule;
 7. content/IP ownership, final audio licenses, and prohibited misuse;
 8. service changes, interruption, termination, and data handling on closure;
 9. warranty disclaimer and legally permissible liability limitations that do

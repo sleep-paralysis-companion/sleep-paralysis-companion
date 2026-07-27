@@ -27,12 +27,12 @@ Satyam Shree has now accepted the small-team Product, Design, iOS, Backend,
 Content/Claims, Privacy/Legal, Security, Accessibility/QA, Commerce, and
 Release roles and approved the product/commercial/lifecycle directions recorded
 on 25 July 2026.
-AlarmKit, system entry, locked/offline audio, StoreKit behavior, Supabase RLS,
+AlarmKit, system entry, locked/offline audio, RevenueCat/StoreKit behavior, Supabase RLS,
 and accessibility still have no required runtime/device evidence. The supplied
 privacy PDF is not publishable; a product-accurate replacement draft now
 exists but still needs the identified legal/contact/region values and approval.
 
-The exact PRD wording tab is now available, Apple/Google/email account methods
+The exact PRD wording tab is now available, Apple/Google-only account methods
 are selected, and clearly labeled audio/asset and legal-URL placeholders are
 authorized for the current phase. Those placeholder inputs remain mandatory
 shipping dependencies, but their final files/URLs are no longer treated as
@@ -52,10 +52,10 @@ permission, entitlement, or remote policy was implemented in Phase 0.
 | `G0-C-005` | Complete onboarding truth table and field-purpose inventory | `SPEC-P1-001 §§7–8`; minimal check-in copy/date/uniqueness/draft rules approved | `PASS — OWNER APPROVED` |
 | `G0-C-006` | Claims/copy matrix across every surface; no prohibited claims | `CLAIMS-P1-001`; Figma/user-flow/privacy conflicts superseded; `PRIV-P1-002` and `LEGAL-P1-003` provide product-accurate replacement drafts | **FAIL:** factual/legal placeholders, final audio/store metadata, legal approval, and release evidence remain |
 | `G0-C-007` | Complete navigation, screen, state, error, destructive, permission, purchase, sync, offline inventory | `NAV-P1-001`; legacy Figma superseded by canonical contract | `PASS — OWNER APPROVED PLAN` |
-| `G0-C-008` | Data inventory, data flow, retention, export, deletion, analytics/privacy contract | `DATA-P1-001`; Supabase plus Apple/Google/email-code direction and retention defaults approved; diagnostics off; `PRIV-P1-002` drafted | **FAIL:** legal/entity/region applicability values and backend evidence remain |
+| `G0-C-008` | Data inventory, data flow, retention, export, deletion, analytics/privacy contract | `DATA-P1-001`; Supabase plus Apple/Google-only direction and retention defaults approved; diagnostics off; `PRIV-P1-002` drafted | **FAIL:** legal/entity/region applicability values and backend evidence remain |
 | `G0-C-009` | Guest-to-account ownership, conversion, conflicts, retry, tombstones, sign-out, reinstall, deletion are deterministic | `DATA-P1-001 §§5–7, 11–12`; merge, linking, reauthentication, sign-out, draft, and recovery direction owner-approved | **FAIL:** Supabase callbacks, migrations, RLS/storage policies, isolation, recovery, and deletion tests unrun |
-| `G0-C-010` | Audio roles, delivery/offline/playback contract, placeholder boundary, and shipping-content gate are explicit | `AUDIO-P1-001`; user authorized placeholders and owned synthetic spike audio | `PASS — PLACEHOLDER CONTRACT`; actual rights/content/assets are required before production content integration and release |
-| `G0-C-011` | Commercial model, access matrix, trial/offline/grace/restore/refund/revoke behavior | `COM-P1-001`: monthly USD 8.99, annual USD 59.99, lifetime USD 149.99, three-day offer, Family Sharing off, 16-day paid-renewal grace | **FAIL — PRODUCT APPROVED:** App Store Connect and Sandbox evidence absent |
+| `G0-C-010` | Audio roles, delivery/offline/playback contract, placeholder boundary, and shipping-content gate are explicit | `AUDIO-P1-001`; user authorized placeholders and owned synthetic spike audio; candidate assets reported available 28 July but not delivered to intake | `PASS — PLACEHOLDER CONTRACT`; actual files, rights/content records, hashes, and approvals are required before production content integration and release |
+| `G0-C-011` | Commercial model, access matrix, trial/offline/cutoff/reminder/restore/refund/revoke behavior | `COM-P1-001` and `RC-P1-004`: monthly USD 8.99, annual USD 59.99, lifetime USD 149.99, Apple three-day offer, RevenueCat `premium_access`, Family Sharing off, billing/custom grace off, immediate cutoff, 72-hour known-expiration reminder | **FAIL — PRODUCT APPROVED:** RevenueCat account/project/collaborator, App Store Connect products/banking prerequisites, Sandbox, and physical evidence absent |
 | `G0-C-012` | Permission/entitlement register; excluded capabilities absent | `COM-P1-001 §6` | **FAIL:** target/system surface/background capability still depends on physical spike |
 | `G0-C-013` | Initial threat model, mitigation/test owners, residual risk accepted | `SEC-P1-001`; Satyam Shree is assigned to all review roles | **FAIL:** mitigation tests and evidence-backed Medium residual acceptance missing |
 | `G0-C-014` | Safety, privacy, security, accessibility, analytics, and release standards with named owners | `SEC-P1-001 §§6–9`; Satyam Shree assigned to all small-team roles | **FAIL — OWNED:** evidence-backed iOS/backend/security/accessibility/release decisions remain |
@@ -80,10 +80,12 @@ Because any `FAIL` prevents passage, Gate 0 is **NOT PASSED**.
 ### `G0-B-002` — Product/Commerce choices — **CLOSED AS DECISIONS**
 
 - **Decision:** Sleep Paralysis Companion; alarm free/all other features
-  premium; monthly USD 8.99; annual USD 59.99; lifetime USD 149.99; StoreKit
-  three-day introductory offer; Family Sharing off; 16-day paid-renewal grace;
-  exact check-in and Supabase email-code UX recorded in the linked contracts.
-- **Remaining evidence:** App Store Connect, Sandbox, and runtime tests under
+  premium; monthly USD 8.99; annual USD 59.99; lifetime USD 149.99; Apple
+  three-day introductory offer; RevenueCat `premium_access`; Family Sharing
+  off; billing/custom grace off; immediate cutoff; 72-hour in-app reminder for
+  a known nonrenewing expiration; and Apple/Google-only Supabase account UX.
+- **Remaining evidence:** RevenueCat account/project/collaborator, App Store
+  Connect products/banking prerequisites, Sandbox, and runtime tests under
   `G0-B-005`.
 
 ### `G0-B-003` — Replace and approve privacy/legal package
@@ -102,8 +104,9 @@ Because any `FAIL` prevents passage, Gate 0 is **NOT PASSED**.
 
 - **Owner:** Content/Claims + Legal/Rights + Accessibility + Product.
 - **Decision:** Satyam Shree approved `AUD-SLOT-001`–`003` and an
-  owned-synthetic spike fixture on 25 July 2026. Do not integrate real content
-  until concrete catalog records arrive.
+  owned-synthetic spike fixture on 25 July 2026, and reported candidate audio
+  available on 28 July. Do not integrate real content until originals enter
+  `assets/audio/incoming/` with concrete catalog and rights records.
 - **Evidence for Gate 0:** signed role/delivery/claims/accessibility contract
   and synthetic-fixture provenance. **Evidence before release:** rights files,
   scripts/transcripts/translations, hashes/mastering, approvals,
@@ -140,7 +143,7 @@ Because any `FAIL` prevents passage, Gate 0 is **NOT PASSED**.
 
 - **Owner:** Backend + Security + Release.
 - **Action:** review RLS/storage/Auth/Edge Function designs, threat mitigations,
-  StoreKit administration, environment isolation, deletion, content
+  RevenueCat/StoreKit administration, environment isolation, deletion, content
   revocation, incident response, and residual risk.
 - **Evidence:** test plan/results appropriate to Phase 0 spike/design, named
   residual acceptances, and production change-control runbooks.
@@ -174,6 +177,7 @@ Because any `FAIL` prevents passage, Gate 0 is **NOT PASSED**.
 | Wellness, Terms, support, commerce, and deletion copy draft | [Legal and support copy draft](./LEGAL_AND_SUPPORT_COPY_DRAFT.md) |
 | Audio/catalog/offline | [Audio and offline](./AUDIO_AND_OFFLINE_CONTRACT.md) |
 | Commercial/permissions | [Commercial access and permissions](./COMMERCIAL_ACCESS_AND_PERMISSIONS.md) |
+| RevenueCat/Apple commerce | [RevenueCat integration contract](./REVENUECAT_INTEGRATION_CONTRACT.md) |
 | Threat/standards/sign-off | [Threat model and standards](./THREAT_MODEL_AND_STANDARDS.md) |
 | Device spike/target protocol | [Platform feasibility report](./PLATFORM_FEASIBILITY_REPORT.md) |
 | Decisions/conflicts/blockers | [Decision register](./OPEN_DECISIONS_AND_CONFLICTS.md) |
@@ -189,7 +193,8 @@ Only:
 - execute the isolated disposable physical-platform spike.
 
 Do not create the production Xcode target, production database migration,
-StoreKit products, Supabase production policy, audio publication, analytics
+RevenueCat production configuration, StoreKit products, Supabase production
+policy, audio publication, analytics
 integration, or permissions/entitlements.
 
 ### Phase 1A after Gate 0 passes
@@ -224,9 +229,9 @@ Phase 1A completion does not itself approve Phase 1B or a release.
 | Backend Lead | Satyam Shree | `ASSIGNED — EVIDENCE PENDING` | Supabase migrations/RLS/isolation/deletion tests |
 | Content/Claims | Satyam Shree | `APPROVED DIRECTION 25 JULY 2026` | `CLAIMS-P1-001`, `AUD-SLOT-001`–`003`; final assets pending |
 | Privacy/Legal | Satyam Shree | `OWNER-APPROVED DIRECTION 25 JULY 2026` | `DATA-P1-001`, `PRIV-P0-001`; replacement policy pending |
-| Security | Satyam Shree | `ASSIGNED — EVIDENCE PENDING` | Threat/RLS/StoreKit/physical evidence and residual acceptance |
+| Security | Satyam Shree | `ASSIGNED — EVIDENCE PENDING` | Threat/RLS/RevenueCat/StoreKit/physical evidence and residual acceptance |
 | Accessibility/QA | Satyam Shree | `ASSIGNED — EVIDENCE PENDING` | Physical AT/device matrix |
-| Finance/Commerce | Satyam Shree | `APPROVED 25 JULY 2026` | `COM-P1-001`; App Store Connect/Sandbox evidence pending |
+| Finance/Commerce | Satyam Shree | `APPROVED 28 JULY 2026` | `COM-P1-001`, `RC-P1-004`; RevenueCat/App Store Connect/Sandbox evidence pending |
 | Release | Satyam Shree | `ASSIGNED — EVIDENCE PENDING` | Hosted macOS/TestFlight/App Store configuration |
 
 **Final Gate 0 result: NOT PASSED.**

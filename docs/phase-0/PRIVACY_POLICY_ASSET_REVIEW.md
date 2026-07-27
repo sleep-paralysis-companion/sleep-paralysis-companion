@@ -28,7 +28,7 @@ must be removed rather than implemented:
 
 | PDF pages | Template statement | Phase 1 disposition |
 |---|---|---|
-| 3-4 | Required account using Apple ID or phone OTP | Superseded. Phase 1 is guest/local-first; optional Supabase sync offers Apple, Google, and email one-time code. |
+| 3-4 | Required account using Apple ID or phone OTP | Superseded. Phase 1 is guest/local-first; optional Supabase sync offers Apple and Google only. |
 | 3-4 | Health questionnaire and profile responses | Excluded from onboarding. Only the optional user-entered check-in fields in `SPEC-P1-001` are allowed. |
 | 3-6, 8-10, 13-16 | Loved-one voice recording/upload and cloud backup | Excluded. No microphone or personal audio collection in Phase 1. |
 | 4-8, 13-16 | Overnight microphone monitoring, detection, and real-time intervention | Prohibited. Phase 1 does not monitor, detect, predict, or automatically respond to an episode. |
@@ -48,7 +48,7 @@ The shipping policy must describe only implemented and verified practices:
 
 - local profile, settings, alarm intent, check-ins, and optional private note;
 - optional Supabase account and synchronization;
-- Sign in with Apple, Sign in with Google, and email one-time-code data;
+- Sign in with Apple and Sign in with Google data;
 - StoreKit transaction/entitlement facts without payment-card collection;
 - an approved minimal diagnostics allowlist, if diagnostics are enabled;
 - no advertising, cross-app tracking, microphone, voice upload, HealthKit,

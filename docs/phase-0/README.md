@@ -2,7 +2,7 @@
 
 **Phase:** Product, claims, and feasibility lock  
 **Status:** Documentation baseline complete; Gate 0 **NOT PASSED**  
-**Baseline date:** 25 July 2026  
+**Baseline date:** 28 July 2026
 **Implementation authority:** None. Phase 0 does not authorize production feature code.
 
 ## Outcome
@@ -23,11 +23,12 @@ reactions remain unavailable because hierarchy calls time out or fail. Satyam
 Shree approved superseding that legacy discovery source with the canonical
 specification. Product-accurate replacement privacy/legal/support drafts now
 exist. Gate 0 remains blocked by their factual/legal verification and approval,
-Supabase/RLS evidence, StoreKit/App Store configuration evidence, and the
+Supabase/RLS evidence, RevenueCat/StoreKit/App Store configuration evidence, and the
 physical-device feasibility matrix.
 
-On 24 July, the exact `Phase 1 Userflow` wording tab was reread,
-Apple/Google/email account methods were selected, and clearly labeled
+On 24 July, the exact `Phase 1 Userflow` wording tab was reread. On 28 July,
+Apple/Google-only account methods and RevenueCat entitlement orchestration
+were selected, and clearly labeled
 audio/asset and privacy/legal-URL placeholders were authorized for current
 planning. Shipping assets, rights, legal text, and live URLs remain later
 integration/release dependencies.
@@ -41,8 +42,8 @@ integration/release dependencies.
   outcome guarantee.
 - One local profile. Guest/local-first use; an account is optional and exists
   only for approved synchronization.
-- Optional sync accounts use Supabase Auth with Sign in with Apple, Sign in
-  with Google, and passwordless email one-time codes.
+- Optional sync accounts use Supabase Auth with Sign in with Apple and Sign in
+  with Google only.
 - SQLite through GRDB is the immediate source of truth. Supabase supplies
   account-scoped synchronization protected by Row Level Security.
 - Core preparation, alarm, manual action, grounding, and local data remain
@@ -56,9 +57,10 @@ integration/release dependencies.
 - The optional check-in is limited to one editable entry per local night:
   occurrence, optional perceived intensity, optional present state, and an
   optional private note using the approved copy in `SPEC-P1-001`.
-- The alarm is always free. Every other product feature requires a verified
-  StoreKit trial, monthly/annual subscription, approved grace state, or
-  lifetime non-consumable entitlement.
+- The alarm is always free. Every other product feature requires active
+  RevenueCat `premium_access` backed by an Apple trial, monthly/annual
+  subscription, or lifetime non-consumable. There is no billing or custom
+  grace; premium ends immediately when that entitlement becomes inactive.
 - Approved United States prices are monthly USD 8.99, annual USD 59.99, and
   lifetime USD 149.99. Eligible monthly/annual customers receive Apple's
   three-day introductory free trial.
@@ -83,6 +85,7 @@ integration/release dependencies.
 | [Legal, wellness, and support copy draft](./LEGAL_AND_SUPPORT_COPY_DRAFT.md) | Product-accurate wellness, alarm, purchase, account, deletion, support, and Terms drafting copy | Factual/legal values and approval pending |
 | [Audio and offline contract](./AUDIO_AND_OFFLINE_CONTRACT.md) | Catalog, rights, manifest, integrity, cache, playback, and offline behavior | Three roles approved; final rights/device evidence pending |
 | [Commercial access and permissions](./COMMERCIAL_ACCESS_AND_PERMISSIONS.md) | StoreKit products, access states, trial, permissions, and entitlements | Product/Finance approved; App Store/Sandbox/device evidence pending |
+| [RevenueCat integration contract](./REVENUECAT_INTEGRATION_CONTRACT.md) | Apple/RevenueCat responsibility split, entitlement/offering map, keys, collaboration, cutoff, and reminder rules | Product direction approved; account/App Store/Sandbox/device evidence pending |
 | [Threat model and standards](./THREAT_MODEL_AND_STANDARDS.md) | Assets, boundaries, threats, mitigations, standards, owners, and sign-off | Satyam Shree assigned; evidence-backed approvals pending |
 | [Platform feasibility report](./PLATFORM_FEASIBILITY_REPORT.md) | Deployment-target options, disposable-spike protocol, physical-device matrix | Package published at `7fa790a`; hosted Xcode/TestFlight/device execution pending |
 | [Decision and conflict register](./OPEN_DECISIONS_AND_CONFLICTS.md) | Adopted decisions, proposals awaiting approval, retired conflicts, blockers | Current |

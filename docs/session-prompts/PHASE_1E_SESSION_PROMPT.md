@@ -12,7 +12,7 @@ Provide the simplest reliable, explicitly user-initiated path to calm grounding 
 
 ## Commercial boundary
 
-Manual episode action and grounding require verified StoreKit trial, subscription, approved grace, or lifetime entitlement; only the alarm remains a free product feature. Follow the approved Phase 0 access UX exactly. Do not place a surprise paywall inside an active grounding sequence. Hide, disable, or gate external entry surfaces honestly according to the approved entitlement design. Use the shared access-policy boundary; do not implement StoreKit internals here. Privacy/legal/support, export/deletion, applicable account deletion, purchase restoration, and subscription-management controls remain accessible without entitlement.
+Manual episode action and grounding require active RevenueCat `premium_access` backed by an Apple trial, subscription, or lifetime purchase; no grace; only the alarm remains a free product feature. Follow the approved Phase 0 access UX exactly. Do not place a surprise paywall inside an active grounding sequence. Hide, disable, or gate external entry surfaces honestly according to the approved entitlement design. Use the shared access-policy boundary; do not implement commerce internals here. Privacy/legal/support, export/deletion, applicable account deletion, purchase restoration, and subscription-management controls remain accessible without entitlement.
 
 ## Required implementation
 

@@ -53,9 +53,9 @@ state.
 | `ST-010` | Recoverable error | State what failed/changed, preserve data, offer idempotent retry |
 | `ST-011` | Blocking integrity error | Do not use corrupt/unverified data or asset; offer safe local alternative |
 | `ST-012` | Free utility | Alarm and utility routes available; premium routes label access |
-| `ST-013` | Introductory trial | Premium routes available only from verified StoreKit trial entitlement; show eligibility/expiration using Apple facts |
-| `ST-014` | Premium | All product routes available from verified StoreKit entitlement |
-| `ST-015` | Premium grace | Same access as premium; optional neutral billing-resolution route |
+| `ST-013` | Introductory trial | Premium routes available only from active RevenueCat `premium_access` backed by Apple trial state; show eligibility/expiration using Apple facts |
+| `ST-014` | Premium | All product routes available from active RevenueCat `premium_access` backed by Apple state |
+| `ST-015` | Known nonrenewing expiration | Premium remains active until the verified expiration; begin the in-app reminder at most 72 hours before expiration, no more than once per local day |
 | `ST-016` | Entitlement/policy unknown | Free utilities only; check/restore action; device clock is not authority |
 | `ST-017` | Purchase pending | No false entitlement; explain pending state and safe exit |
 | `ST-018` | Sync pending/syncing | Local changes remain authoritative for UI; show progress without blocking core use |
@@ -241,7 +241,8 @@ state.
 - **States:** `ST-002`, `ST-010`, `ST-014`–`ST-017`, `ST-024`.
 - **Acceptance:** cancellation is not an error; pending is not entitled;
   unverified never unlocks; success updates all affected routes once; refund,
-  revoke, expiry, and grace reconcile on foreground and transaction update.
+  revoke, expiry, reminder, and immediate cutoff reconcile on foreground,
+  CustomerInfo update, and transaction update.
 
 ### `SCR-017` — Settings
 
@@ -256,8 +257,8 @@ state.
 
 - **Purpose:** explain optional sync, authenticate, convert, show sync state,
   reauthenticate, sign out, or navigate to account deletion.
-- **Authentication choices:** Sign in with Apple, Sign in with Google, and the
-  approved email account-creation/sign-in flow; guest mode remains available.
+- **Authentication choices:** Sign in with Apple and Sign in with Google only;
+  guest mode remains available.
 - **States:** `ST-002`, `ST-005`, `ST-006`, `ST-010`, `ST-018`–`ST-024`,
   `ST-025`.
 - **Acceptance:** no account-first pressure; exact data list before conversion;
@@ -310,7 +311,8 @@ state.
   help, and paywall.
 - **States:** `ST-002`, `ST-006`, `ST-010`, `ST-012`–`ST-017`, `ST-024`.
 - **Acceptance:** available to guest and account-linked users; shows verified
-  StoreKit state; no custom external payment unlock in Phase 1.
+  RevenueCat entitlement and Apple purchase state; no custom external payment
+  unlock in Phase 1.
 
 ### `SCR-024` — Help, legal, and app information
 

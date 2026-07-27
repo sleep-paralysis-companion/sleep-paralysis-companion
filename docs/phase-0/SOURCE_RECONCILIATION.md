@@ -38,10 +38,14 @@ feasibility evidence.
 | `S-APPLE-INTENT` | [Creating your first App Intent](https://developer.apple.com/documentation/appintents/creating-your-first-app-intent) | App Intents can expose approved actions to system experiences; execution context, privacy, authentication, idempotency, and lifecycle still require Paralux-specific device tests. |
 | `S-APPLE-AUDIO` | [Handling audio interruptions](https://developer.apple.com/documentation/AVFAudio/handling-audio-interruptions) | Audio-session interruption and route behavior must follow observed system events; the exact resume/background policy remains a product and physical-device decision. |
 | `S-APPLE-DELETE` | [Offering account deletion in your app](https://developer.apple.com/support/offering-account-deletion-in-your-app/) | An app that supports account creation must let every user initiate full account deletion in-app, explain timing and subscription consequences, and revoke Sign in with Apple tokens when applicable. |
-| `S-APPLE-STOREKIT` | [StoreKit current entitlements](https://developer.apple.com/documentation/storekit/transaction/currententitlements) and [billing grace period](https://developer.apple.com/help/app-store-connect/manage-subscriptions/enable-billing-grace-period-for-auto-renewable-subscriptions) | Grant premium access only from verified transactions/renewal state. If Billing Grace Period is enabled, `inGracePeriod` remains entitled and must be tested. |
+| `S-APPLE-STOREKIT` | [StoreKit current entitlements](https://developer.apple.com/documentation/storekit/transaction/currententitlements) and [billing grace period](https://developer.apple.com/help/app-store-connect/manage-subscriptions/enable-billing-grace-period-for-auto-renewable-subscriptions) | Apple transaction and renewal state remains purchase authority. The owner selected Billing Grace Period off; RevenueCat must not add custom grace. |
 | `S-APPLE-IAP-TYPES` | [In-App Purchase types](https://developer.apple.com/help/app-store-connect/reference/in-app-purchases-and-subscriptions/in-app-purchase-types) | Monthly/annual access uses auto-renewable subscriptions; a lifetime unlock is a non-consumable that does not expire. |
 | `S-APPLE-INTRO` | [Introductory offers](https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-up-introductory-offers-for-auto-renewable-subscriptions) | Apple supports a three-day free introductory offer; each customer can redeem one introductory offer per subscription group. |
-| `S-APPLE-GRACE` | [Billing Grace Period](https://developer.apple.com/help/app-store-connect/manage-subscriptions/enable-billing-grace-period-for-auto-renewable-subscriptions/) | Monthly/yearly subscriptions support 3-, 16-, or 28-day grace; scope can be paid-to-paid renewals instead of trial-to-paid conversion. |
+| `S-APPLE-GRACE` | [Billing Grace Period](https://developer.apple.com/help/app-store-connect/manage-subscriptions/enable-billing-grace-period-for-auto-renewable-subscriptions/) | Apple offers optional grace configurations. Phase 1 deliberately disables Billing Grace Period and cuts premium access when the verified entitlement becomes inactive. |
+| `S-APPLE-BANK` | [Enter banking information](https://developer.apple.com/help/app-store-connect/manage-banking-information/enter-banking-information) and [receiving payments](https://developer.apple.com/help/app-store-connect/getting-paid/overview-of-receiving-payments/) | Developer payout banking, agreements, tax, and payments are managed in App Store Connect, not RevenueCat. |
+| `S-RC-ROLE` | [RevenueCat developer store payments](https://www.revenuecat.com/docs/platform-resources/developer-store-payments) | RevenueCat does not process or receive App Store customer payments; Apple pays the developer. |
+| `S-RC-SETUP` | [RevenueCat projects](https://www.revenuecat.com/docs/projects/overview), [collaborators](https://www.revenuecat.com/docs/projects/collaborators), and [authentication](https://www.revenuecat.com/docs/projects/authentication) | Use project collaborators instead of shared credentials, keep secret keys server-side, and expose only the correct public SDK key in the app. |
+| `S-RC-ENTITLEMENT` | [RevenueCat entitlements](https://www.revenuecat.com/docs/getting-started/entitlements) | A single `premium_access` entitlement maps the approved Apple products to application access. |
 | `S-APPLE-PRIVACY` | [Third-party SDK requirements](https://developer.apple.com/support/third-party-SDK-requirements/) and [privacy manifests](https://developer.apple.com/documentation/bundleresources/adding-a-privacy-manifest-to-your-app-or-third-party-sdk) | Required-reason APIs, privacy manifests, listed SDK signatures, and declared data use must match the shipped binary. |
 
 ## Extraction and access notes
@@ -68,14 +72,14 @@ The PRD is not missing; the earlier reference to `Master PRD - SP.pdf` was a
 stale filename. The native Google Doc linked above is the reviewed source.
 
 On 24 July 2026 the user designated the `Phase 1 Userflow` tab
-`t.ptx1blwstnqb` as the exact-wording source and selected Google, Apple, and
-email account creation. Exact source wording is preserved below rather than
-reconstructed:
+`t.ptx1blwstnqb` as the exact-wording source. On 28 July the user superseded
+its account direction with Apple and Google only. Exact source wording is
+preserved below rather than reconstructed:
 
 | Source area | Exact source text | Phase 1 disposition |
 |---|---|---|
 | Splash | “Understand your nights.” | `COPY REVIEW`: may imply analysis; do not ship until Claims approves |
-| Account | “Apple ID or email” | `SUPERSEDED`: optional sync account offers Apple, Google, and email; guest use remains available |
+| Account | “Apple ID or email” | `SUPERSEDED`: optional sync account offers only Apple and Google; guest use remains available |
 | Manual action | “I just had an episode” | `ADOPTED COPY DIRECTION`: a manual self-report, subject to locked-surface privacy and physical feasibility |
 | Post-action statement | “You’re awake. You’re safe.” | `PROHIBITED AS WRITTEN`: the app cannot verify either fact; user must supply revised exact wording or approve the neutral scoped alternative |
 | Occurrence | “Did you have an episode last night?” — “Yes / No” | `ADOPTED EXACT SOURCE COPY` for the optional check-in |
@@ -163,7 +167,7 @@ component, variable, prototype, comment, or file setting.
 | `SC-007` | HealthKit, wearables, Watch, Android, AI, community, telehealth, EHR, or B2B portal | Excluded from Phase 1 |
 | `SC-008` | Ambiguous “three-night” or seven-day trial variants | Replaced through change control by one StoreKit three-day introductory offer for eligible monthly/annual customers |
 | `SC-009` | Conflicting product and price variants | Approved US model: monthly USD 8.99, annual USD 59.99, lifetime non-consumable USD 149.99; alarm always free; all other features premium |
-| `SC-010` | Polar or other external payment for in-app digital functionality | StoreKit/In-App Purchase controls iOS premium access |
+| `SC-010` | Polar or other external payment for in-app digital functionality | Apple In-App Purchase controls the transaction; RevenueCat orchestrates the resulting app entitlement |
 | `SC-011` | AWS as preferred Phase 1 backend | Supabase is the account/sync backend |
 | `SC-012` | Remote APNs foundation | Not included unless a separately approved user need requires remote push |
 | `SC-013` | “HIPAA-ready,” “protected sleep,” “peaceful sleep,” “knows,” or guaranteed-result language | Prohibited without a future legal/product scope change; Phase 1 makes no such claim |

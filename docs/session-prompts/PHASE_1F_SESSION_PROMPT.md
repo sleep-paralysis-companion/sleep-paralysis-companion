@@ -23,7 +23,7 @@ Use only the approved enum values/copy from Phase 0. Do not infer, prefill, auto
 
 ## Commercial boundary
 
-Check-in and personal history require verified StoreKit trial, subscription, approved grace, or lifetime entitlement; only the alarm remains a free product feature. Export, individual deletion, complete data deletion, applicable account deletion, privacy/legal/support, purchase restoration, and subscription management remain accessible without entitlement. Apply the approved access UX through the shared access-policy boundary.
+Check-in and personal history require active RevenueCat `premium_access` backed by an Apple trial, subscription, or lifetime purchase; no grace; only the alarm remains a free product feature. Export, individual deletion, complete data deletion, applicable account deletion, privacy/legal/support, purchase restoration, and subscription management remain accessible without entitlement. Apply the approved access UX through the shared access-policy boundary.
 
 ## Required implementation
 

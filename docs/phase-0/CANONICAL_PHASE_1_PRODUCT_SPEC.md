@@ -69,7 +69,7 @@ A change requires a decision record when it changes any of:
 | Optional check-in | User-entered occurrence, perceived intensity, present state, and optional note | `P1-CHK-*` |
 | Personal history | Descriptive display of submitted user entries only | `P1-HIS-*` |
 | Settings and data rights | Alarm/audio controls, actual permission state, privacy/legal/support, export and deletion | `P1-SET-*` |
-| StoreKit premium access | Alarm always free; all other features require a verified trial, subscription, grace, or lifetime entitlement | `P1-SET-007`, `P1-SET-008` |
+| RevenueCat/StoreKit premium access | Alarm always free; all other features require active `premium_access` from an Apple trial, subscription, or lifetime purchase; no grace | `P1-SET-007`, `P1-SET-008` |
 | Optional account sync | Account only for sync; local-first with explicit lifecycle | `P1-SYN-*` |
 
 ### Excluded
@@ -116,9 +116,8 @@ previous account's protected local data.
 | Access class | Authority | Meaning |
 |---|---|---|
 | `utility_free` | Build rules | Alarm plus legal/support/data-rights and commerce utilities |
-| `premium_trial` | Verified StoreKit introductory-offer transaction | All Phase 1 features through the signed trial expiration |
-| `premium` | Verified StoreKit subscription or lifetime entitlement | All Phase 1 features while entitled |
-| `premium_grace` | StoreKit renewal state when Billing Grace Period is enabled | Same access as premium through Apple's grace end |
+| `premium_trial` | Active RevenueCat `premium_access` backed by an Apple introductory-offer transaction | All Phase 1 features through the known trial expiration |
+| `premium` | Active RevenueCat `premium_access` backed by an Apple subscription or lifetime purchase | All Phase 1 features while active |
 | `unknown` | No trustworthy entitlement evidence | `utility_free` only; show recovery, never guess from account/device clock |
 
 Account state does not grant premium access. Premium state does not require an
@@ -183,8 +182,9 @@ and failed scheduling. Never display “set” from local intent alone.
 1. Person intentionally invokes the in-app action or the physically proven
    system surface.
 2. Repeated activation resolves idempotently to one current session.
-3. If a verified trial, subscription, grace, or lifetime entitlement is
-   available, open the local grounding flow.
+3. If active RevenueCat `premium_access` backed by an Apple trial,
+   subscription, or lifetime purchase is available, open the local grounding
+   flow.
 4. If premium is unavailable, preserve the always-free alarm and utility
    routes and present honest access choices. Do not imply that purchase is
    required for safety.
@@ -245,8 +245,7 @@ History must not show:
 2. App explains exactly which entities leave the device and links privacy
    information.
 3. If offline, stop without creating an account or changing ownership.
-4. Person chooses **Sign in with Apple**, **Sign in with Google**, or the
-   approved email account-creation/sign-in flow.
+4. Person chooses **Sign in with Apple** or **Sign in with Google**.
 5. If the account has no remote profile, atomically link and upload the approved
    guest dataset.
 6. If the account already has data, do not merge scalar/profile state silently;
@@ -261,9 +260,11 @@ usable guest profile.
 
 1. Paywall states the premium feature set, exact localized price/period, renewal
    behavior, and links required by Apple.
-2. StoreKit controls purchase and transaction verification.
-3. Pending, cancelled, failed, unverified, active, grace, expired, refunded,
-   and revoked states remain distinct.
+2. StoreKit/App Store Connect control products, payments, and transaction
+   truth; RevenueCat controls the app's `premium_access` entitlement mapping
+   and customer-information presentation.
+3. Pending, cancelled, failed, unverified, active, billing-retry-without-grace,
+   expired, refunded, and revoked states remain distinct.
 4. Restore and subscription management remain available without login or
    premium.
 5. Account deletion explains that deleting Sleep Paralysis Companion data does not itself cancel
@@ -378,7 +379,7 @@ Validation:
 | Downloaded asset integrity | Versioned manifest plus verified local file |
 | Remote account/session | Supabase Auth; tokens in Keychain |
 | Remote synchronized records | Supabase rows/objects protected by RLS |
-| Premium entitlement | Verified StoreKit transaction/renewal state |
+| Premium entitlement | RevenueCat `premium_access` backed by Apple transaction state |
 
 The UI may display cached intent while loading, but must label it and reconcile
 to the owning system before claiming success.
@@ -491,7 +492,8 @@ The specification intentionally does not pretend the following are approved:
 - exact neutral alarm and manual-action labels;
 - exact audio titles, scripts, voices, licenses, and downloadable catalog;
 - App Store Connect product IDs/localizations and StoreKit Sandbox evidence for
-  the approved monthly, annual, lifetime, trial, and grace configuration;
+  the approved monthly, annual, lifetime, trial, no-grace, immediate-cutoff,
+  and known-expiration-reminder configuration;
 - minimum iOS deployment target and fallback;
 - replacement public privacy/terms/support wording, entity/contact values,
   live URLs, and any required independent counsel review;

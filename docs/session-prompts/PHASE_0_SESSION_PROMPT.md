@@ -35,7 +35,7 @@ If sources conflict, record the conflict and apply the current approved/default 
 - No personal/partner voice recording, overnight monitoring, microphone permission, HealthKit, Apple Watch app, Android app, AI analysis/coaching, community, clinician portal, or tracking.
 - Bundle the minimum approved grounding content needed for offline use; a larger pre-sleep catalog may be securely downloaded/cached after approval.
 - Ultra-light optional check-in only: episode occurrence, perceived intensity, recovery state, and optional note. Exact labels/options need copy, privacy, accessibility, localization, retention, edit/delete, and export approval.
-- The alarm and mandatory utility routes remain free. All other functionality requires verified StoreKit premium access.
+- The alarm and mandatory utility routes remain free. All other functionality requires active RevenueCat `premium_access` backed by an Apple trial, subscription, or lifetime purchase.
 - Eligible monthly/annual customers may receive Apple's three-day introductory free trial. Lifetime is a separate non-consumable purchase. Do not implement a custom trial clock.
 - Privacy/legal/support, export/deletion, applicable account deletion, purchase restoration, and subscription management remain accessible without entitlement.
 
@@ -44,11 +44,11 @@ If sources conflict, record the conflict and apply the current approved/default 
 - Reconcile every available requirement into stable IDs with source and test traceability.
 - Complete the profile/onboarding truth table and approved field-purpose inventory.
 - Create the approved claims/copy matrix and remove/replace risk score, Guardian Mode, detection, prevention, and reduction language.
-- Inventory all navigation, screens, and states: normal, loading, empty, offline, denied/revoked permission, unsupported/unavailable capability, error, retry, destructive confirmation, purchase, restore, trial eligibility/active/expired, subscription/lifetime/grace, entitlement loss, deletion, and recovery.
+- Inventory all navigation, screens, and states: normal, loading, empty, offline, denied/revoked permission, unsupported/unavailable capability, error, retry, destructive confirmation, purchase, restore, trial eligibility/active/expired, subscription/lifetime, known-expiration reminder, immediate entitlement loss, deletion, and recovery.
 - Approve the data inventory, data-flow diagram, retention/deletion schedule, export behavior, analytics allowlist, and privacy categories.
 - Specify guest ownership, guest-to-account conversion, sign-out/reinstall/token-expiry behavior, entity conflict policy, retry, tombstones, and deletion propagation.
 - Approve the audio catalog, rights/provenance, bundled/downloaded manifest, integrity/cache/cleanup rules, and offline promise.
-- Specify the commercial access matrix, StoreKit product/offer direction, verified offline/grace/clock-tampering behavior, refund/revocation behavior, and which surfaces disappear or gate when entitlement is absent. Never infer access from install/account date or Supabase.
+- Specify the commercial access matrix, RevenueCat/StoreKit product/offer direction, verified offline/no-grace/clock-tampering behavior, reminder/refund/revocation behavior, and which surfaces disappear or gate when entitlement is absent. Never infer access from install/account date or Supabase.
 - Produce the permission/entitlement register, initial threat model, content/safety/accessibility/privacy/security/analytics standards, and owner/sign-off register.
 - Run or design the physical-device feasibility matrix for AlarmKit, UserNotifications fallback, Lock Screen controls/widgets, App Intents, audio while locked, interruptions/routes, app termination, restart, silent mode, and Focus.
 - Lock the minimum deployment target only after feasibility evidence is complete.
