@@ -33,15 +33,14 @@ struct AppConfiguration: Equatable, Sendable, ExternalResourceResolving {
             return .unavailable(SafeDiagnostic(code: .configurationUnavailable))
         }
 
-        if environment != .production,
-           values.productionHosts.map({ $0.lowercased() }).contains(host)
-        {
+        let isNonProduction = environment != .production
+        let productionHosts = values.productionHosts.map { $0.lowercased() }
+        if isNonProduction && productionHosts.contains(host) {
             return .unavailable(SafeDiagnostic(code: .productionResourceRejected))
         }
 
-        if environment != .production,
-           !values.allowedHosts.map({ $0.lowercased() }).contains(host)
-        {
+        let allowedHosts = values.allowedHosts.map { $0.lowercased() }
+        if isNonProduction && !allowedHosts.contains(host) {
             return .unavailable(SafeDiagnostic(code: .configurationUnavailable))
         }
 
