@@ -1,19 +1,19 @@
 import OSLog
 
-enum AppLogCategory: String, Sendable {
+nonisolated enum AppLogCategory: String, Sendable {
     case lifecycle
     case configuration
     case navigation
 }
 
-enum AppLogEvent: String, Sendable {
+nonisolated enum AppLogEvent: String, Sendable {
     case appActivated = "app_activated"
     case appDeactivated = "app_deactivated"
     case configurationUnavailable = "configuration_unavailable"
     case routeChanged = "route_changed"
 }
 
-struct SensitiveLogValue<Value: Sendable>: CustomStringConvertible, Sendable {
+nonisolated struct SensitiveLogValue<Value: Sendable>: CustomStringConvertible, Sendable {
     private let value: Value
 
     init(_ value: Value) {
@@ -26,11 +26,11 @@ struct SensitiveLogValue<Value: Sendable>: CustomStringConvertible, Sendable {
     }
 }
 
-protocol PrivacySafeLogging: Sendable {
+nonisolated protocol PrivacySafeLogging: Sendable {
     func record(_ event: AppLogEvent, category: AppLogCategory)
 }
 
-struct ApplePrivacySafeLogger: PrivacySafeLogging {
+nonisolated struct ApplePrivacySafeLogger: PrivacySafeLogging {
     private let subsystem: String
 
     init(subsystem: String) {

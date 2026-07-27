@@ -1,6 +1,6 @@
 import Foundation
 
-enum AppEnvironment: String, CaseIterable, Sendable {
+nonisolated enum AppEnvironment: String, CaseIterable, Sendable {
     case development
     case staging
     case production

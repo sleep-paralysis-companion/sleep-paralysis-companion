@@ -1,9 +1,9 @@
 import Foundation
 
-enum ExternalResource: Hashable, Sendable {
+nonisolated enum ExternalResource: Hashable, Sendable {
     case publicAPI
 }
 
-protocol ExternalResourceResolving: Sendable {
+nonisolated protocol ExternalResourceResolving: Sendable {
     func url(for resource: ExternalResource) -> URL?
 }

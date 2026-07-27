@@ -1,6 +1,6 @@
 import Foundation
 
-struct PublicConfigurationValues: Equatable, Sendable {
+nonisolated struct PublicConfigurationValues: Equatable, Sendable {
     var publicAPIBaseURL: URL?
     var allowedHosts: Set<String>
     var productionHosts: Set<String>
@@ -12,12 +12,12 @@ struct PublicConfigurationValues: Equatable, Sendable {
     )
 }
 
-enum ConfigurationResult: Equatable, Sendable {
+nonisolated enum ConfigurationResult: Equatable, Sendable {
     case ready(AppConfiguration)
     case unavailable(SafeDiagnostic)
 }
 
-struct AppConfiguration: Equatable, Sendable, ExternalResourceResolving {
+nonisolated struct AppConfiguration: Equatable, Sendable, ExternalResourceResolving {
     let environment: AppEnvironment
     private let publicAPIBaseURL: URL?
 
@@ -61,7 +61,7 @@ struct AppConfiguration: Equatable, Sendable, ExternalResourceResolving {
     }
 }
 
-struct BundlePublicConfigurationLoader {
+nonisolated struct BundlePublicConfigurationLoader {
     func load(from bundle: Bundle) -> PublicConfigurationValues {
         let endpointString = bundle.object(forInfoDictionaryKey: "SPCPublicAPIBaseURL") as? String
         let endpoint = endpointString.flatMap { value in

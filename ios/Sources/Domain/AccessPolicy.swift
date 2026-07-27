@@ -1,4 +1,4 @@
-enum AppUtility: Hashable, CaseIterable, Sendable {
+nonisolated enum AppUtility: Hashable, CaseIterable, Sendable {
     case alarm
     case privacy
     case legal
@@ -12,37 +12,37 @@ enum AppUtility: Hashable, CaseIterable, Sendable {
     case accessStatus
 }
 
-enum ProductCapability: Hashable, Sendable {
+nonisolated enum ProductCapability: Hashable, Sendable {
     case foundationDetails
     case futureGrounding
     case futureHistory
 }
 
-enum PremiumAccess: Equatable, Sendable {
+nonisolated enum PremiumAccess: Equatable, Sendable {
     case unavailable
     case active
     case unknown
 }
 
-struct PlatformCapabilities: Equatable, Sendable {
+nonisolated struct PlatformCapabilities: Equatable, Sendable {
     var supported: Set<ProductCapability>
 }
 
-struct ReleaseGates: Equatable, Sendable {
+nonisolated struct ReleaseGates: Equatable, Sendable {
     var enabled: Set<ProductCapability>
 }
 
-struct ExternalAvailability: Equatable, Sendable {
+nonisolated struct ExternalAvailability: Equatable, Sendable {
     var available: Set<ProductCapability>
 }
 
-enum AccessDecision: Equatable, Sendable {
+nonisolated enum AccessDecision: Equatable, Sendable {
     case allowed
     case unavailable
     case premiumRequired
 }
 
-struct AccessPolicy: Sendable {
+nonisolated struct AccessPolicy: Sendable {
     func decision(
         for utility: AppUtility,
         premium: PremiumAccess

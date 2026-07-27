@@ -18,6 +18,9 @@ generic repository, manager/helper layer, runtime SDK, or mutable global state.
 ## State and concurrency
 
 - `AppModel` is `@MainActor` and observable.
+- The UI-facing app target uses MainActor-by-default. Immutable, `Sendable`
+  Core, Domain, Configuration, DataInterfaces, and PlatformInterfaces
+  declarations explicitly opt out with safe `nonisolated` type isolation.
 - Navigation is `[AppRoute]`, not string or view-instance routing.
 - App activation work is cancellable, inherits the main actor, checks
   cancellation, and never uses detached tasks or semaphore bridging.

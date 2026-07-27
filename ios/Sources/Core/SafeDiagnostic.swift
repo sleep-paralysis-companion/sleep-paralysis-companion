@@ -1,9 +1,9 @@
 import Foundation
 
-struct SafeDiagnostic: Equatable, Sendable {
+nonisolated struct SafeDiagnostic: Equatable, Sendable {
     let code: Code
 
-    enum Code: String, Sendable {
+    nonisolated enum Code: String, Sendable {
         case configurationUnavailable = "configuration_unavailable"
         case productionResourceRejected = "production_resource_rejected"
     }

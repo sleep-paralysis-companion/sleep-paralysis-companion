@@ -21,7 +21,7 @@ enum AppTypographyRole {
     static let control = Font.headline
 }
 
-enum AppSpacing {
+nonisolated enum AppSpacing {
     static let compact: CGFloat = 8
     static let standard: CGFloat = 16
     static let spacious: CGFloat = 24
@@ -29,18 +29,18 @@ enum AppSpacing {
     static let minimumControl: CGFloat = 44
 }
 
-enum AppShape {
+nonisolated enum AppShape {
     static let controlRadius: CGFloat = 14
     static let cardRadius: CGFloat = 20
 }
 
-enum AppMotion {
+nonisolated enum AppMotion {
     static func standardDuration(reduceMotion: Bool) -> Double {
         reduceMotion ? 0 : 0.22
     }
 }
 
-enum AppAccessibility {
+nonisolated enum AppAccessibility {
     static func verticalSpacing(for size: DynamicTypeSize) -> CGFloat {
         size.isAccessibilitySize ? AppSpacing.spacious : AppSpacing.standard
     }

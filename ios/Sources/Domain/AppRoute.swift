@@ -1,3 +1,3 @@
-enum AppRoute: Hashable, Sendable {
+nonisolated enum AppRoute: Hashable, Sendable {
     case foundationDetails
 }
