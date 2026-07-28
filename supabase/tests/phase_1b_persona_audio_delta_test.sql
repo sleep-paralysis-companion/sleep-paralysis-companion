@@ -1,17 +1,16 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(30);
 
 select has_table('public', 'persona_answer_aggregates', 'complete persona aggregate exists remotely');
 select ok((select relrowsecurity from pg_class where oid = 'public.persona_answer_aggregates'::regclass), 'persona aggregate enables RLS');
 select ok((select relforcerowsecurity from pg_class where oid = 'public.persona_answer_aggregates'::regclass), 'persona aggregate forces RLS');
 select ok(to_regclass('public.personal_audio_clip_metadata') is null, 'no remote personal-audio metadata table exists');
-select ok(to_regclass('storage.personal_audio') is null, 'no personal-audio bucket representation exists');
-select ok(not exists (
-  select 1 from pg_policies
-  where schemaname in ('public', 'storage') and policyname ilike '%personal%audio%'
-), 'no personal-audio policy exists');
+select ok(not exists (select 1 from storage.buckets where id ilike '%personal%audio%'), 'no personal-audio Storage bucket row exists');
+select ok(not exists (select 1 from storage.objects where bucket_id ilike '%personal%audio%' or name ilike '%personal%audio%'), 'no personal-audio Storage object/reference exists');
+select ok(not exists (select 1 from pg_policies where schemaname = 'storage' and tablename in ('buckets', 'objects') and policyname ilike '%personal%audio%'), 'no personal-audio Storage policy exists');
+select ok(not exists (select 1 from information_schema.columns where table_schema = 'public' and column_name ilike '%audio%' and table_name not in ('audio_catalog')), 'no remote personal-audio columns exist');
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at
@@ -55,6 +54,26 @@ select results_eq(
 
 select throws_ok(
   $test$
+  insert into public.persona_answer_aggregates (
+    id, owner_user_id, episode_frequency, post_episode_feeling, calming_person_context,
+    routing_rule_version, calculated_at, updated_at, revision
+  ) values (
+    'a5000000-0000-4000-8000-000000000005', 'a1000000-0000-4000-8000-000000000001',
+    'weekly', 'awake_scared', 'alone', '2026-07-29-v1', now(), now(), 1
+  )
+  $test$, '42501', null, 'direct persona INSERT cannot bypass receipts'
+);
+select throws_ok($test$update public.persona_answer_aggregates set revision = 2 where id = 'a3000000-0000-4000-8000-000000000003'$test$, '42501', null, 'direct persona UPDATE cannot bypass receipts');
+select throws_ok($test$delete from public.persona_answer_aggregates where id = 'a3000000-0000-4000-8000-000000000003'$test$, '42501', null, 'direct persona DELETE cannot bypass tombstones');
+
+select set_config('request.jwt.claim.sub', 'a2000000-0000-4000-8000-000000000002', true);
+select is((select count(*)::integer from public.persona_answer_aggregates), 0, 'cross-user SELECT hides an existing owner persona row');
+select throws_ok($test$update public.persona_answer_aggregates set revision = 2 where id = 'a3000000-0000-4000-8000-000000000003'$test$, '42501', null, 'cross-user UPDATE is denied');
+select throws_ok($test$delete from public.persona_answer_aggregates where id = 'a3000000-0000-4000-8000-000000000003'$test$, '42501', null, 'cross-user DELETE is denied');
+select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000001', true);
+
+select throws_ok(
+  $test$
   select * from public.apply_sync_mutation(
     'b3000000-0000-4000-8000-000000000003',
     'b4000000-0000-4000-8000-000000000004',
@@ -85,6 +104,36 @@ select is((select count(*)::integer from public.mutation_receipts where idempote
 select throws_ok(
   $test$
   select * from public.apply_sync_mutation(
+    'b3100000-0000-4000-8000-000000000003', 'b2000000-0000-4000-8000-000000000002', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 0, 1,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"monthly","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:00:00Z","updated_at":"2026-07-29T00:00:00Z","revision":1}'::jsonb
+  )
+  $test$, '23505', null, 'changed payload replay is denied'
+);
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'b3200000-0000-4000-8000-000000000003', 'b2000000-0000-4000-8000-000000000002', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'delete', 0, 1,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"weekly","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:00:00Z","updated_at":"2026-07-29T00:00:00Z","revision":1}'::jsonb
+  )
+  $test$, '22023', null, 'changed operation replay is denied'
+);
+
+select lives_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'b3300000-0000-4000-8000-000000000003', 'b3400000-0000-4000-8000-000000000004', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 1, 2,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"monthly","post_episode_feeling":"shake_it_off","calming_person_context":"beside_me","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":2}'::jsonb
+  )
+  $test$, 'trusted boundary updates persona exactly once'
+);
+select is((select revision from public.persona_answer_aggregates where id = 'a3000000-0000-4000-8000-000000000003'), 2::bigint, 'trusted update advances revision exactly once');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
     'b5000000-0000-4000-8000-000000000005',
     'b6000000-0000-4000-8000-000000000006',
     'audio',
@@ -106,13 +155,13 @@ select lives_ok(
     'b8000000-0000-4000-8000-000000000008',
     'tombstone',
     'a4000000-0000-4000-8000-000000000004',
-    'delete', 1, 2,
+    'delete', 2, 3,
     '{
       "id":"a4000000-0000-4000-8000-000000000004",
       "owner_user_id":"a1000000-0000-4000-8000-000000000001",
       "entity_type":"persona",
       "entity_id":"a3000000-0000-4000-8000-000000000003",
-      "deleted_revision":2,
+      "deleted_revision":3,
       "deleted_at":"2026-07-29T00:02:00Z"
     }'::jsonb
   )
@@ -122,8 +171,24 @@ select lives_ok(
 select is((select count(*)::integer from public.persona_answer_aggregates), 0, 'persona deletion removes the aggregate');
 select is((select count(*)::integer from public.deletion_tombstones where entity_type = 'persona'), 1, 'persona deletion records one tombstone');
 
-select set_config('request.jwt.claim.sub', 'a2000000-0000-4000-8000-000000000002', true);
-select results_eq($test$select count(*)::bigint from public.persona_answer_aggregates$test$, array[0::bigint], 'cross-user select is denied by RLS');
+select lives_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'b7000000-0000-4000-8000-000000000007', 'b8000000-0000-4000-8000-000000000008', 'tombstone',
+    'a4000000-0000-4000-8000-000000000004', 'delete', 2, 3,
+    '{"id":"a4000000-0000-4000-8000-000000000004","owner_user_id":"a1000000-0000-4000-8000-000000000001","entity_type":"persona","entity_id":"a3000000-0000-4000-8000-000000000003","deleted_revision":3,"deleted_at":"2026-07-29T00:02:00Z"}'::jsonb
+  )
+  $test$, 'identical tombstone retry is idempotent'
+);
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'b9000000-0000-4000-8000-000000000009', 'ba000000-0000-4000-8000-00000000000a', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 3, 4,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"weekly","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:03:00Z","updated_at":"2026-07-29T00:03:00Z","revision":4}'::jsonb
+  )
+  $test$, '23514', null, 'tombstone prevents stale persona resurrection'
+);
 
 set local role anon;
 select throws_ok($test$select * from public.persona_answer_aggregates$test$, '42501', null, 'anon cannot select persona rows');

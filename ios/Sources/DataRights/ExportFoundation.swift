@@ -7,8 +7,27 @@ nonisolated struct LocalExportSnapshot: Sendable {
     let settings: AppSettings
     let alarm: AlarmPreference?
     let checkIns: [SubmittedCheckIn]
-    let personaAnswerAggregate: PersonaAnswerAggregate? = nil
+    /// Deliberately redacted export projection, never a persistence row.
+    let persona: PersonaExport? = nil
     let scope: ExportScope
+}
+
+nonisolated struct PersonaExport: Codable, Equatable, Sendable {
+    let episodeFrequency: EpisodeFrequency
+    let postEpisodeFeeling: PostEpisodeFeeling
+    let calmingPersonContext: CalmingPersonContext
+    let derivedPersona: DerivedPersona
+    let routingRuleVersion: String
+    let calculatedAt: Date
+
+    init(_ aggregate: PersonaAnswerAggregate) {
+        episodeFrequency = aggregate.episodeFrequency
+        postEpisodeFeeling = aggregate.postEpisodeFeeling
+        calmingPersonContext = aggregate.calmingPersonContext
+        derivedPersona = aggregate.derivedPersona
+        routingRuleVersion = aggregate.routingRuleVersion
+        calculatedAt = aggregate.calculatedAt
+    }
 }
 
 nonisolated struct ExportArtifact: Equatable, Sendable {
@@ -119,8 +138,8 @@ nonisolated struct LocalExportService: Sendable {
             ("checkins.json", checkInsData),
             ("checkins.csv", checkInsCSV),
         ]
-        if let personaAnswerAggregate = snapshot.personaAnswerAggregate {
-            provisional.append(("persona.json", try encoder.encode(personaAnswerAggregate)))
+        if let persona = snapshot.persona {
+            provisional.append(("persona.json", try encoder.encode(persona)))
         }
         let manifest = ExportManifest(
             exportVersion: metadata.manifestVersion,

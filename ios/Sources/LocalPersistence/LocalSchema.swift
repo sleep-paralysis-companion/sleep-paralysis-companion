@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 
 nonisolated enum LocalSchema {
-    static let currentVersion = 3
+    static let currentVersion = 4
 
     static func migrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
@@ -390,6 +390,41 @@ nonisolated enum LocalSchema {
                 UPDATE spc_schema_metadata SET schema_version = 3 WHERE singleton = 1;
                 """
             )
+        }
+        // v3 shipped the intended two-identity shape (an opaque draft id plus a
+        // profile-scoped current-draft constraint), but its first consumer used
+        // the profile id as if it were the primary key.  Keep the released v3
+        // migration immutable and make the ownership/index contract explicit.
+        migrator.registerMigration("v4_persona_audio_identity_and_queue_repair") { database in
+            try database.execute(sql: """
+                CREATE UNIQUE INDEX IF NOT EXISTS questionnaire_drafts_profile_current
+                    ON questionnaire_drafts(profileID);
+                CREATE INDEX IF NOT EXISTS questionnaire_drafts_profile_account_current
+                    ON questionnaire_drafts(profileID, accountUserID);
+                CREATE INDEX IF NOT EXISTS persona_answer_aggregates_profile_account_current
+                    ON persona_answer_aggregates(profileID, accountUserID);
+
+                CREATE TRIGGER questionnaire_drafts_account_matches_profile_insert
+                BEFORE INSERT ON questionnaire_drafts
+                WHEN NOT EXISTS (
+                    SELECT 1 FROM local_profiles
+                    WHERE id = NEW.profileID AND accountUserID = NEW.accountUserID
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'questionnaire draft account mismatch');
+                END;
+                CREATE TRIGGER questionnaire_drafts_account_matches_profile_update
+                BEFORE UPDATE OF profileID, accountUserID ON questionnaire_drafts
+                WHEN NOT EXISTS (
+                    SELECT 1 FROM local_profiles
+                    WHERE id = NEW.profileID AND accountUserID = NEW.accountUserID
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'questionnaire draft account mismatch');
+                END;
+
+                UPDATE spc_schema_metadata SET schema_version = 4 WHERE singleton = 1;
+                """)
         }
         return migrator
     }

@@ -2,33 +2,97 @@ import Foundation
 import GRDB
 
 extension LocalDatabase {
+    func exportSnapshot(
+        appVersion: String,
+        policyVersions: [String: String],
+        profileID: UUID,
+        authenticatedUserID: UUID,
+        scope: ExportScope
+    ) throws -> LocalExportSnapshot {
+        try assertAuthenticatedOwner(profileID: profileID, userID: authenticatedUserID)
+        guard let profile = try profile(id: profileID), let settings = try settings(profileID: profileID) else {
+            throw LocalDatabaseError.constraintViolation
+        }
+        return LocalExportSnapshot(
+            appVersion: appVersion,
+            profileCreatedAt: profile.createdAt,
+            policyVersions: policyVersions,
+            settings: settings,
+            alarm: try pool.read { database in
+                try AlarmPreferenceRecord.fetchOne(
+                    database,
+                    sql: "SELECT * FROM alarm_preferences WHERE profileID = ? ORDER BY updatedAt DESC LIMIT 1",
+                    arguments: [profileID.uuidString]
+                )?.domainValue()
+            },
+            checkIns: try checkIns(profileID: profileID),
+            persona: try personaAnswerAggregate(profileID: profileID, authenticatedUserID: authenticatedUserID).map(PersonaExport.init),
+            scope: scope
+        )
+    }
     func questionnaireDraft(
         profileID: UUID,
         authenticatedUserID: UUID
     ) throws -> QuestionnaireDraft? {
         try assertAuthenticatedOwner(profileID: profileID, userID: authenticatedUserID)
         return try pool.read { database in
-            try QuestionnaireDraftRecord.fetchOne(database, key: profileID.uuidString)?.domainValue()
+            try QuestionnaireDraftRecord.fetchOne(
+                database,
+                sql: "SELECT * FROM questionnaire_drafts WHERE profileID = ? AND accountUserID = ?",
+                arguments: [profileID.uuidString, authenticatedUserID.uuidString]
+            )?.domainValue()
         }
     }
 
     func saveQuestionnaireDraft(_ draft: QuestionnaireDraft) throws {
         try assertAuthenticatedOwner(profileID: draft.profileID, userID: draft.accountUserID)
         try write { database in
-            try QuestionnaireDraftRecord(draft).save(database)
+            if let existing = try QuestionnaireDraftRecord.fetchOne(
+                database,
+                sql: "SELECT * FROM questionnaire_drafts WHERE profileID = ?",
+                arguments: [draft.profileID.uuidString]
+            ) {
+                guard existing.accountUserID == draft.accountUserID.uuidString else {
+                    throw PersonaAudioValidationError.wrongAccount
+                }
+                // A profile has one current draft. A caller can safely replace
+                // it (for example after a restored flow allocates a fresh opaque
+                // id) without a uniqueness error; all answers remain explicit.
+                if existing.id != draft.id.uuidString {
+                    _ = try QuestionnaireDraftRecord.deleteOne(database, key: existing.id)
+                    try QuestionnaireDraftRecord(draft).insert(database)
+                } else {
+                    try QuestionnaireDraftRecord(draft).update(database)
+                }
+            } else {
+                try QuestionnaireDraftRecord(draft).insert(database)
+            }
         }
     }
 
     func completeQuestionnaireDraft(
         profileID: UUID,
         authenticatedUserID: UUID,
-        calculatedAt: Date
+        calculatedAt: Date,
+        operationID: UUID = UUID(),
+        idempotencyKey: UUID = UUID()
     ) throws -> PersonaAnswerAggregate {
         try assertAuthenticatedOwner(profileID: profileID, userID: authenticatedUserID)
-        return try pool.write { database in
-            guard let draft = try QuestionnaireDraftRecord.fetchOne(database, key: profileID.uuidString),
-                  draft.accountUserID == authenticatedUserID.uuidString
-            else {
+        var completed: PersonaAnswerAggregate?
+        try write { database in
+            guard let draft = try QuestionnaireDraftRecord.fetchOne(
+                database,
+                sql: "SELECT * FROM questionnaire_drafts WHERE profileID = ? AND accountUserID = ?",
+                arguments: [profileID.uuidString, authenticatedUserID.uuidString]
+            ) else {
+                if let existing = try PersonaAnswerAggregateRecord.fetchOne(
+                    database,
+                    sql: "SELECT * FROM persona_answer_aggregates WHERE profileID = ? AND accountUserID = ?",
+                    arguments: [profileID.uuidString, authenticatedUserID.uuidString]
+                ) {
+                    completed = try existing.domainValue()
+                    return
+                }
                 throw PersonaAudioValidationError.incompleteQuestionnaire
             }
             let value = try draft.domainValue()
@@ -38,7 +102,18 @@ extension LocalDatabase {
             else {
                 throw PersonaAudioValidationError.incompleteQuestionnaire
             }
-            let existing = try PersonaAnswerAggregateRecord.fetchOne(database, key: profileID.uuidString)
+            let existing = try PersonaAnswerAggregateRecord.fetchOne(
+                database,
+                sql: "SELECT * FROM persona_answer_aggregates WHERE profileID = ? AND accountUserID = ?",
+                arguments: [profileID.uuidString, authenticatedUserID.uuidString]
+            )
+            if let existing, existing.episodeFrequency == episodeFrequency.rawValue,
+               existing.postEpisodeFeeling == postEpisodeFeeling.rawValue,
+               existing.calmingPersonContext == calmingPersonContext.rawValue {
+                _ = try QuestionnaireDraftRecord.deleteOne(database, key: draft.id)
+                completed = try existing.domainValue()
+                return
+            }
             let aggregate = PersonaAnswerAggregate(
                 id: existing.flatMap { UUID(uuidString: $0.id) } ?? profileID,
                 profileID: profileID,
@@ -58,9 +133,16 @@ extension LocalDatabase {
                 revision: (existing?.revision ?? 0) + 1
             )
             try PersonaAnswerAggregateRecord(aggregate).save(database)
-            _ = try QuestionnaireDraftRecord.deleteOne(database, key: profileID.uuidString)
-            return aggregate
+            _ = try QuestionnaireDraftRecord.deleteOne(database, key: draft.id)
+            try supersedePendingPersonaUpserts(database, profileID: profileID)
+            try personaUpsertOperation(
+                database, profileID: profileID, aggregate: aggregate,
+                operationID: operationID, idempotencyKey: idempotencyKey, at: calculatedAt
+            )
+            completed = aggregate
         }
+        guard let completed else { throw LocalDatabaseError.constraintViolation }
+        return completed
     }
 
     func personaAnswerAggregate(
@@ -69,7 +151,11 @@ extension LocalDatabase {
     ) throws -> PersonaAnswerAggregate? {
         try assertAuthenticatedOwner(profileID: profileID, userID: authenticatedUserID)
         return try pool.read { database in
-            try PersonaAnswerAggregateRecord.fetchOne(database, key: profileID.uuidString)?.domainValue()
+            try PersonaAnswerAggregateRecord.fetchOne(
+                database,
+                sql: "SELECT * FROM persona_answer_aggregates WHERE profileID = ? AND accountUserID = ?",
+                arguments: [profileID.uuidString, authenticatedUserID.uuidString]
+            )?.domainValue()
         }
     }
 
@@ -87,7 +173,29 @@ extension LocalDatabase {
             throw PersonaAudioValidationError.invalidPersona
         }
         try write { database in
-            try PersonaAnswerAggregateRecord(aggregate).save(database)
+            let existing = try PersonaAnswerAggregateRecord.fetchOne(
+                database,
+                sql: "SELECT * FROM persona_answer_aggregates WHERE profileID = ? AND accountUserID = ?",
+                arguments: [aggregate.profileID.uuidString, aggregate.accountUserID.uuidString]
+            )
+            if let existing,
+               existing.episodeFrequency == aggregate.episodeFrequency.rawValue,
+               existing.postEpisodeFeeling == aggregate.postEpisodeFeeling.rawValue,
+               existing.calmingPersonContext == aggregate.calmingPersonContext.rawValue {
+                return
+            }
+            let revised = PersonaAnswerAggregate(
+                id: aggregate.profileID, profileID: aggregate.profileID, accountUserID: aggregate.accountUserID,
+                episodeFrequency: aggregate.episodeFrequency, postEpisodeFeeling: aggregate.postEpisodeFeeling,
+                calmingPersonContext: aggregate.calmingPersonContext,
+                derivedPersona: PersonaRouting.derive(episodeFrequency: aggregate.episodeFrequency, postEpisodeFeeling: aggregate.postEpisodeFeeling, calmingPersonContext: aggregate.calmingPersonContext),
+                routingRuleVersion: PersonaRouting.initialRuleVersion, calculatedAt: aggregate.calculatedAt,
+                createdAt: existing.map { Date(timeIntervalSince1970: $0.createdAt) } ?? aggregate.createdAt,
+                updatedAt: aggregate.updatedAt, revision: (existing?.revision ?? 0) + 1
+            )
+            try PersonaAnswerAggregateRecord(revised).save(database)
+            try supersedePendingPersonaUpserts(database, profileID: aggregate.profileID)
+            try personaUpsertOperation(database, profileID: aggregate.profileID, aggregate: revised, operationID: UUID(), idempotencyKey: UUID(), at: aggregate.updatedAt)
         }
     }
 
@@ -101,12 +209,15 @@ extension LocalDatabase {
     ) throws {
         try assertAuthenticatedOwner(profileID: profileID, userID: authenticatedUserID)
         try write { database in
-            guard let aggregate = try PersonaAnswerAggregateRecord.fetchOne(database, key: profileID.uuidString),
-                  aggregate.accountUserID == authenticatedUserID.uuidString
+            guard let aggregate = try PersonaAnswerAggregateRecord.fetchOne(
+                database, sql: "SELECT * FROM persona_answer_aggregates WHERE profileID = ? AND accountUserID = ?",
+                arguments: [profileID.uuidString, authenticatedUserID.uuidString]
+            )
             else {
                 return
             }
             _ = try PersonaAnswerAggregateRecord.deleteOne(database, key: profileID.uuidString)
+            try supersedePendingPersonaUpserts(database, profileID: profileID)
             let deletedRevision = aggregate.revision + 1
             try DeletionTombstoneRecord(
                 id: tombstoneID.uuidString,
@@ -154,6 +265,9 @@ extension LocalDatabase {
         }
         try write { database in
             let existing = try PersonalAudioClipMetadataRecord.fetchOne(database, key: metadata.id.uuidString)
+            if let existing, existing.profileID != metadata.profileID.uuidString {
+                throw PersonaAudioValidationError.wrongAccount
+            }
             if existing == nil {
                 let count = try Int.fetchOne(
                     database,
@@ -253,6 +367,27 @@ extension LocalDatabase {
             }
             _ = try PersonalAudioClipMetadataRecord.deleteOne(database, key: id.uuidString)
         }
+    }
+
+    private func supersedePendingPersonaUpserts(_ database: Database, profileID: UUID) throws {
+        try database.execute(
+            sql: "UPDATE sync_operations SET state = 'deleted' WHERE profileID = ? AND entityType = 'persona' AND operation = 'upsert' AND state IN ('pending', 'failedRecoverable')",
+            arguments: [profileID.uuidString]
+        )
+    }
+
+    private func personaUpsertOperation(
+        _ database: Database, profileID: UUID, aggregate: PersonaAnswerAggregate,
+        operationID: UUID, idempotencyKey: UUID, at: Date
+    ) throws {
+        try SynchronizationOperationRecord(
+            id: operationID.uuidString, profileID: profileID.uuidString,
+            entityType: SyncEntityType.persona.rawValue, entityID: aggregate.id.uuidString,
+            operation: SyncOperationKind.upsert.rawValue, idempotencyKey: idempotencyKey.uuidString,
+            baseRevision: aggregate.revision - 1, localRevision: aggregate.revision,
+            state: SynchronizationState.pending.rawValue, attemptCount: 0, nextAttemptAt: nil,
+            lastErrorCategory: nil, createdAt: at.timeIntervalSince1970, updatedAt: at.timeIntervalSince1970
+        ).insert(database)
     }
 
     private func assertAuthenticatedOwner(profileID: UUID, userID: UUID) throws {

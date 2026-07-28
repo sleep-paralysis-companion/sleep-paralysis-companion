@@ -276,7 +276,7 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertThrowsError(try LocalDatabase(path: path)) { error in
             XCTAssertEqual(
                 error as? LocalDatabaseError,
-                .unsupportedNewerSchema(found: 99, supported: 2)
+                .unsupportedNewerSchema(found: 99, supported: 4)
             )
         }
         let preserved = try queue.read {
@@ -294,23 +294,41 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), bytes)
     }
 
-    func testMigrationFromCommittedV1ToV3() async throws {
+    func testMigrationFromCommittedV1ToV4() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v1_core_local_data")
 
         let migrated = try LocalDatabase(path: path)
         let version = try await migrated.schemaVersion()
-        XCTAssertEqual(version, 3)
+        XCTAssertEqual(version, 4)
     }
 
-    func testMigrationFromCommittedV2ToV3() async throws {
+    func testMigrationFromCommittedV2ToV4() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v2_sync_security_foundation")
 
         let migrated = try LocalDatabase(path: path)
-        XCTAssertEqual(try await migrated.schemaVersion(), 3)
+        XCTAssertEqual(try await migrated.schemaVersion(), 4)
+    }
+
+    func testMigrationFromCommittedV3ToV4PreservesNoFabricatedPersonaData() async throws {
+        let path = temporaryDatabasePath()
+        let queue = try DatabaseQueue(path: path)
+        try LocalSchema.migrator().migrate(queue, upTo: "v3_persona_and_local_personal_audio")
+
+        let migrated = try LocalDatabase(path: path)
+        var profile = Phase1BFixture.profile()
+        profile.ownership = .accountLinked
+        profile.accountUserID = Phase1BFixture.userID
+        profile.accountLinkState = .linked
+        try await migrated.createProfile(profile, settings: Phase1BFixture.settings())
+        XCTAssertEqual(try await migrated.schemaVersion(), 4)
+        XCTAssertNil(try await migrated.personaAnswerAggregate(
+            profileID: Phase1BFixture.profileID,
+            authenticatedUserID: Phase1BFixture.userID
+        ))
     }
 
     func testInterruptedMigrationRollsBackItsTransaction() throws {

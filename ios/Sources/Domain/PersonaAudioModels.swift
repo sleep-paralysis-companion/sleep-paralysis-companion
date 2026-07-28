@@ -155,4 +155,15 @@ nonisolated enum PersonaAudioValidationError: Error, Equatable, Sendable {
     case invalidAudioMetadata
     case maximumPersonalAudioClipsReached
     case invalidDefaultSelection
+    case draftIdentityMismatch
+}
+
+/// Boundary for the later protected-file implementation. Implementations must
+/// make file creation/removal and metadata/default mutations one recoverable
+/// lifecycle; this delta deliberately stores neither a file location nor bytes.
+nonisolated protocol PersonalAudioFileLifecycleManaging: Sendable {
+    func prepareProtectedClipLifecycle(clipID: UUID, profileID: UUID) async throws
+    func commitProtectedClipLifecycle(clipID: UUID, profileID: UUID) async throws
+    func removeProtectedClipLifecycle(clipID: UUID, profileID: UUID) async throws
+    func removeAllProtectedClipLifecycles(profileID: UUID) async throws
 }

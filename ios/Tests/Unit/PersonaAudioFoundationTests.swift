@@ -71,21 +71,24 @@ final class PersonaAudioFoundationTests: XCTestCase {
         let completed = try await database.completeQuestionnaireDraft(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID,
-            calculatedAt: Phase1BFixture.now
+            calculatedAt: Phase1BFixture.now,
+            operationID: Phase1BFixture.operationID,
+            idempotencyKey: Phase1BFixture.key
         )
         XCTAssertEqual(completed.derivedPersona, .frequentIntenseNoCalmingPerson)
         XCTAssertNil(try await database.questionnaireDraft(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID
         ))
-        try await database.saveQuestionnaireDraft(draft)
         let repeated = try await database.completeQuestionnaireDraft(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID,
             calculatedAt: Phase1BFixture.now.addingTimeInterval(1)
         )
         XCTAssertEqual(repeated.id, completed.id)
-        XCTAssertEqual(repeated.revision, completed.revision + 1)
+        XCTAssertEqual(repeated.revision, completed.revision)
+        let pendingOperations = try await database.operations(profileID: draft.profileID)
+        XCTAssertEqual(pendingOperations.filter { $0.entityType == .persona && $0.operation == .upsert }.count, 1)
     }
 
     func testWrongAccountCannotReadOrWriteDraft() async throws {
@@ -171,12 +174,72 @@ final class PersonaAudioFoundationTests: XCTestCase {
     }
 
     func testUnknownEnumValuesAreRejected() {
-        XCTAssertThrowsError(
-            try JSONDecoder().decode(
-                EpisodeFrequency.self,
-                from: Data("\"future_frequency\"".utf8)
-            )
+        for value in ["future_frequency", "future_feeling", "future_context", "future_persona"] {
+            XCTAssertThrowsError(try JSONDecoder().decode(EpisodeFrequency.self, from: Data("\"\(value)\"".utf8)))
+        }
+        XCTAssertEqual(EpisodeFrequency.almostNightly.rawValue, "almost_nightly")
+        XCTAssertEqual(PostEpisodeFeeling.tooFrightenedToCloseEyes.rawValue, "too_frightened_to_close_eyes")
+        XCTAssertEqual(CalmingPersonContext.notAlwaysPresent.rawValue, "not_always_present")
+        XCTAssertEqual(DerivedPersona.generalDefault.rawValue, "general_default")
+    }
+
+    func testDistinctDraftAndProfileIDsResumeAndCompleteThroughPersonaPayloadProvider() async throws {
+        let database = try await linkedDatabase()
+        let draftID = Phase1BFixture.uuid("66666666-6666-4666-8666-666666666666")
+        let draft = QuestionnaireDraft(
+            id: draftID, profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: .besideMe,
+            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
         )
+        try await database.saveQuestionnaireDraft(draft)
+        let resumed = try await database.questionnaireDraft(profileID: draft.profileID, authenticatedUserID: draft.accountUserID)
+        XCTAssertEqual(resumed?.id, draftID)
+        let aggregate = try await database.completeQuestionnaireDraft(
+            profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now,
+            operationID: Phase1BFixture.operationID, idempotencyKey: Phase1BFixture.key
+        )
+        let queued = try await database.operations(profileID: draft.profileID)
+        let operation = try XCTUnwrap(queued.first)
+        let payload = try await LocalDatabaseOutboundPayloadProvider(database: database).payload(
+            for: operation, authenticatedUserID: Phase1BFixture.userID
+        )
+        guard case let .persona(remote) = payload else { return XCTFail("Expected persona payload") }
+        XCTAssertEqual(remote.id, aggregate.id)
+        XCTAssertEqual(remote.ownerUserID, Phase1BFixture.userID)
+        XCTAssertEqual(remote.episodeFrequency, EpisodeFrequency.weekly.rawValue)
+        XCTAssertEqual(remote.calmingPersonContext, CalmingPersonContext.besideMe.rawValue)
+    }
+
+    func testSettingsChangeAndDeletionQueueExactlyOneSuccessorOrTombstone() async throws {
+        let database = try await linkedDatabase()
+        let draft = QuestionnaireDraft(
+            id: Phase1BFixture.entityID, profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .rarely, postEpisodeFeeling: .shakeItOff, calmingPersonContext: .alone,
+            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+        )
+        try await database.saveQuestionnaireDraft(draft)
+        _ = try await database.completeQuestionnaireDraft(profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now)
+        let changed = PersonaAnswerAggregate(
+            id: Phase1BFixture.profileID, profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: .alone,
+            derivedPersona: .frequentIntenseNoCalmingPerson, routingRuleVersion: PersonaRouting.initialRuleVersion,
+            calculatedAt: Phase1BFixture.now.addingTimeInterval(1), createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now.addingTimeInterval(1), revision: 99
+        )
+        try await database.replacePersonaAnswerAggregate(changed)
+        let revised = try await database.personaAnswerAggregate(profileID: draft.profileID, authenticatedUserID: draft.accountUserID)
+        XCTAssertEqual(revised?.revision, 2)
+        try await database.deletePersonaAnswerAggregate(
+            profileID: draft.profileID, authenticatedUserID: draft.accountUserID,
+            deletedAt: Phase1BFixture.now.addingTimeInterval(2),
+            tombstoneID: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777"),
+            operationID: Phase1BFixture.uuid("88888888-8888-4888-8888-888888888888"),
+            idempotencyKey: Phase1BFixture.uuid("99999999-9999-4999-8999-999999999999")
+        )
+        let operations = try await database.operations(profileID: draft.profileID)
+        XCTAssertEqual(operations.filter { $0.entityType == .tombstone && $0.operation == .delete }.count, 1)
+        let deleted = try await database.personaAnswerAggregate(profileID: draft.profileID, authenticatedUserID: draft.accountUserID)
+        XCTAssertNil(deleted)
     }
 
     private func linkedDatabase() async throws -> LocalDatabase {
