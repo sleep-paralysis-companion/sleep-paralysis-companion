@@ -1,8 +1,8 @@
-nonisolated enum ContextualPermissionKind: String, CaseIterable, Sendable {
+nonisolated enum ContextualPermissionKind: String, CaseIterable, Hashable, Sendable {
     case alarms
 }
 
-nonisolated enum ContextualPermissionState: String, CaseIterable, Sendable {
+nonisolated enum ContextualPermissionState: String, CaseIterable, Hashable, Sendable {
     case notRequested
     case denied
     case unsupported
