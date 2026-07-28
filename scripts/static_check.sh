@@ -30,7 +30,10 @@ if grep -R -n -E "$FORBIDDEN_RESOURCE" "$RESOURCE_ROOT"; then
   exit 1
 fi
 
-if find "$REPOSITORY_ROOT/ios" -type f \( -name '*.entitlements' -o -name '*.mobileprovision' -o -name '*.p8' \) | grep -q .; then
+if find "$REPOSITORY_ROOT/ios" \
+  -path "$REPOSITORY_ROOT/ios/.generated" -prune -o \
+  -type f \( -name '*.entitlements' -o -name '*.mobileprovision' -o -name '*.p8' \) \
+  -print | grep -q .; then
   echo "Unexpected entitlement or credential file found." >&2
   exit 1
 fi
