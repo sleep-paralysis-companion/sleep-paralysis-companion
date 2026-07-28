@@ -53,8 +53,8 @@ actor LocalOnboardingProfileStore: OnboardingProfilePersisting {
         return opened
     }
 
-    nonisolated private static func onboardingProfile(_ profile: LocalProfile) -> OnboardingProfile {
-        return OnboardingProfile(
+    private nonisolated static func onboardingProfile(_ profile: LocalProfile) -> OnboardingProfile {
+        OnboardingProfile(
             localProfileID: profile.id,
             profileCreatedAt: profile.createdAt,
             productNoticeVersion: profile.productNoticeVersion,
@@ -63,7 +63,7 @@ actor LocalOnboardingProfileStore: OnboardingProfilePersisting {
         )
     }
 
-    nonisolated private static func safeError(_ error: any Error) -> OnboardingPersistenceError {
+    private nonisolated static func safeError(_ error: any Error) -> OnboardingPersistenceError {
         if error is RecordMappingError {
             return .invalidStoredProfile
         }

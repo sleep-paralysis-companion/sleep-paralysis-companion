@@ -139,7 +139,7 @@ final class NavigationStateTests: XCTestCase {
     }
 
     @MainActor
-    func testMalformedStaleAndFutureRestorationFallsBackToHomeRoot() async throws {
+    func testMalformedStaleAndFutureRestorationFallsBackToHomeRoot() async {
         let wrongProfile = UUID(uuidString: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
             ?? UUID()
         let stale = RouteRestorationCodec().encode(

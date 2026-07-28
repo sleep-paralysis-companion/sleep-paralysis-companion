@@ -80,7 +80,7 @@ struct FixedAppIdentifierProvider: AppIdentifierProviding {
     }
 }
 
-struct Phase1CFixture {
+enum Phase1CFixture {
     static let now = Date(timeIntervalSince1970: 1_753_747_200)
     static let profileID = UUID(uuidString: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
         ?? UUID()
