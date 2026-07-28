@@ -79,7 +79,7 @@ struct AppFeedbackBanner: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("feedback.accessibility.label"))
         .accessibilityValue(message)
-        .accessibilityLiveRegion(.assertive)
+        .accessibilityAddTraits(.updatesFrequently)
         .accessibilityIdentifier("feedback.banner")
     }
 }

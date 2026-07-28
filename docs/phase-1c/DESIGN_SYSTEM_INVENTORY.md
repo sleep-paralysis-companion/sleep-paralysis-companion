@@ -21,7 +21,7 @@ accessibility tree when decorative.
 | `AppSecondaryButtonStyle` | bordered secondary/local navigation action |
 | `AppCard` | semantic adaptive surface with increased-contrast outline and reduced-transparency fallback |
 | `AppFeatureCard` | title, honest status, and one explicit action |
-| `AppFeedbackBanner` | combined important message with assertive accessibility live region |
+| `AppFeedbackBanner` | combined important message with update trait and explicit focus transfer |
 | `AppStateView` | loading/error/unavailable/empty state with focused heading and optional recovery |
 
 `ScrollView`, multi-line labels, `ViewThatFits`, adaptive padding, and no fixed text frames keep

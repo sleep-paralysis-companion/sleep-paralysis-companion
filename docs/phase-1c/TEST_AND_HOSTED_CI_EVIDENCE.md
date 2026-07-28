@@ -26,7 +26,7 @@ The workflow has two jobs:
 | Offline guest launch | in-memory/local-store launch tests and no-network composition scan |
 | Wrong-account/auth-required | app-model preservation test |
 | Accessibility text sizes | five-category UI loop and design-token unit tests |
-| VoiceOver semantics | UI labels/order plus heading focus/live-region implementation checks |
+| VoiceOver semantics | UI labels/order plus heading and feedback focus/update-trait checks |
 | Reduce Motion/contrast/appearance/RTL/narrow | hosted UI launch configurations and screenshots |
 | Prohibited copy/framework/permission/entitlement/secret/network | contract, static, manifest, and secret scripts |
 

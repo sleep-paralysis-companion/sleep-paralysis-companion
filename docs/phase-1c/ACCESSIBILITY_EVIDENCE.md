@@ -7,7 +7,8 @@
 - Every screen scrolls where content can outgrow the viewport.
 - Headings carry header traits and onboarding/state headings receive accessibility focus.
 - Decorative symbols are hidden; meaningful symbols are paired with text.
-- Feedback is a combined accessible element, marked important, and uses an assertive live region.
+- Feedback is a combined accessible element, carries the updating-content trait, and receives
+  explicit accessibility focus when a new error appears.
 - Button labels and hints describe actions without relying on position, shape, or color.
 - System colors support light/dark; borders become stronger for increased contrast.
 - Reduce Motion removes decorative duration; Reduce Transparency uses an opaque semantic surface.
