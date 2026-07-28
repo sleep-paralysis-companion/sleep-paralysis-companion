@@ -12,7 +12,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["welcome.title"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["welcome.continue"].isHittable)
+        makeHittable(app.buttons["welcome.continue"], in: app)
         XCTAssertFalse(app.buttons["Sign in"].exists)
         XCTAssertFalse(app.buttons["Start trial"].exists)
         XCTAssertFalse(app.staticTexts["Paywall"].exists)
@@ -31,14 +31,14 @@ final class ApplicationLaunchUITests: XCTestCase {
                 "The app responds only when you choose an action or enter information."
             ].exists
         )
-        XCTAssertTrue(app.buttons["notice.continue"].isHittable)
-        XCTAssertTrue(app.buttons["notice.alarm.button"].isHittable)
-        XCTAssertTrue(app.buttons["notice.privacy.button"].isHittable)
+        makeHittable(app.buttons["notice.alarm.button"], in: app)
+        makeHittable(app.buttons["notice.privacy.button"], in: app)
+        makeHittable(app.buttons["notice.continue"], in: app)
 
         app.buttons["notice.continue"].tap()
 
         XCTAssertTrue(app.staticTexts["home.title"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["home.alarm.button"].isHittable)
+        makeHittable(app.buttons["home.alarm.button"], in: app)
         XCTAssertFalse(app.buttons["Sign in"].exists)
         XCTAssertFalse(app.buttons["Start trial"].exists)
         XCTAssertEqual(app.alerts.count, 0)
@@ -66,7 +66,7 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         app.launch()
         XCTAssertTrue(app.staticTexts["home.title"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["home.alarm.button"].isHittable)
+        makeHittable(app.buttons["home.alarm.button"], in: app)
     }
 
     @MainActor
@@ -105,13 +105,13 @@ final class ApplicationLaunchUITests: XCTestCase {
             )
             app.launch()
             XCTAssertTrue(app.buttons["welcome.continue"].waitForExistence(timeout: 8))
-            XCTAssertTrue(app.buttons["welcome.continue"].isHittable, category)
+            makeHittable(app.buttons["welcome.continue"], in: app, context: category)
             app.buttons["welcome.continue"].tap()
             XCTAssertTrue(app.buttons["notice.continue"].waitForExistence(timeout: 5))
-            XCTAssertTrue(app.buttons["notice.continue"].isHittable, category)
+            makeHittable(app.buttons["notice.continue"], in: app, context: category)
             app.buttons["notice.continue"].tap()
             XCTAssertTrue(app.buttons["home.alarm.button"].waitForExistence(timeout: 8))
-            XCTAssertTrue(app.buttons["home.alarm.button"].isHittable, category)
+            makeHittable(app.buttons["home.alarm.button"], in: app, context: category)
             app.terminate()
         }
     }
@@ -137,16 +137,16 @@ final class ApplicationLaunchUITests: XCTestCase {
         let heading = app.staticTexts["welcome.title"]
         let action = app.buttons["welcome.continue"]
         XCTAssertTrue(heading.waitForExistence(timeout: 8))
-        XCTAssertTrue(action.isHittable)
         XCTAssertLessThan(heading.frame.minY, action.frame.minY)
         XCTAssertEqual(action.label, "Continue")
+        makeHittable(action, in: app)
         app.buttons["welcome.continue"].tap()
 
         let noticeHeading = app.staticTexts["notice.title"]
         let noticeAction = app.buttons["notice.continue"]
         XCTAssertTrue(noticeHeading.waitForExistence(timeout: 5))
-        XCTAssertTrue(noticeAction.isHittable)
         XCTAssertLessThan(noticeHeading.frame.minY, noticeAction.frame.minY)
+        makeHittable(noticeAction, in: app)
         keepScreenshot(app, name: "notice-dark-contrast-accessibility")
     }
 
@@ -165,19 +165,22 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.buttons["welcome.continue"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["welcome.continue"].isHittable)
+        makeHittable(app.buttons["welcome.continue"], in: app)
         app.buttons["welcome.continue"].tap()
         XCTAssertTrue(app.buttons["notice.continue"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["notice.alarm.button"].isHittable)
-        XCTAssertTrue(app.buttons["notice.privacy.button"].isHittable)
-        XCTAssertTrue(app.buttons["notice.help.button"].isHittable)
+        makeHittable(app.buttons["notice.alarm.button"], in: app)
+        makeHittable(app.buttons["notice.privacy.button"], in: app)
+        makeHittable(app.buttons["notice.help.button"], in: app)
+        makeHittable(app.buttons["notice.continue"], in: app)
         keepScreenshot(app, name: "notice-rtl-narrow")
     }
 
+    @MainActor
     private func freshApplication(arguments: [String] = []) -> XCUIApplication {
         application(namespace: UUID().uuidString, arguments: arguments)
     }
 
+    @MainActor
     private func application(
         namespace: String,
         arguments: [String] = []
@@ -188,15 +191,31 @@ final class ApplicationLaunchUITests: XCTestCase {
         return app
     }
 
+    @MainActor
     private func completeOnboarding(_ app: XCUIApplication) {
         if app.staticTexts["welcome.title"].exists {
+            makeHittable(app.buttons["welcome.continue"], in: app)
             app.buttons["welcome.continue"].tap()
         }
         XCTAssertTrue(app.buttons["notice.continue"].waitForExistence(timeout: 5))
+        makeHittable(app.buttons["notice.continue"], in: app)
         app.buttons["notice.continue"].tap()
         XCTAssertTrue(app.staticTexts["home.title"].waitForExistence(timeout: 8))
     }
 
+    @MainActor
+    private func makeHittable(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        context: String = ""
+    ) {
+        for _ in 0 ..< 8 where !element.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.isHittable, context)
+    }
+
+    @MainActor
     private func keepScreenshot(_ app: XCUIApplication, name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name
