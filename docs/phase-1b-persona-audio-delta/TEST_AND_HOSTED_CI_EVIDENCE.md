@@ -1,6 +1,8 @@
 # Test and hosted-CI evidence
 
-**Repaired local implementation commit:** `029626fe8df6e0d54a28f96fe5ac8ff8646f1d75` on `codex/phase-1b-persona-audio-delta` (parent/start: `791ea4208d41ebe0971561bbe925a9e4f080cb34`).
+**Implementation repair commit:** `029626fedf5381ef687d5c3d9a8d407d11b0a009` on `codex/phase-1b-persona-audio-delta` (verified with `git rev-parse`; parent/start: `791ea4208d41ebe0971561bbe925a9e4f080cb34`).
+
+**Evidence correction commit / final local HEAD:** Recorded after Git creates the correction commit; neither SHA may be manually reconstructed.
 
 ## Local commands and terminal results
 
@@ -8,16 +10,16 @@
 |---|---|
 | `git diff --check` | Passed (no whitespace errors). |
 | `python -c "import yaml ... yaml.safe_load(codemagic.yaml)"` | Passed: `codemagic.yaml: valid YAML`. |
-| Static secret-pattern scan across iOS/Supabase/docs/scripts | No credential-shaped value found; textual policy references were reviewed as non-secret documentation/runtime identifiers. |
+| Static secret-pattern scan of `HEAD` and all reachable Git history | No credential-shaped value found. |
 | Personal-audio prohibited-field scan across iOS sources, migrations, and tests | Passed: no filename/path/bytes/transcript/waveform/embedding/remote-reference fields were introduced for personal audio. |
-| pgTAP assertion count check | `phase_1b_persona_audio_delta_test.sql` declares and contains 30 assertions. |
+| pgTAP assertion count check | `phase_1b_persona_audio_delta_test.sql` declares and contains 54 assertions; static count only, not execution evidence. |
 | `docker version` | Not runnable against a usable daemon: local Docker access/daemon unavailable. |
 | `wsl -l -q` | Not runnable: WSL service access denied. |
 | Swift/Xcode/Supabase CLI discovery | `swift`, `swiftc`, `xcodebuild`, and `supabase` are unavailable on this Windows host. |
 
-`PersonaAudioFoundationTests` now covers routing counts, incomplete completion rejection, distinct draft/profile IDs, idempotent completion, queue creation, production outbound persona conversion, Settings revision change, tombstone queueing, wrong-account access, enum raw values/rejection, bounds/default behavior, and local schema upgrade coverage. `DataRightsFoundationTests` covers redacted `persona.json` inclusion and exclusions.
+Swift source tests assert routing counts, every incomplete completion shape, distinct draft/profile IDs, idempotent completion, queue creation, provider conversion, Settings revision change, tombstone queueing, missing/wrong-account access, enum raw values/rejection, pre-transaction write-fault preservation, metadata bounds/formats/defaults/cascade, and structured `persona.json` inclusion/exclusion. `PersonaExport.CodingKeys` is statically inspected for the six approved snake-case keys.
 
-The pgTAP suite covers actual Storage bucket/object/policy absence, owner RPC, existing-row cross-user read denial, direct-DML denial, forged persona/receipt rollback, replay mismatch, trusted update, audio mutation denial, tombstone/retry, stale resurrection prevention, and anonymous denial.
+The pgTAP source suite asserts actual Storage bucket/object/policy absence, owner RPC, existing-row cross-user read denial, direct-DML denial, forged/malformed/replayed payload rejection with absent receipts, trusted update, audio mutation denial, tombstone/retry, stale resurrection prevention, execution privileges, legacy compatibility, and account-deletion cascade. None of these assertions has run locally or hosted yet.
 
 ## Not run / not claimed
 

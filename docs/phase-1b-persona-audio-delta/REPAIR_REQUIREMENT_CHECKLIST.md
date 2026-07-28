@@ -1,18 +1,22 @@
 # Persona/audio repair requirement-to-evidence checklist
 
-**Status:** Local repair implementation commit `029626fe8df6e0d54a28f96fe5ac8ff8646f1d75`; Gate 1B Persona/Audio Delta is **NOT PASSED** until exact-head Codemagic iOS and isolated-backend jobs pass after an explicitly approved push.
+**Implementation repair commit:** `029626fedf5381ef687d5c3d9a8d407d11b0a009` (verified with `git rev-parse`).
+
+**Evidence correction commit:** Recorded only after Git creates the local correction commit; it must not be manually reconstructed.
+
+**Final local HEAD for hosted verification:** Recorded only after the correction commit. Gate 1B Persona/Audio Delta is **NOT PASSED** until exact-head Codemagic iOS and isolated-backend jobs pass after an explicitly approved push.
 
 | Requirement | Local repair/evidence |
 |---|---|
-| Draft identity, one current draft, account isolation, v3-safe migration | Local schema v4 preserves v3, indexes profile/account lookup, and guards draft account/profile linkage; `PersonaAudioFoundationTests` covers distinct IDs/resume and wrong account. |
-| Atomic completion/edit/delete and queue work | `LocalDatabase+PersonaAudio` completes or replaces in one local transaction, queues persona upsert/tombstone work, supersedes retryable stale upserts, and keeps unchanged answers idempotent. |
-| End-to-end persona sync | Completion creates `SyncEntityType.persona`; `LocalDatabaseOutboundPayloadProvider` derives a trusted-owner `RemoteMutationPayload.persona`; test covers the production provider path. |
-| Structured export/redaction | `PersonaExport` is an explicit six-field projection. `exportSnapshot` assembles it only from a complete aggregate; tests cover inclusion and exclusions. |
-| Local personal-audio metadata | Existing bounds/format/account/default/cascade constraints are retained; repair adds cross-profile clip-ID protection and a protected-file lifecycle interface without storing a path, name, or bytes. |
-| Remote mutation/RLS boundary | New immutable follow-up migration revokes ordinary DML, preserves owner reads, and moves the checked RPC implementation behind a non-exposed private, explicitly granted definer function. |
-| pgTAP security/absence coverage | Suite tests real Storage rows/objects/policies, direct-DML denial, existing-row cross-user reads, owner RPC, forged persona, replay mismatch, trusted update, delete/retry, and resurrection denial. |
-| Swift migration/fault coverage | Existing v1/v2 migration, corruption, and write-fault tests are updated for v4; a v3-to-v4 no-fabrication test and persona/audio queue/export tests are added. |
-| Codemagic/evidence | Persona/audio workflows remain branch-scoped and untouched. Local evidence is recorded separately; hosted verification is intentionally pending consent. |
+| Draft identity, one current draft, account isolation, v3-safe migration | **Implemented; statically inspected.** Local schema v4 preserves v3, indexes profile/account lookup, and guards draft account/profile linkage. Runtime test not run. |
+| Atomic completion/edit/delete and queue work | **Implemented; statically inspected.** Completion/replacement use the existing operation/tombstone queue. The available injected write fault occurs before the transaction begins; mid-transaction rollback is **not yet proven**. |
+| End-to-end persona sync | **Implemented; source test added.** Completion creates `SyncEntityType.persona`; the production provider derives a trusted-owner `RemoteMutationPayload.persona`. Runtime test not run. |
+| Structured export/redaction | **Implemented; source test added.** `PersonaExport` has explicit snake-case keys and a six-field projection. Runtime export test not run. |
+| Local personal-audio metadata | **Implemented; source tests added.** Bounds/formats/default/cascade and cross-profile clip-ID rejection are asserted in test source. Runtime test not run. |
+| Remote mutation/RLS boundary | **Implemented; statically inspected.** Follow-up migration revokes ordinary DML, preserves owner reads, and uses a narrowly granted private definer implementation. pgTAP runtime not run. |
+| pgTAP security/absence coverage | **Test source expanded; runtime not run.** The 54-assertion suite includes Storage absence, DML/RLS, malformed payload, replay, privilege, legacy, and account-cascade assertions. |
+| Swift migration/fault coverage | **Test source expanded; runtime not run.** v1/v2/v3 migration, corruption, pre-transaction write-fault preservation, persona/audio, and export tests are present. |
+| Codemagic/evidence | **Hosted not tested.** Workflows remain branch-scoped and untouched; hosted verification awaits explicit push consent. |
 | Explicitly out of scope | No onboarding UI, microphone/file implementation, importing/playback, WidgetKit, AlarmKit, credentials, live Supabase/Figma, deployment, or remote audio system was added. |
 
 ## Remaining acceptance evidence

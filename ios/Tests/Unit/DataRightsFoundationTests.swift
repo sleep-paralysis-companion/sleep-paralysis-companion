@@ -159,15 +159,26 @@ final class DataRightsFoundationTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             in: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         )
-        let text = try XCTUnwrap(searchableArchiveText(Data(contentsOf: artifact.archiveURL)))
+        let personaData = try XCTUnwrap(
+            uncompressedZIPEntry(named: "persona.json", in: Data(contentsOf: artifact.archiveURL))
+        )
+        let persona = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: personaData) as? [String: Any]
+        )
         XCTAssertTrue(artifact.includedFileNames.contains("persona.json"))
-        XCTAssertTrue(text.contains("episode_frequency"))
-        XCTAssertTrue(text.contains("routing_rule_version"))
-        XCTAssertFalse(text.contains("accountUserID"))
-        XCTAssertFalse(text.contains("owner_user_id"))
-        XCTAssertFalse(text.contains("sync_operations"))
-        XCTAssertFalse(text.contains("audio"))
-        XCTAssertFalse(text.contains(Phase1BFixture.profileID.uuidString))
+        XCTAssertEqual(
+            Set(persona.keys),
+            Set([
+                "episode_frequency", "post_episode_feeling", "calming_person_context",
+                "derived_persona", "routing_rule_version", "calculated_at",
+            ])
+        )
+        XCTAssertEqual(persona["episode_frequency"] as? String, "weekly")
+        XCTAssertEqual(persona["post_episode_feeling"] as? String, "awake_scared")
+        XCTAssertEqual(persona["calming_person_context"] as? String, "alone")
+        XCTAssertEqual(persona["derived_persona"] as? String, "frequent_intense_no_calming_person")
+        XCTAssertEqual(persona["routing_rule_version"] as? String, PersonaRouting.initialRuleVersion)
+        XCTAssertNotNil(persona["calculated_at"] as? String)
     }
 
     func testExportProtectionFailureFailsClosed() {
@@ -370,5 +381,36 @@ final class DataRightsFoundationTests: XCTestCase {
             (0x20 ... 0x7E).contains(byte) ? byte : 0x20
         }
         return String(bytes: printableASCII, encoding: .utf8)
+    }
+
+    private func uncompressedZIPEntry(named expectedName: String, in archive: Data) -> Data? {
+        var offset = 0
+        while offset + 30 <= archive.count {
+            guard littleEndianUInt32(archive, offset) == 0x0403_4B50 else { return nil }
+            let compressedSize = Int(littleEndianUInt32(archive, offset + 18))
+            let nameLength = Int(littleEndianUInt16(archive, offset + 26))
+            let extraLength = Int(littleEndianUInt16(archive, offset + 28))
+            let nameStart = offset + 30
+            let dataStart = nameStart + nameLength + extraLength
+            guard dataStart + compressedSize <= archive.count,
+                  let name = String(data: archive.subdata(in: nameStart ..< nameStart + nameLength), encoding: .utf8)
+            else { return nil }
+            if name == expectedName {
+                return archive.subdata(in: dataStart ..< dataStart + compressedSize)
+            }
+            offset = dataStart + compressedSize
+        }
+        return nil
+    }
+
+    private func littleEndianUInt16(_ data: Data, _ offset: Int) -> UInt16 {
+        UInt16(data[offset]) | (UInt16(data[offset + 1]) << 8)
+    }
+
+    private func littleEndianUInt32(_ data: Data, _ offset: Int) -> UInt32 {
+        UInt32(data[offset])
+            | (UInt32(data[offset + 1]) << 8)
+            | (UInt32(data[offset + 2]) << 16)
+            | (UInt32(data[offset + 3]) << 24)
     }
 }

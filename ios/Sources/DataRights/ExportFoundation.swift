@@ -20,6 +20,15 @@ nonisolated struct PersonaExport: Codable, Equatable, Sendable {
     let routingRuleVersion: String
     let calculatedAt: Date
 
+    enum CodingKeys: String, CodingKey {
+        case episodeFrequency = "episode_frequency"
+        case postEpisodeFeeling = "post_episode_feeling"
+        case calmingPersonContext = "calming_person_context"
+        case derivedPersona = "derived_persona"
+        case routingRuleVersion = "routing_rule_version"
+        case calculatedAt = "calculated_at"
+    }
+
     init(_ aggregate: PersonaAnswerAggregate) {
         episodeFrequency = aggregate.episodeFrequency
         postEpisodeFeeling = aggregate.postEpisodeFeeling

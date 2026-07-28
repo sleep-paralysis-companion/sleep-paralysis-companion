@@ -55,6 +55,35 @@ final class PersonaAudioFoundationTests: XCTestCase {
         ))
     }
 
+    func testEveryIncompleteQuestionnaireShapeProducesNoPersonaOrOperation() async throws {
+        let shapes: [(EpisodeFrequency?, PostEpisodeFeeling?, CalmingPersonContext?)] = [
+            (nil, nil, nil), (.weekly, nil, nil), (nil, .awakeScared, nil),
+            (nil, nil, .alone), (.weekly, .awakeScared, nil),
+            (.weekly, nil, .alone), (nil, .awakeScared, .alone),
+        ]
+        for (index, shape) in shapes.enumerated() {
+            let database = try await linkedDatabase()
+            let draft = QuestionnaireDraft(
+                id: UUID(), profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
+                episodeFrequency: shape.0, postEpisodeFeeling: shape.1, calmingPersonContext: shape.2,
+                createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now.addingTimeInterval(TimeInterval(index))
+            )
+            try await database.saveQuestionnaireDraft(draft)
+            await XCTAssertThrowsErrorAsync {
+                _ = try await database.completeQuestionnaireDraft(
+                    profileID: draft.profileID, authenticatedUserID: draft.accountUserID,
+                    calculatedAt: Phase1BFixture.now
+                )
+            }
+            let aggregate = try await database.personaAnswerAggregate(
+                profileID: draft.profileID, authenticatedUserID: draft.accountUserID
+            )
+            let operations = try await database.operations(profileID: draft.profileID)
+            XCTAssertNil(aggregate, "Incomplete shape \(index) produced an aggregate")
+            XCTAssertTrue(operations.isEmpty, "Incomplete shape \(index) queued sync work")
+        }
+    }
+
     func testCompletionIsAtomicIdempotentAndRemovesDraft() async throws {
         let database = try await linkedDatabase()
         let draft = QuestionnaireDraft(
@@ -110,6 +139,57 @@ final class PersonaAudioFoundationTests: XCTestCase {
                 authenticatedUserID: Phase1BFixture.uuid("99999999-9999-4999-8999-999999999999")
             )
         }
+    }
+
+    func testMissingProfileAndSignedOutAccessFailSafely() async throws {
+        let database = try await linkedDatabase()
+        let unknownProfileID = Phase1BFixture.uuid("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+        do {
+            _ = try await database.questionnaireDraft(
+                profileID: unknownProfileID, authenticatedUserID: Phase1BFixture.userID
+            )
+            XCTFail("Expected missing-profile access to fail")
+        } catch let error as PersonaAudioValidationError {
+            XCTAssertEqual(error, .wrongAccount)
+        }
+        do {
+            _ = try await database.personaAnswerAggregate(
+                profileID: Phase1BFixture.profileID,
+                authenticatedUserID: Phase1BFixture.uuid("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+            )
+            XCTFail("Expected signed-out/wrong-user access to fail")
+        } catch let error as PersonaAudioValidationError {
+            XCTAssertEqual(error, .wrongAccount)
+        }
+    }
+
+    func testPreTransactionWriteFaultLeavesQuestionnaireDraftAndSyncStateIntact() async throws {
+        let path = temporaryDatabasePath()
+        let initial = try LocalDatabase(path: path)
+        try await configureLinkedProfile(in: initial)
+        let draft = completeDraft()
+        try await initial.saveQuestionnaireDraft(draft)
+
+        let failing = try LocalDatabase(path: path, writeFault: FailingLocalWrite())
+        await XCTAssertThrowsErrorAsync {
+            _ = try await failing.completeQuestionnaireDraft(
+                profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now
+            )
+        }
+
+        let reopened = try LocalDatabase(path: path)
+        let preservedDraft = try await reopened.questionnaireDraft(
+            profileID: draft.profileID, authenticatedUserID: draft.accountUserID
+        )
+        let aggregate = try await reopened.personaAnswerAggregate(
+            profileID: draft.profileID, authenticatedUserID: draft.accountUserID
+        )
+        let operations = try await reopened.operations(profileID: draft.profileID)
+        XCTAssertEqual(preservedDraft, draft)
+        XCTAssertNil(aggregate)
+        XCTAssertTrue(operations.isEmpty)
+        // FailingLocalWrite is called before DatabasePool.write begins; this proves
+        // failure-before-transaction preservation, not a mid-transaction fault.
     }
 
     func testPersonalAudioMetadataLimitAndSelectedDeletionOnlyClearsItsDefault() async throws {
@@ -174,9 +254,11 @@ final class PersonaAudioFoundationTests: XCTestCase {
     }
 
     func testUnknownEnumValuesAreRejected() {
-        for value in ["future_frequency", "future_feeling", "future_context", "future_persona"] {
-            XCTAssertThrowsError(try JSONDecoder().decode(EpisodeFrequency.self, from: Data("\"\(value)\"".utf8)))
-        }
+        XCTAssertThrowsError(try JSONDecoder().decode(EpisodeFrequency.self, from: Data("\"future_frequency\"".utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(PostEpisodeFeeling.self, from: Data("\"future_feeling\"".utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(CalmingPersonContext.self, from: Data("\"future_context\"".utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(DerivedPersona.self, from: Data("\"future_persona\"".utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(PersonalAudioStorageFormat.self, from: Data("\"future_format\"".utf8)))
         XCTAssertEqual(EpisodeFrequency.almostNightly.rawValue, "almost_nightly")
         XCTAssertEqual(PostEpisodeFeeling.tooFrightenedToCloseEyes.rawValue, "too_frightened_to_close_eyes")
         XCTAssertEqual(CalmingPersonContext.notAlwaysPresent.rawValue, "not_always_present")
@@ -242,13 +324,198 @@ final class PersonaAudioFoundationTests: XCTestCase {
         XCTAssertNil(deleted)
     }
 
+    func testClipLimitsFormatsAndValidationFailuresLeaveNoPartialMetadata() async throws {
+        let database = try await linkedDatabase()
+        for format in PersonalAudioStorageFormat.allCases {
+            let metadata = clip(id: UUID(), source: .imported, format: format)
+            try await database.savePersonalAudioClipMetadata(metadata, authenticatedUserID: Phase1BFixture.userID)
+        }
+        let acceptedImports = try await database.personalAudioClipMetadata(
+            profileID: Phase1BFixture.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        XCTAssertEqual(Set(acceptedImports.map(\.storageFormat)), Set(PersonalAudioStorageFormat.allCases))
+
+        let invalidByteCount = clip(
+            id: UUID(), source: .recorded, format: .m4a,
+            byteCount: PersonalAudioPolicy.maximumByteCount + 1,
+            duration: PersonalAudioPolicy.maximumDurationMilliseconds
+        )
+        let invalidDuration = clip(
+            id: UUID(), source: .recorded, format: .m4a,
+            byteCount: PersonalAudioPolicy.maximumByteCount,
+            duration: PersonalAudioPolicy.maximumDurationMilliseconds + 1
+        )
+        let invalidRecordedFormat = clip(id: UUID(), source: .recorded, format: .mp3)
+        for invalid in [invalidByteCount, invalidDuration, invalidRecordedFormat] {
+            await XCTAssertThrowsErrorAsync {
+                try await database.savePersonalAudioClipMetadata(invalid, authenticatedUserID: Phase1BFixture.userID)
+            }
+        }
+        let afterFailures = try await database.personalAudioClipMetadata(
+            profileID: Phase1BFixture.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        XCTAssertEqual(afterFailures.count, PersonalAudioStorageFormat.allCases.count)
+    }
+
+    func testTenClipsAreAcceptedAndEleventhIsRejected() async throws {
+        let database = try await linkedDatabase()
+        for _ in 0 ..< PersonalAudioPolicy.maximumClipCount {
+            try await database.savePersonalAudioClipMetadata(
+                clip(id: UUID(), source: .recorded, format: .m4a,
+                     byteCount: PersonalAudioPolicy.maximumByteCount,
+                     duration: PersonalAudioPolicy.maximumDurationMilliseconds),
+                authenticatedUserID: Phase1BFixture.userID
+            )
+        }
+        let stored = try await database.personalAudioClipMetadata(
+            profileID: Phase1BFixture.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        XCTAssertEqual(stored.count, PersonalAudioPolicy.maximumClipCount)
+        await XCTAssertThrowsErrorAsync {
+            try await database.savePersonalAudioClipMetadata(
+                self.clip(id: UUID(), source: .recorded, format: .m4a),
+                authenticatedUserID: Phase1BFixture.userID
+            )
+        }
+        let stillStored = try await database.personalAudioClipMetadata(
+            profileID: Phase1BFixture.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        XCTAssertEqual(stillStored.count, PersonalAudioPolicy.maximumClipCount)
+    }
+
+    func testClipCannotBeMovedToAnotherProfileAndOnlyItsSelectedDefaultIsCleared() async throws {
+        let database = try await linkedDatabase()
+        let selected = clip(id: Phase1BFixture.entityID, source: .recorded, format: .m4a)
+        let unselected = clip(id: UUID(), source: .imported, format: .mp3)
+        try await database.savePersonalAudioClipMetadata(selected, authenticatedUserID: Phase1BFixture.userID)
+        try await database.savePersonalAudioClipMetadata(unselected, authenticatedUserID: Phase1BFixture.userID)
+        try await database.setLocalRecoveryAudioDefault(
+            .personalClip(selected.id), profileID: selected.profileID,
+            authenticatedUserID: Phase1BFixture.userID, updatedAt: Phase1BFixture.now
+        )
+        try await database.deletePersonalAudioClipMetadata(
+            id: unselected.id, profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        let retainedDefault = try await database.localRecoveryAudioDefault(
+            profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        XCTAssertEqual(retainedDefault, .personalClip(selected.id))
+        let otherProfileID = Phase1BFixture.uuid("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+        let moved = PersonalAudioClipMetadata(
+            id: selected.id, profileID: otherProfileID, source: .recorded, storageFormat: .m4a,
+            byteCount: 1, durationMilliseconds: 1, createdOrImportedAt: Phase1BFixture.now,
+            availability: .ready, protectionVersion: 1
+        )
+        await XCTAssertThrowsErrorAsync {
+            try await database.savePersonalAudioClipMetadata(moved, authenticatedUserID: Phase1BFixture.userID)
+        }
+        try await database.deletePersonalAudioClipMetadata(
+            id: selected.id, profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        let clearedDefault = try await database.localRecoveryAudioDefault(
+            profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+        )
+        XCTAssertNil(clearedDefault)
+    }
+
+    func testDraftAndAudioCannotProducePayloadAndPersonaConversionIsRejected() async throws {
+        let database = try await linkedDatabase()
+        let draft = completeDraft()
+        try await database.saveQuestionnaireDraft(draft)
+        try await database.savePersonalAudioClipMetadata(
+            clip(id: UUID(), source: .recorded, format: .m4a), authenticatedUserID: Phase1BFixture.userID
+        )
+        let provider = LocalDatabaseOutboundPayloadProvider(database: database)
+        let upsert = SynchronizationOperation(
+            id: UUID(), profileID: draft.profileID, entityType: .persona, entityID: draft.profileID,
+            operation: .upsert, idempotencyKey: UUID(), baseRevision: 0, localRevision: 1,
+            state: .pending, attemptCount: 0, nextAttemptAt: nil, lastErrorCategory: nil,
+            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+        )
+        await XCTAssertThrowsErrorAsync {
+            _ = try await provider.payload(for: upsert, authenticatedUserID: Phase1BFixture.userID)
+        }
+        _ = try await database.completeQuestionnaireDraft(
+            profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now
+        )
+        let conversion = SynchronizationOperation(
+            id: UUID(), profileID: draft.profileID, entityType: .persona, entityID: draft.profileID,
+            operation: .convert, idempotencyKey: UUID(), baseRevision: 1, localRevision: 2,
+            state: .pending, attemptCount: 0, nextAttemptAt: nil, lastErrorCategory: nil,
+            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+        )
+        do {
+            _ = try await provider.payload(for: conversion, authenticatedUserID: Phase1BFixture.userID)
+            XCTFail("Persona conversion must be rejected")
+        } catch let error as RemoteMutationError {
+            XCTAssertEqual(error, .validation)
+        }
+    }
+
+    func testProfileRemovalCascadesPersonaDraftClipsAndDefault() async throws {
+        let database = try await linkedDatabase()
+        let complete = completeDraft()
+        try await database.saveQuestionnaireDraft(complete)
+        _ = try await database.completeQuestionnaireDraft(
+            profileID: complete.profileID, authenticatedUserID: complete.accountUserID, calculatedAt: Phase1BFixture.now
+        )
+        let incomplete = QuestionnaireDraft(
+            id: UUID(), profileID: complete.profileID, accountUserID: complete.accountUserID,
+            episodeFrequency: .weekly, postEpisodeFeeling: nil, calmingPersonContext: nil,
+            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+        )
+        try await database.saveQuestionnaireDraft(incomplete)
+        let clipMetadata = clip(id: UUID(), source: .recorded, format: .m4a)
+        try await database.savePersonalAudioClipMetadata(clipMetadata, authenticatedUserID: Phase1BFixture.userID)
+        try await database.setLocalRecoveryAudioDefault(
+            .personalClip(clipMetadata.id), profileID: complete.profileID,
+            authenticatedUserID: complete.accountUserID, updatedAt: Phase1BFixture.now
+        )
+        try await database.removeProfileFromDevice(profileID: complete.profileID, expectedUserID: complete.accountUserID)
+        try await configureLinkedProfile(in: database)
+        let draft = try await database.questionnaireDraft(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
+        let persona = try await database.personaAnswerAggregate(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
+        let clips = try await database.personalAudioClipMetadata(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
+        let fallback = try await database.localRecoveryAudioDefault(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
+        XCTAssertNil(draft)
+        XCTAssertNil(persona)
+        XCTAssertTrue(clips.isEmpty)
+        XCTAssertNil(fallback)
+    }
+
     private func linkedDatabase() async throws -> LocalDatabase {
         let database = try LocalDatabase(path: temporaryDatabasePath())
+        try await configureLinkedProfile(in: database)
+        return database
+    }
+
+    private func configureLinkedProfile(in database: LocalDatabase) async throws {
         var profile = Phase1BFixture.profile()
         profile.ownership = .accountLinked
         profile.accountUserID = Phase1BFixture.userID
         profile.accountLinkState = .linked
         try await database.createProfile(profile, settings: Phase1BFixture.settings())
-        return database
+    }
+
+    private func completeDraft() -> QuestionnaireDraft {
+        QuestionnaireDraft(
+            id: UUID(), profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: .alone,
+            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+        )
+    }
+
+    private func clip(
+        id: UUID,
+        source: PersonalAudioSource,
+        format: PersonalAudioStorageFormat,
+        byteCount: Int64 = 1,
+        duration: Int64? = 1
+    ) -> PersonalAudioClipMetadata {
+        PersonalAudioClipMetadata(
+            id: id, profileID: Phase1BFixture.profileID, source: source, storageFormat: format,
+            byteCount: byteCount, durationMilliseconds: duration, createdOrImportedAt: Phase1BFixture.now,
+            availability: .ready, protectionVersion: 1
+        )
     }
 }

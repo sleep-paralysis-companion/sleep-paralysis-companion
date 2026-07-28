@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(54);
 
 select has_table('public', 'persona_answer_aggregates', 'complete persona aggregate exists remotely');
 select ok((select relrowsecurity from pg_class where oid = 'public.persona_answer_aggregates'::regclass), 'persona aggregate enables RLS');
@@ -104,6 +104,83 @@ select is((select count(*)::integer from public.mutation_receipts where idempote
 select throws_ok(
   $test$
   select * from public.apply_sync_mutation(
+    'c1000000-0000-4000-8000-000000000001', 'c2000000-0000-4000-8000-000000000002', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 1, 2,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a2000000-0000-4000-8000-000000000002","episode_frequency":"weekly","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":2}'::jsonb
+  )
+  $test$, '42501', null, 'forged owner_user_id is rejected by the trusted boundary'
+);
+select is((select count(*)::integer from public.mutation_receipts where idempotency_key = 'c2000000-0000-4000-8000-000000000002'), 0, 'forged owner leaves no receipt');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'c3000000-0000-4000-8000-000000000003', 'c4000000-0000-4000-8000-000000000004', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 1, 2,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"future","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":2}'::jsonb
+  )
+  $test$, '22023', null, 'invalid episode_frequency is rejected'
+);
+select is((select count(*)::integer from public.mutation_receipts where idempotency_key = 'c4000000-0000-4000-8000-000000000004'), 0, 'invalid episode_frequency leaves no receipt');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'c5000000-0000-4000-8000-000000000005', 'c6000000-0000-4000-8000-000000000006', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 1, 2,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"weekly","post_episode_feeling":"future","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":2}'::jsonb
+  )
+  $test$, '22023', null, 'invalid post_episode_feeling is rejected'
+);
+select is((select count(*)::integer from public.mutation_receipts where idempotency_key = 'c6000000-0000-4000-8000-000000000006'), 0, 'invalid post_episode_feeling leaves no receipt');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'c7000000-0000-4000-8000-000000000007', 'c8000000-0000-4000-8000-000000000008', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 1, 2,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"weekly","post_episode_feeling":"awake_scared","calming_person_context":"future","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":2}'::jsonb
+  )
+  $test$, '22023', null, 'invalid calming_person_context is rejected'
+);
+select is((select count(*)::integer from public.mutation_receipts where idempotency_key = 'c8000000-0000-4000-8000-000000000008'), 0, 'invalid calming_person_context leaves no receipt');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'c9000000-0000-4000-8000-000000000009', 'ca000000-0000-4000-8000-00000000000a', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 1, 2,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"weekly","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"future","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":2}'::jsonb
+  )
+  $test$, '22023', null, 'invalid routing_rule_version is rejected'
+);
+select is((select count(*)::integer from public.mutation_receipts where idempotency_key = 'ca000000-0000-4000-8000-00000000000a'), 0, 'invalid routing version leaves no receipt');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'cb000000-0000-4000-8000-00000000000b', 'cc000000-0000-4000-8000-00000000000c', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 1, 2,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"weekly","post_episode_feeling":"awake_scared","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":2}'::jsonb
+  )
+  $test$, '22023', null, 'incomplete persona payload is rejected'
+);
+select is((select count(*)::integer from public.mutation_receipts where idempotency_key = 'cc000000-0000-4000-8000-00000000000c'), 0, 'incomplete payload leaves no receipt');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'cd000000-0000-4000-8000-00000000000d', 'ce000000-0000-4000-8000-00000000000e', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 0, 1,
+    '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"weekly","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:01:00Z","updated_at":"2026-07-29T00:01:00Z","revision":1}'::jsonb
+  )
+  $test$, '40001', null, 'stale persona base/entity revision conflicts'
+);
+select is((select count(*)::integer from public.mutation_receipts where idempotency_key = 'ce000000-0000-4000-8000-00000000000e'), 0, 'revision conflict leaves no receipt');
+
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
     'b3100000-0000-4000-8000-000000000003', 'b2000000-0000-4000-8000-000000000002', 'persona',
     'a3000000-0000-4000-8000-000000000003', 'upsert', 0, 1,
     '{"id":"a3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","episode_frequency":"monthly","post_episode_feeling":"awake_scared","calming_person_context":"alone","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:00:00Z","updated_at":"2026-07-29T00:00:00Z","revision":1}'::jsonb
@@ -189,6 +266,70 @@ select throws_ok(
   )
   $test$, '23514', null, 'tombstone prevents stale persona resurrection'
 );
+
+select ok(
+  has_function_privilege(
+    'authenticated',
+    to_regprocedure('public.apply_sync_mutation(uuid,uuid,text,uuid,text,bigint,bigint,jsonb)'),
+    'EXECUTE'
+  ),
+  'authenticated can invoke the public mutation wrapper'
+);
+select ok(
+  not has_function_privilege(
+    'anon',
+    to_regprocedure('public.apply_sync_mutation(uuid,uuid,text,uuid,text,bigint,bigint,jsonb)'),
+    'EXECUTE'
+  ),
+  'anon cannot invoke the public mutation wrapper'
+);
+select ok(
+  not exists (
+    select 1
+    from pg_proc procedure
+    join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    cross join lateral aclexplode(coalesce(procedure.proacl, acldefault('f', procedure.proowner))) privilege
+    where namespace.nspname = 'public'
+      and procedure.proname = 'apply_sync_mutation'
+      and privilege.grantee = 0
+      and privilege.privilege_type = 'EXECUTE'
+  ),
+  'PUBLIC execution is revoked from the public mutation wrapper'
+);
+select ok(
+  to_regprocedure('public.apply_sync_mutation_trusted(uuid,uuid,text,uuid,text,bigint,bigint,jsonb)') is null,
+  'private trusted mutation function is not exposed through the public API schema'
+);
+select ok(
+  to_regprocedure('private.apply_sync_mutation_legacy(uuid,uuid,text,uuid,text,bigint,bigint,jsonb)') is not null,
+  'legacy mutation implementation remains present for supported legacy entities'
+);
+select lives_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'd1000000-0000-4000-8000-000000000001', 'd2000000-0000-4000-8000-000000000002', 'profile',
+    'd3000000-0000-4000-8000-000000000003', 'upsert', 0, 1,
+    '{"id":"d3000000-0000-4000-8000-000000000003","owner_user_id":"a1000000-0000-4000-8000-000000000001","profile_created_at":"2026-07-29T00:00:00Z","revision":1}'::jsonb
+  )
+  $test$, 'legacy profile mutation remains compatible through the checked definer chain'
+);
+
+set local role anon;
+select throws_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'cf000000-0000-4000-8000-00000000000f', 'd0000000-0000-4000-8000-000000000010', 'persona',
+    'a3000000-0000-4000-8000-000000000003', 'upsert', 0, 1, '{}'::jsonb
+  )
+  $test$, '42501', null, 'anon execution of the public wrapper is denied'
+);
+set local role authenticated;
+
+reset role;
+delete from auth.users where id = 'a1000000-0000-4000-8000-000000000001';
+select is((select count(*)::integer from public.persona_answer_aggregates), 0, 'account deletion leaves no persona rows');
+select is((select count(*)::integer from public.mutation_receipts), 0, 'account deletion cascades owned mutation receipts');
+select is((select count(*)::integer from public.deletion_tombstones), 0, 'account deletion cascades owned persona tombstones');
 
 set local role anon;
 select throws_ok($test$select * from public.persona_answer_aggregates$test$, '42501', null, 'anon cannot select persona rows');
