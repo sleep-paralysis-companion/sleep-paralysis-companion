@@ -19,16 +19,18 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.buttons["welcome.continue"].tap()
 
         XCTAssertTrue(app.staticTexts["notice.title"].waitForExistence(timeout: 5))
-        XCTAssertTrue(
-            app.staticTexts[
-                "Sleep Paralysis Companion is a nonmedical wellness tool. It does not diagnose, detect, "
-                    + "monitor, predict, prevent, or treat sleep paralysis, and it is not an emergency service."
-            ].exists
+        let boundaryClaim = app.staticTexts["notice.claim.001"]
+        XCTAssertTrue(boundaryClaim.exists)
+        XCTAssertEqual(
+            boundaryClaim.label,
+            "Sleep Paralysis Companion is a nonmedical wellness tool. It does not diagnose, detect, "
+                + "monitor, predict, prevent, or treat sleep paralysis, and it is not an emergency service."
         )
-        XCTAssertTrue(
-            app.staticTexts[
-                "The app responds only when you choose an action or enter information."
-            ].exists
+        let responseClaim = app.staticTexts["notice.claim.002"]
+        XCTAssertTrue(responseClaim.exists)
+        XCTAssertEqual(
+            responseClaim.label,
+            "The app responds only when you choose an action or enter information."
         )
         makeHittable(app.buttons["notice.alarm.button"], in: app)
         makeHittable(app.buttons["notice.privacy.button"], in: app)
@@ -69,7 +71,7 @@ final class ApplicationLaunchUITests: XCTestCase {
     }
 
     @MainActor
-    func testTypedRouteRestoresAfterRelaunch() {
+    func testTypedRouteSurvivesBackgroundAndForceTerminationFallsBackSafely() {
         let app = freshApplication()
         app.launch()
         completeOnboarding(app)
@@ -79,10 +81,17 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(privacyButton.waitForExistence(timeout: 5))
         privacyButton.tap()
         XCTAssertTrue(app.staticTexts["privacy.title"].waitForExistence(timeout: 5))
+
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(app.staticTexts["privacy.title"].waitForExistence(timeout: 8))
         app.terminate()
 
         app.launch()
-        XCTAssertTrue(app.staticTexts["privacy.title"].waitForExistence(timeout: 8))
+        let restoredPrivacy = app.staticTexts["privacy.title"]
+        if !restoredPrivacy.waitForExistence(timeout: 4) {
+            XCTAssertTrue(app.staticTexts["home.title"].waitForExistence(timeout: 8))
+        }
     }
 
     @MainActor

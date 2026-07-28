@@ -69,8 +69,10 @@ struct ProductNoticeView: View {
                     .accessibilityAddTraits(.isHeader)
                 Text("notice.claim.001")
                     .font(AppTypographyRole.body)
+                    .accessibilityIdentifier("notice.claim.001")
                 Text("notice.claim.002")
                     .font(AppTypographyRole.body)
+                    .accessibilityIdentifier("notice.claim.002")
             }
         }
         .accessibilityIdentifier("notice.boundary.card")

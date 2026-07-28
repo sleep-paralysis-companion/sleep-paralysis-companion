@@ -139,6 +139,28 @@ final class NavigationStateTests: XCTestCase {
     }
 
     @MainActor
+    func testCurrentNavigationStateRoundTripsThroughTheRestorationEnvelope() async {
+        let model = makeModel(
+            store: InMemoryOnboardingStore(profile: Phase1CFixture.profile())
+        )
+        model.activate()
+        await waitForAppModel { model.launchDestination == .home }
+        model.send(.selectTab(.settings))
+        model.send(.open(.dataPrivacy))
+        model.send(.present(.accessUnavailable))
+
+        let restoredModel = makeModel(
+            store: InMemoryOnboardingStore(profile: Phase1CFixture.profile())
+        )
+        restoredModel.activate(restoredState: model.restorationValue)
+        await waitForAppModel { restoredModel.launchDestination == .home }
+
+        XCTAssertEqual(restoredModel.selectedTab, .settings)
+        XCTAssertEqual(restoredModel.path, [.dataPrivacy])
+        XCTAssertEqual(restoredModel.presentedSheet, .accessUnavailable)
+    }
+
+    @MainActor
     func testMalformedStaleAndFutureRestorationFallsBackToHomeRoot() async {
         let wrongProfile = UUID(uuidString: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
             ?? UUID()

@@ -60,7 +60,9 @@ and optional sheet. It is stored through `SceneStorage`.
 
 Restoration is accepted only when its schema version and local profile ID match. Malformed,
 unsupported-future, or stale-profile data falls back to Home with an empty path. Deep links use
-the local `spc` scheme resolver and reject unknown schemes/destinations.
+the local `spc` scheme resolver and reject unknown schemes/destinations. Scene restoration keeps
+the typed route while a scene is backgrounded. A user- or test-forced process termination may
+discard scene-scoped state; in that case launch deterministically returns to the safe Home root.
 
 Auth-state changes update an explicit account-access state without deleting or replacing the
 local profile. Authentication remains reachable only from the user-selected Sync route.
