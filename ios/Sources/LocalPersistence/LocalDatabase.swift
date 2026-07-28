@@ -600,6 +600,8 @@ actor LocalDatabase {
             try pool.write(body)
         } catch let error as Phase1BValidationError {
             throw error
+        } catch let error as PersonaAudioValidationError {
+            throw error
         } catch let error as AuthenticationError {
             throw error
         } catch let error as LocalDatabaseError {

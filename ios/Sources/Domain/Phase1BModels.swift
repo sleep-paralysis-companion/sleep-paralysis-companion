@@ -178,6 +178,7 @@ nonisolated enum SyncEntityType: String, Codable, CaseIterable, Sendable {
     case settings
     case alarm
     case checkIn
+    case persona
     case tombstone
 
     var remoteName: String {

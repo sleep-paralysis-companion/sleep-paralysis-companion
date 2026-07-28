@@ -187,3 +187,56 @@ nonisolated struct ConversionCheckpointRecord: Codable, FetchableRecord, Persist
     var startedAt: Double
     var updatedAt: Double
 }
+
+nonisolated struct QuestionnaireDraftRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
+    static let databaseTableName = "questionnaire_drafts"
+
+    var id: String
+    var profileID: String
+    var accountUserID: String
+    var episodeFrequency: String?
+    var postEpisodeFeeling: String?
+    var calmingPersonContext: String?
+    var createdAt: Double
+    var updatedAt: Double
+}
+
+nonisolated struct PersonaAnswerAggregateRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
+    static let databaseTableName = "persona_answer_aggregates"
+
+    var id: String
+    var profileID: String
+    var accountUserID: String
+    var episodeFrequency: String
+    var postEpisodeFeeling: String
+    var calmingPersonContext: String
+    var derivedPersona: String
+    var routingRuleVersion: String
+    var calculatedAt: Double
+    var createdAt: Double
+    var updatedAt: Double
+    var revision: Int64
+}
+
+nonisolated struct PersonalAudioClipMetadataRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
+    static let databaseTableName = "personal_audio_clip_metadata"
+
+    var id: String
+    var profileID: String
+    var source: String
+    var storageFormat: String
+    var byteCount: Int64
+    var durationMilliseconds: Int64?
+    var createdOrImportedAt: Double
+    var availability: String
+    var protectionVersion: Int
+}
+
+nonisolated struct LocalRecoveryAudioDefaultRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
+    static let databaseTableName = "local_recovery_audio_defaults"
+
+    var profileID: String
+    var personalClipID: String?
+    var catalogItemID: String?
+    var updatedAt: Double
+}

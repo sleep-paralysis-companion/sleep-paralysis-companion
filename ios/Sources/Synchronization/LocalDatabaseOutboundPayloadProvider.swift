@@ -3,8 +3,10 @@ import Foundation
 nonisolated enum SyncMutationCompatibility {
     static func allows(operation: SyncOperationKind, entityType: SyncEntityType) -> Bool {
         switch operation {
-        case .upsert, .convert:
+        case .upsert:
             entityType != .tombstone
+        case .convert:
+            entityType != .tombstone && entityType != .persona
         case .delete:
             entityType == .tombstone
         }
@@ -66,6 +68,11 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
             )
         case .checkIn:
             try await checkInPayload(
+                operation: operation,
+                ownerUserID: authenticatedUserID
+            )
+        case .persona:
+            try await personaPayload(
                 operation: operation,
                 ownerUserID: authenticatedUserID
             )
@@ -230,6 +237,42 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
                 entityID: tombstone.entityID,
                 deletedRevision: tombstone.deletedRevision,
                 deletedAt: tombstone.deletedAt
+            )
+        )
+    }
+
+    private func personaPayload(
+        operation: SynchronizationOperation,
+        ownerUserID: UUID
+    ) async throws -> RemoteMutationPayload {
+        guard operation.operation == .upsert,
+              operation.entityID == operation.profileID,
+              let aggregate = try await database.personaAnswerAggregate(
+                  profileID: operation.profileID,
+                  authenticatedUserID: ownerUserID
+              ),
+              aggregate.id == operation.entityID,
+              aggregate.accountUserID == ownerUserID,
+              aggregate.revision == operation.localRevision,
+              aggregate.derivedPersona == PersonaRouting.derive(
+                  episodeFrequency: aggregate.episodeFrequency,
+                  postEpisodeFeeling: aggregate.postEpisodeFeeling,
+                  calmingPersonContext: aggregate.calmingPersonContext
+              )
+        else {
+            throw RemoteMutationError.validation
+        }
+        return .persona(
+            RemotePersonaAnswerAggregateDTO(
+                id: aggregate.id,
+                ownerUserID: ownerUserID,
+                episodeFrequency: aggregate.episodeFrequency.rawValue,
+                postEpisodeFeeling: aggregate.postEpisodeFeeling.rawValue,
+                calmingPersonContext: aggregate.calmingPersonContext.rawValue,
+                routingRuleVersion: aggregate.routingRuleVersion,
+                calculatedAt: aggregate.calculatedAt,
+                updatedAt: aggregate.updatedAt,
+                revision: aggregate.revision
             )
         )
     }

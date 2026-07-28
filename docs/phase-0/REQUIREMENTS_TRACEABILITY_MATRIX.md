@@ -39,6 +39,15 @@ legacy source with the canonical contracts.
 | `P1-ONB-008` | Relaunch during onboarding restores a valid step and state. | `BASELINE` | `S-EXEC` Phase 1C; `S-SWIFT` §§9, 15 | Pending | State-restoration tests for every step, termination, deep link, and invalidated route. |
 | `P1-ONB-009` | Reconcile the exact onboarding questions and branch logic before implementation. | `BASELINE` | `SPEC-P1-001` §§6.1, 7.1; `NAV-P1-001` `SCR-002`–`SCR-004` | Pending Phase 1C verification | Canonical flow contains no questions: Welcome → boundary/privacy summary → atomic guest profile → Home. |
 
+### 29 July 2026 persona/audio delta traceability
+
+| ID | Requirement | Status | Sources | Minimum acceptance evidence |
+|---|---|---|---|---|
+| `P1B-PA-001` | Persist Q1-Q3 drafts only locally for the exact authenticated account; incomplete state has no persona or sync payload. | `IMPLEMENTED — hosted verification pending` | Persona realignment section 2; delta evidence | Unit/integration wrong-account, resume, atomic-completion, and no-outbound-draft tests; exact-head hosted run. |
+| `P1B-PA-002` | Derive one complete current persona deterministically from all 36 answer combinations. | `IMPLEMENTED — hosted verification pending` | Persona realignment section 2 | 4/4/4/24 routing test, SQLite migration tests, and PostgreSQL generated-value/RPC tests. |
+| `P1B-PA-003` | Keep personal-audio metadata/device default local only; do not represent personal audio remotely. | `IMPLEMENTED — hosted verification pending` | Persona realignment section 4; delta evidence | Metadata/redaction/deletion tests and pgTAP remote-absence test. |
+| `P1B-PA-004` | Use only Apple/Google authentication; keep provider grants separate from Supabase sessions. | `BASELINE — provider-console evidence pending` | Persona realignment section 1; auth lifecycle | Dependency-injected auth/revocation tests plus provider-console verification; no provider configuration in this delta. |
+
 ## Sleep preparation, schedule, reminders, and audio
 
 | ID | Requirement | Status | Sources | Figma | Minimum acceptance evidence |

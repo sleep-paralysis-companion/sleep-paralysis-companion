@@ -198,3 +198,134 @@ nonisolated extension SynchronizationOperationRecord {
         )
     }
 }
+
+nonisolated extension QuestionnaireDraftRecord {
+    init(_ value: QuestionnaireDraft) {
+        id = value.id.uuidString
+        profileID = value.profileID.uuidString
+        accountUserID = value.accountUserID.uuidString
+        episodeFrequency = value.episodeFrequency?.rawValue
+        postEpisodeFeeling = value.postEpisodeFeeling?.rawValue
+        calmingPersonContext = value.calmingPersonContext?.rawValue
+        createdAt = value.createdAt.timeIntervalSince1970
+        updatedAt = value.updatedAt.timeIntervalSince1970
+    }
+
+    func domainValue() throws -> QuestionnaireDraft {
+        guard let id = UUID(uuidString: id),
+              let profileID = UUID(uuidString: profileID),
+              let accountUserID = UUID(uuidString: accountUserID),
+              let episodeFrequency = optionalEnum(episodeFrequency, EpisodeFrequency.init(rawValue:)),
+              let postEpisodeFeeling = optionalEnum(postEpisodeFeeling, PostEpisodeFeeling.init(rawValue:)),
+              let calmingPersonContext = optionalEnum(
+                  calmingPersonContext,
+                  CalmingPersonContext.init(rawValue:)
+              )
+        else {
+            throw RecordMappingError.invalidStoredValue(table: Self.databaseTableName, field: "enum")
+        }
+        return QuestionnaireDraft(
+            id: id,
+            profileID: profileID,
+            accountUserID: accountUserID,
+            episodeFrequency: episodeFrequency,
+            postEpisodeFeeling: postEpisodeFeeling,
+            calmingPersonContext: calmingPersonContext,
+            createdAt: Date(timeIntervalSince1970: createdAt),
+            updatedAt: Date(timeIntervalSince1970: updatedAt)
+        )
+    }
+}
+
+private func optionalEnum<Value>(
+    _ rawValue: String?,
+    _ transform: (String) -> Value?
+) -> Value?? {
+    guard let rawValue else {
+        return .some(nil)
+    }
+    guard let value = transform(rawValue) else {
+        return nil
+    }
+    return .some(value)
+}
+
+nonisolated extension PersonaAnswerAggregateRecord {
+    init(_ value: PersonaAnswerAggregate) {
+        id = value.id.uuidString
+        profileID = value.profileID.uuidString
+        accountUserID = value.accountUserID.uuidString
+        episodeFrequency = value.episodeFrequency.rawValue
+        postEpisodeFeeling = value.postEpisodeFeeling.rawValue
+        calmingPersonContext = value.calmingPersonContext.rawValue
+        derivedPersona = value.derivedPersona.rawValue
+        routingRuleVersion = value.routingRuleVersion
+        calculatedAt = value.calculatedAt.timeIntervalSince1970
+        createdAt = value.createdAt.timeIntervalSince1970
+        updatedAt = value.updatedAt.timeIntervalSince1970
+        revision = value.revision
+    }
+
+    func domainValue() throws -> PersonaAnswerAggregate {
+        guard let id = UUID(uuidString: id),
+              let profileID = UUID(uuidString: profileID),
+              let accountUserID = UUID(uuidString: accountUserID),
+              let episodeFrequency = EpisodeFrequency(rawValue: episodeFrequency),
+              let postEpisodeFeeling = PostEpisodeFeeling(rawValue: postEpisodeFeeling),
+              let calmingPersonContext = CalmingPersonContext(rawValue: calmingPersonContext),
+              let derivedPersona = DerivedPersona(rawValue: derivedPersona)
+        else {
+            throw RecordMappingError.invalidStoredValue(table: Self.databaseTableName, field: "enum")
+        }
+        return PersonaAnswerAggregate(
+            id: id,
+            profileID: profileID,
+            accountUserID: accountUserID,
+            episodeFrequency: episodeFrequency,
+            postEpisodeFeeling: postEpisodeFeeling,
+            calmingPersonContext: calmingPersonContext,
+            derivedPersona: derivedPersona,
+            routingRuleVersion: routingRuleVersion,
+            calculatedAt: Date(timeIntervalSince1970: calculatedAt),
+            createdAt: Date(timeIntervalSince1970: createdAt),
+            updatedAt: Date(timeIntervalSince1970: updatedAt),
+            revision: revision
+        )
+    }
+}
+
+nonisolated extension PersonalAudioClipMetadataRecord {
+    init(_ value: PersonalAudioClipMetadata) {
+        id = value.id.uuidString
+        profileID = value.profileID.uuidString
+        source = value.source.rawValue
+        storageFormat = value.storageFormat.rawValue
+        byteCount = value.byteCount
+        durationMilliseconds = value.durationMilliseconds
+        createdOrImportedAt = value.createdOrImportedAt.timeIntervalSince1970
+        availability = value.availability.rawValue
+        protectionVersion = value.protectionVersion
+    }
+
+    func domainValue() throws -> PersonalAudioClipMetadata {
+        guard let id = UUID(uuidString: id),
+              let profileID = UUID(uuidString: profileID),
+              let source = PersonalAudioSource(rawValue: source),
+              let storageFormat = PersonalAudioStorageFormat(rawValue: storageFormat),
+              let availability = PersonalAudioAvailability(rawValue: availability)
+        else {
+            throw RecordMappingError.invalidStoredValue(table: Self.databaseTableName, field: "enum")
+        }
+        return PersonalAudioClipMetadata(
+            id: id,
+            profileID: profileID,
+            source: source,
+            storageFormat: storageFormat,
+            byteCount: byteCount,
+            durationMilliseconds: durationMilliseconds,
+            createdOrImportedAt: Date(timeIntervalSince1970: createdOrImportedAt),
+            availability: availability,
+            protectionVersion: protectionVersion
+        )
+    }
+}

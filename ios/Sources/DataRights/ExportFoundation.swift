@@ -7,6 +7,7 @@ nonisolated struct LocalExportSnapshot: Sendable {
     let settings: AppSettings
     let alarm: AlarmPreference?
     let checkIns: [SubmittedCheckIn]
+    let personaAnswerAggregate: PersonaAnswerAggregate? = nil
     let scope: ExportScope
 }
 
@@ -112,12 +113,15 @@ nonisolated struct LocalExportService: Sendable {
         let checkInsData = try encoder.encode(visibleCheckIns)
         let checkInsCSV = Data(csv(checkIns: visibleCheckIns).utf8)
 
-        let provisional = [
+        var provisional: [(String, Data)] = [
             ("settings.json", settingsData),
             ("alarm.json", alarmData),
             ("checkins.json", checkInsData),
             ("checkins.csv", checkInsCSV),
         ]
+        if let personaAnswerAggregate = snapshot.personaAnswerAggregate {
+            provisional.append(("persona.json", try encoder.encode(personaAnswerAggregate)))
+        }
         let manifest = ExportManifest(
             exportVersion: metadata.manifestVersion,
             appVersion: snapshot.appVersion,

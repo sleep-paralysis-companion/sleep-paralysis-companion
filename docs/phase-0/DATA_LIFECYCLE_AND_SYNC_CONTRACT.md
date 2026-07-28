@@ -87,6 +87,19 @@ and consent/legal basis are approved.
 
 ## 3. Entity inventory
 
+### Phase 1B persona/audio delta inventory — implementation evidence pending
+
+This subsection records the approved 29 July 2026 delta without rewriting the historical rows below.
+
+| Entity | Storage | Purpose | Synchronization/export/deletion |
+|---|---|---|---|
+| Questionnaire draft | Protected local GRDB, exact authenticated profile/account | Resume/edit incomplete Q1-Q3 | Never synchronized or exported; local/account deletion removes it |
+| Complete persona aggregate | Protected local GRDB and account-owned remote Postgres | Current Q1-Q3 and deterministic recommended-setup routing | Sync only as complete aggregate; structured export includes enum answers, derived persona, rule version, calculation instant; delete via tombstone/account cascade |
+| Personal clip metadata | Protected local GRDB only | Future local clip lifecycle and explicit default selection | Never synchronized/exported; deletion removes metadata and selected local default |
+| Personal audio bytes/files | Later protected file implementation only | Explicit person-selected comfort audio | Never placed in GRDB, Supabase, app-controlled backup, structured export, diagnostics, or remote deletion |
+
+The remote delta has no personal-audio table, bucket, object, metadata, reference, or policy. Hosted isolated-backend verification remains required before any status is promoted.
+
 ### `DATA-PROFILE` — Local profile
 
 | Field | Type | Sensitivity | Purpose | Remote |

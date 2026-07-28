@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 
 nonisolated enum LocalSchema {
-    static let currentVersion = 2
+    static let currentVersion = 3
 
     static func migrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
@@ -265,6 +265,129 @@ nonisolated enum LocalSchema {
                 );
 
                 UPDATE spc_schema_metadata SET schema_version = 2 WHERE singleton = 1;
+                """
+            )
+        }
+        migrator.registerMigration("v3_persona_and_local_personal_audio") { database in
+            try database.execute(
+                sql: """
+                ALTER TABLE sync_operations RENAME TO sync_operations_v2;
+                CREATE TABLE sync_operations (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    entityType TEXT NOT NULL CHECK (
+                        entityType IN ('profile', 'settings', 'alarm', 'checkIn', 'persona', 'tombstone')
+                    ),
+                    entityID TEXT NOT NULL,
+                    operation TEXT NOT NULL CHECK (operation IN ('upsert', 'delete', 'convert')),
+                    idempotencyKey TEXT NOT NULL UNIQUE,
+                    baseRevision INTEGER NOT NULL CHECK (baseRevision >= 0),
+                    localRevision INTEGER NOT NULL CHECK (localRevision > 0),
+                    state TEXT NOT NULL CHECK (
+                        state IN (
+                            'pending', 'syncing', 'synced', 'conflicted',
+                            'failedRecoverable', 'authRequired', 'deleted'
+                        )
+                    ),
+                    attemptCount INTEGER NOT NULL CHECK (attemptCount >= 0),
+                    nextAttemptAt REAL,
+                    lastErrorCategory TEXT CHECK (
+                        lastErrorCategory IN (
+                            'network', 'backendUnavailable', 'authentication',
+                            'authorization', 'validation', 'conflict', 'cancelled'
+                        )
+                    ),
+                    createdAt REAL NOT NULL,
+                    updatedAt REAL NOT NULL,
+                    UNIQUE (profileID, entityType, entityID, operation, localRevision)
+                );
+                INSERT INTO sync_operations SELECT * FROM sync_operations_v2;
+                DROP TABLE sync_operations_v2;
+                CREATE INDEX sync_operations_ready
+                    ON sync_operations(profileID, state, nextAttemptAt, createdAt);
+                CREATE UNIQUE INDEX sync_operations_one_inflight
+                    ON sync_operations(profileID, entityType, entityID)
+                    WHERE state = 'syncing';
+
+                CREATE TABLE questionnaire_drafts (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL UNIQUE REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    accountUserID TEXT NOT NULL,
+                    episodeFrequency TEXT CHECK (
+                        episodeFrequency IN ('rarely', 'monthly', 'weekly', 'almost_nightly')
+                    ),
+                    postEpisodeFeeling TEXT CHECK (
+                        postEpisodeFeeling IN (
+                            'shake_it_off', 'awake_scared', 'too_frightened_to_close_eyes'
+                        )
+                    ),
+                    calmingPersonContext TEXT CHECK (
+                        calmingPersonContext IN ('beside_me', 'not_always_present', 'alone')
+                    ),
+                    createdAt REAL NOT NULL,
+                    updatedAt REAL NOT NULL CHECK (updatedAt >= createdAt)
+                );
+                CREATE INDEX questionnaire_drafts_account_profile
+                    ON questionnaire_drafts(accountUserID, profileID);
+
+                CREATE TABLE persona_answer_aggregates (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL UNIQUE REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    accountUserID TEXT NOT NULL,
+                    episodeFrequency TEXT NOT NULL CHECK (
+                        episodeFrequency IN ('rarely', 'monthly', 'weekly', 'almost_nightly')
+                    ),
+                    postEpisodeFeeling TEXT NOT NULL CHECK (
+                        postEpisodeFeeling IN (
+                            'shake_it_off', 'awake_scared', 'too_frightened_to_close_eyes'
+                        )
+                    ),
+                    calmingPersonContext TEXT NOT NULL CHECK (
+                        calmingPersonContext IN ('beside_me', 'not_always_present', 'alone')
+                    ),
+                    derivedPersona TEXT NOT NULL CHECK (
+                        derivedPersona IN (
+                            'frequent_intense_person_not_always_present',
+                            'frequent_intense_person_beside_user',
+                            'frequent_intense_no_calming_person', 'general_default'
+                        )
+                    ),
+                    routingRuleVersion TEXT NOT NULL CHECK (length(routingRuleVersion) BETWEEN 1 AND 64),
+                    calculatedAt REAL NOT NULL,
+                    createdAt REAL NOT NULL,
+                    updatedAt REAL NOT NULL CHECK (updatedAt >= createdAt),
+                    revision INTEGER NOT NULL CHECK (revision > 0)
+                );
+                CREATE INDEX persona_answer_aggregates_account_profile
+                    ON persona_answer_aggregates(accountUserID, profileID);
+
+                CREATE TABLE personal_audio_clip_metadata (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    source TEXT NOT NULL CHECK (source IN ('recorded', 'imported')),
+                    storageFormat TEXT NOT NULL CHECK (storageFormat IN ('m4a', 'mp3', 'wav', 'aiff', 'caf')),
+                    byteCount INTEGER NOT NULL CHECK (byteCount BETWEEN 0 AND 26214400),
+                    durationMilliseconds INTEGER CHECK (durationMilliseconds BETWEEN 0 AND 180000),
+                    createdOrImportedAt REAL NOT NULL,
+                    availability TEXT NOT NULL CHECK (availability IN ('ready', 'unavailable', 'corrupt')),
+                    protectionVersion INTEGER NOT NULL CHECK (protectionVersion > 0),
+                    CHECK (source <> 'recorded' OR storageFormat = 'm4a')
+                );
+                CREATE INDEX personal_audio_clip_metadata_profile_created
+                    ON personal_audio_clip_metadata(profileID, createdOrImportedAt);
+
+                CREATE TABLE local_recovery_audio_defaults (
+                    profileID TEXT PRIMARY KEY NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    personalClipID TEXT REFERENCES personal_audio_clip_metadata(id) ON DELETE CASCADE,
+                    catalogItemID TEXT REFERENCES audio_catalog(id),
+                    updatedAt REAL NOT NULL,
+                    CHECK (
+                        (personalClipID IS NOT NULL AND catalogItemID IS NULL)
+                        OR (personalClipID IS NULL AND catalogItemID IS NOT NULL)
+                    )
+                );
+
+                UPDATE spc_schema_metadata SET schema_version = 3 WHERE singleton = 1;
                 """
             )
         }

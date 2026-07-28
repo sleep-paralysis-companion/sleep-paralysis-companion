@@ -102,6 +102,30 @@ nonisolated struct RemoteTombstoneDTO: Codable, Equatable, Sendable {
     }
 }
 
+nonisolated struct RemotePersonaAnswerAggregateDTO: Codable, Equatable, Sendable {
+    let id: UUID
+    let ownerUserID: UUID
+    let episodeFrequency: String
+    let postEpisodeFeeling: String
+    let calmingPersonContext: String
+    let routingRuleVersion: String
+    let calculatedAt: Date
+    let updatedAt: Date
+    let revision: Int64
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case ownerUserID = "owner_user_id"
+        case episodeFrequency = "episode_frequency"
+        case postEpisodeFeeling = "post_episode_feeling"
+        case calmingPersonContext = "calming_person_context"
+        case routingRuleVersion = "routing_rule_version"
+        case calculatedAt = "calculated_at"
+        case updatedAt = "updated_at"
+        case revision
+    }
+}
+
 nonisolated struct RemoteMutationReceiptDTO: Codable, Equatable, Sendable {
     let id: UUID
     let ownerUserID: UUID
@@ -169,6 +193,7 @@ nonisolated enum RemoteMutationPayload: Encodable, Sendable {
     case settings(RemoteSettingsDTO)
     case alarm(RemoteAlarmPreferenceDTO)
     case checkIn(RemoteCheckInDTO)
+    case persona(RemotePersonaAnswerAggregateDTO)
     case tombstone(RemoteTombstoneDTO)
 
     var entityType: SyncEntityType {
@@ -181,6 +206,8 @@ nonisolated enum RemoteMutationPayload: Encodable, Sendable {
             .alarm
         case .checkIn:
             .checkIn
+        case .persona:
+            .persona
         case .tombstone:
             .tombstone
         }
@@ -195,6 +222,8 @@ nonisolated enum RemoteMutationPayload: Encodable, Sendable {
         case let .alarm(value):
             value.id
         case let .checkIn(value):
+            value.id
+        case let .persona(value):
             value.id
         case let .tombstone(value):
             value.id
@@ -211,6 +240,8 @@ nonisolated enum RemoteMutationPayload: Encodable, Sendable {
             value.ownerUserID
         case let .checkIn(value):
             value.ownerUserID
+        case let .persona(value):
+            value.ownerUserID
         case let .tombstone(value):
             value.ownerUserID
         }
@@ -226,6 +257,8 @@ nonisolated enum RemoteMutationPayload: Encodable, Sendable {
             value.revision
         case let .checkIn(value):
             value.revision
+        case let .persona(value):
+            value.revision
         case let .tombstone(value):
             value.deletedRevision
         }
@@ -240,6 +273,8 @@ nonisolated enum RemoteMutationPayload: Encodable, Sendable {
         case let .alarm(value):
             try value.encode(to: encoder)
         case let .checkIn(value):
+            try value.encode(to: encoder)
+        case let .persona(value):
             try value.encode(to: encoder)
         case let .tombstone(value):
             try value.encode(to: encoder)

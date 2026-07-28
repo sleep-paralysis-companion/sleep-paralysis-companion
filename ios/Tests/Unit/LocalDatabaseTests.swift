@@ -11,7 +11,7 @@ final class LocalDatabaseTests: XCTestCase {
         let version = try await database.schemaVersion()
         let profile = try await database.profile(id: Phase1BFixture.profileID)
         let settings = try await database.settings(profileID: Phase1BFixture.profileID)
-        XCTAssertEqual(version, 2)
+        XCTAssertEqual(version, 3)
         XCTAssertEqual(profile, Phase1BFixture.profile())
         XCTAssertEqual(settings, Phase1BFixture.settings())
     }
@@ -294,14 +294,23 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), bytes)
     }
 
-    func testMigrationFromCommittedV1ToV2() async throws {
+    func testMigrationFromCommittedV1ToV3() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v1_core_local_data")
 
         let migrated = try LocalDatabase(path: path)
         let version = try await migrated.schemaVersion()
-        XCTAssertEqual(version, 2)
+        XCTAssertEqual(version, 3)
+    }
+
+    func testMigrationFromCommittedV2ToV3() async throws {
+        let path = temporaryDatabasePath()
+        let queue = try DatabaseQueue(path: path)
+        try LocalSchema.migrator().migrate(queue, upTo: "v2_sync_security_foundation")
+
+        let migrated = try LocalDatabase(path: path)
+        XCTAssertEqual(try await migrated.schemaVersion(), 3)
     }
 
     func testInterruptedMigrationRollsBackItsTransaction() throws {

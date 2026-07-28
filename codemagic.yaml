@@ -31,6 +31,35 @@ workflows:
       - ios/SleepParalysisCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
       - ios/SleepParalysisCompanion.xcodeproj/xcshareddata/xcschemes/*.xcscheme
 
+  phase-1b-persona-audio-ios:
+    name: Phase 1B Persona Audio - Xcode 26.6 / iPhone 17 / iOS 26.5
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: 26.6
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/.build-tools
+        - $CM_BUILD_DIR/ios/.generated/SourcePackages
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: codex/phase-1b-persona-audio-delta
+          include: true
+          source: true
+      cancel_previous_builds: true
+    scripts:
+      - name: Verify exact persona/audio delta iOS head
+        script: bash scripts/verify_persona_audio_delta_ios.sh
+    artifacts:
+      - scripts/versions.env
+      - ios/TestResults/CodemagicEnvironment.txt
+      - ios/TestResults/*.xcresult
+      - ios/TestResults/Screenshots
+      - ios/SleepParalysisCompanion.xcodeproj/project.pbxproj
+      - ios/SleepParalysisCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
   phase-1c-isolated-backend:
     name: Phase 1C - Supabase 2.110.0 / Postgres 17 / pgTAP
     instance_type: linux_x2
@@ -52,6 +81,35 @@ workflows:
     scripts:
       - name: Verify exact Phase 1C isolated backend head
         script: bash scripts/verify_phase_1c_codemagic_backend.sh
+    artifacts:
+      - scripts/versions.env
+      - supabase/TestResults/CodemagicEnvironment.txt
+      - supabase/config.toml
+      - supabase/migrations
+      - supabase/tests
+      - supabase/functions/delete-account
+
+  phase-1b-persona-audio-isolated-backend:
+    name: Phase 1B Persona Audio - Supabase 2.110.0 / Postgres 17 / pgTAP
+    instance_type: linux_x2
+    max_build_duration: 35
+    environment:
+      ubuntu: 24.04
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.cache/deno
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: codex/phase-1b-persona-audio-delta
+          include: true
+          source: true
+      cancel_previous_builds: true
+    scripts:
+      - name: Verify exact persona/audio delta isolated backend head
+        script: bash scripts/verify_persona_audio_delta_backend.sh
     artifacts:
       - scripts/versions.env
       - supabase/TestResults/CodemagicEnvironment.txt
