@@ -1,5 +1,7 @@
 # Phase 0 Decision, Conflict, and Blocker Register
 
+> **29 July 2026 disposition.** `D0-003`, `D0-004`, `D0-009`, `D0-025`, `D0-026`, `R0-001`, and `R0-003` are superseded only to the extent stated in [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). The prior records remain historical evidence. The skipped/incomplete-question behavior is a new open decision and must not be inferred.
+
 **Register ID:** `DEC-P0-001`  
 **Status:** Current baseline; open approvals prevent Gate 0  
 **Updated:** 28 July 2026

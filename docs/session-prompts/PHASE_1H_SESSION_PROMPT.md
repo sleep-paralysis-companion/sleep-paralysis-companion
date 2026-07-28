@@ -1,5 +1,7 @@
 # Session Prompt: Phase 1H - Integrated Quality, Security, and Release Readiness
 
+> **Amended 29 July 2026.** Release validation must include the approved persona/local-only-personal-audio/just-in-time-recording boundary in [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). Earlier exclusion language is historical only.
+
 You are working in the SP / Paralux repository. This session is exclusively for **Phase 1H: Integrated quality, security, and release readiness**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate

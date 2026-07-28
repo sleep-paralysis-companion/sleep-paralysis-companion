@@ -1,5 +1,7 @@
 # Privacy Manifest and Required-Reason API Review
 
+> **Historical Phase 1A evidence - 29 July 2026.** This review predates the approved local-only personal-audio and just-in-time recording scope in [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). It does not validate the revised product boundary.
+
 ## Current manifest
 
 `ios/Resources/PrivacyInfo.xcprivacy` declares:

@@ -1,5 +1,7 @@
 # Source Reconciliation
 
+> **29 July 2026 disposition.** The approved questionnaire/persona and local-only personal-audio scope is [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). This prior source reconciliation remains discovery history where it classified those concepts as excluded or superseded; no Figma change is authorized.
+
 **Status:** Evidence baseline  
 **Reconciled:** 23 July 2026  
 **Clarified:** 25 July 2026  

@@ -1,5 +1,7 @@
 # Phase 1C Implementation and Architecture
 
+> **SUPERSEDED FOR PRODUCT ACCEPTANCE - 29 July 2026.** This documents the existing guest-only implementation, not the approved product. Its reusable foundation and required replacements are inventoried in [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). No claim here validates the revised authentication, persona, recording/import, widget, or schedule journey.
+
 ## Scope
 
 The implemented first-use flow is exactly:

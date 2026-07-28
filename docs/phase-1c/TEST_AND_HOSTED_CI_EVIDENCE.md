@@ -1,5 +1,7 @@
 # Phase 1C Test and Hosted-CI Evidence
 
+> **SUPERSEDED FOR PRODUCT ACCEPTANCE - 29 July 2026.** The jobs and coverage below test the obsolete guest-only flow. They do not validate the approved authenticated persona, local-only audio, recording/import, or widget/manual-action scope in [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md).
+
 Workflows:
 
 - `.github/workflows/phase-1c-onboarding.yml`

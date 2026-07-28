@@ -1,5 +1,7 @@
 # Phase 0 Control Index
 
+> **Current product-change entrypoint (29 July 2026):** [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) supersedes conflicting guest-only, questionnaire/persona, personal-audio/microphone, and Figma dispositions in this index's linked historical contracts.
+
 **Phase:** Product, claims, and feasibility lock  
 **Status:** Documentation baseline complete; Gate 0 **NOT PASSED**  
 **Baseline date:** 28 July 2026

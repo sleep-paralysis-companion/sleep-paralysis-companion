@@ -1,5 +1,7 @@
 # Onboarding State and Route Table
 
+> **SUPERSEDED FOR PRODUCT ACCEPTANCE - 29 July 2026.** This is the route table for the obsolete guest-only flow. The authenticated Q1-Q3/persona, recommended-setup, personal-audio, schedule, and Home journey is controlled by [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) and requires a replacement route table in a later implementation stage.
+
 ## Launch truth table
 
 | Local state | Notice state | Valid restoration | Launch result |

@@ -1,5 +1,7 @@
 # Architecture and Data Boundaries
 
+> **Phase 1B delta required - 29 July 2026.** This documents the previously implemented foundation. The approved persona/settings/local-personal-audio-metadata delta in [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) is not implemented or validated by this document; personal audio bytes remain out of every remote boundary.
+
 The Phase 1A inward dependency direction is preserved:
 
 `SwiftUI state -> use-case coordinators -> domain models/protocols -> local or remote adapters`

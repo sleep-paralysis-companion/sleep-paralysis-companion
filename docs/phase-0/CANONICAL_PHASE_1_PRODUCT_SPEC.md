@@ -1,5 +1,7 @@
 # Canonical Phase 1 Product Specification
 
+> **Superseded in part - 29 July 2026 product change.** The approved authenticated persona and personal-audio journey is controlled by [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). Where this document says guest-only, excludes questionnaire/persona or personal audio/recording, or treats those Figma concepts as superseded, the newer contract controls. The original text remains historical baseline evidence.
+
 **Specification ID:** `SPEC-P1-001`  
 **Version:** 0.12  
 **Status:** Product decisions approved by Satyam Shree; implementation,

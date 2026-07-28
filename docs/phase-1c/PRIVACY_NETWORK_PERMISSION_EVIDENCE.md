@@ -1,5 +1,7 @@
 # Privacy, Network, and Permission Evidence
 
+> **SUPERSEDED FOR PRODUCT ACCEPTANCE - 29 July 2026.** This is evidence for the prior no-microphone, guest-only implementation. The approved just-in-time recording permission and local-only personal-audio boundary is [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md); no revised implementation or permission evidence exists yet.
+
 ## Onboarding allowlist
 
 The production onboarding boundary accepts exactly five values:

@@ -1,5 +1,7 @@
 # SP / Paralux — Phase 1 Execution Plan
 
+> **29 July 2026 approved product-change override.** [Persona and Personal Audio Product Realignment](phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) controls the authenticated Q1-Q3/persona onboarding, local-only personal audio, microphone, widget/manual-action, and Phase 1B/1C delta scope. Any guest-only onboarding, questionnaire/persona exclusion, personal-recording exclusion, or incompatible Phase 1C sequence below is historical baseline text and is superseded.
+
 **Document status:** Initial operating plan for product, design, iOS, backend, QA, privacy, and release agents  
 **Scope:** Phase 1 iPhone application only  
 **Last reviewed:** 25 July 2026

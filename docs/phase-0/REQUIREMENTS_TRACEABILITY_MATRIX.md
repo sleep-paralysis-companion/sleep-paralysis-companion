@@ -1,5 +1,7 @@
 # Phase 1 Requirements Traceability Matrix
 
+> **Phase 1 change control - 29 July 2026.** Requirements that exclude questionnaire/persona collection, personal audio, recording, microphone permission, or authenticated onboarding are superseded by [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). A traceability-matrix delta is required before implementation; current rows remain historical baseline traceability.
+
 **Status:** Baseline v0.9 - Gate 0 not passed  
 **Prepared:** 21 July 2026  
 **Last updated:** 28 July 2026

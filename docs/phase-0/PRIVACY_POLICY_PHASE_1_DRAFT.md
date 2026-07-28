@@ -1,5 +1,7 @@
 # Sleep Paralysis Companion Privacy Policy - Phase 1 Draft
 
+> **Not publishable; product-change update required - 29 July 2026.** Any statement excluding the approved local-only personal recording/import or its just-in-time microphone permission is superseded by [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). Final legal copy, disclosures, and purpose strings remain unapproved.
+
 **Document ID:** `PRIV-P1-002`  
 **Status:** Product-accurate working draft - not legal advice and not approved
 for publication  

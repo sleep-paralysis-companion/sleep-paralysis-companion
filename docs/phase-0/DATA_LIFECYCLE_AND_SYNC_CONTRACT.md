@@ -1,5 +1,7 @@
 # Data Lifecycle and Sync Contract
 
+> **Phase 1B delta required - 29 July 2026.** [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) adds sensitive persona-answer/derived-persona data and local-only personal-audio metadata. The current entity inventory is implementation history, not authorization to omit those fields or store audio remotely. A versioned local/remote schema and RLS/export/deletion delta is required before implementation.
+
 **Contract ID:** `DATA-P1-001`  
 **Status:** Complete proposed contract; Product, Privacy/Legal, Backend, and
 Security approval pending  

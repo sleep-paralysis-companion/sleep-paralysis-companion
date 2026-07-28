@@ -1,5 +1,7 @@
 # Retention, Deletion, and Export
 
+> **Phase 1B delta required - 29 July 2026.** Retention/export/deletion for persona answers and local-only personal recordings/imports is controlled by [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) and is not covered by this prior-foundation evidence.
+
 - Abandoned drafts: local only, purged after seven days, excluded from export.
 - Submitted records/settings: retained until individual, local-data, or account deletion.
 - Tombstones/mutation receipts: retained until remote acknowledgment and the bounded 30-day purge

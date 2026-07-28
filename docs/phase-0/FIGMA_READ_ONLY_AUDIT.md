@@ -1,5 +1,7 @@
 # Figma Read-Only Audit
 
+> **29 July 2026 disposition.** This remains read-only discovery evidence and no Figma mutation is authorized. Its prior classification of questionnaire/persona and personal voice concepts as superseded is itself superseded by [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md); it is not design or implementation authority for the revised journey.
+
 **Audit ID:** `FIGMA-P0-001`  
 **Inspection date:** 25 July 2026  
 **Authority:** Strictly read-only visual and interaction evidence  

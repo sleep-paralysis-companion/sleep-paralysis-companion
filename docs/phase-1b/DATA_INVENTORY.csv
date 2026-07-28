@@ -1,3 +1,4 @@
+# Historical Phase 1B inventory. The required 29 July 2026 persona/settings/local-personal-audio-metadata delta is specified in ../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md and is not represented by these prior-foundation rows; personal audio bytes remain local-only.
 location,entity,field,requirement_source,purpose,sensitivity,owner,retention,export,deletion,privacy_category
 local,local_profiles,id,DATA-SYNC-001,stable installation profile key,identifier,installation,until local deletion,manifest profile id,delete with profile,user id
 local,local_profiles,createdAt,DATA-SYNC-001,profile creation instant,metadata,installation,until local deletion,include,delete with profile,other data

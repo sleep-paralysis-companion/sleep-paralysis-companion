@@ -1,5 +1,7 @@
 # Session Prompt: Phase 1A - Repository and Platform Foundation
 
+> **Historical prompt, amended 29 July 2026.** This foundation prompt predates [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) and does not authorize or validate its later implementation.
+
 You are working in the SP / Paralux repository. This session is exclusively for **Phase 1A: Repository and platform foundation**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate

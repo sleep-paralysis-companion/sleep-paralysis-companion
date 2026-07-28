@@ -1,5 +1,7 @@
 # Session Prompt: Phase 1C - Design System, App Shell, and Onboarding
 
+> **SUPERSEDED - 29 July 2026.** This guest-first Phase 1C prompt must not be executed as written. The replacement scope is [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md); await an implementation-stage prompt that resolves skipped/incomplete-question behavior.
+
 You are working in the SP / Paralux repository. This session is exclusively for **Phase 1C: Design system, app shell, and onboarding**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate

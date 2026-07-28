@@ -1,5 +1,7 @@
 # Threat Model, Standards, Owners, and Sign-off
 
+> **Security delta required - 29 July 2026.** The existing threat model predates approved local-only personal recording/import and persona answers. [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) controls the changed boundary; implementers must add a reviewed threat/test delta before shipping, while prohibitions on hidden/ambient/overnight recording and server-side audio remain active.
+
 **Record ID:** `SEC-P1-001`  
 **Status:** Initial threat model complete; named review and residual-risk
 acceptance pending  

@@ -1,5 +1,7 @@
 # Navigation and Screen/State Map
 
+> **Superseded in part - 29 July 2026 product change.** The guest-only `SCR-002`/`SCR-003` onboarding and microphone-exclusion statements below are historical baseline behavior. The authoritative onboarding, recording/import, Settings, and Home Screen WidgetKit/manual-action state boundary is [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md); no Lock Screen or Control Center claim is approved without physical evidence.
+
 **Map ID:** `NAV-P1-001`  
 **Status:** Canonical behavior approved; legacy Figma canvas retained as
 superseded discovery evidence  

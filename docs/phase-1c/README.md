@@ -1,5 +1,7 @@
 # Phase 1C Evidence Index
 
+> **SUPERSEDED FOR PRODUCT ACCEPTANCE - 29 July 2026.** These documents retain evidence for the obsolete guest-only Phase 1C implementation. The approved replacement scope is [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md); Gate 1C remains not passed and this evidence does not validate the revised journey.
+
 Phase 1C implements the narrow onboarding and usable app-shell exception. Gate 0 remains
 **NOT PASSED**.
 

@@ -1,5 +1,7 @@
 # Audio Catalog and Offline Contract
 
+> **Superseded in part - 29 July 2026 product change.** The exclusions of personal recording/import and microphone access in this legacy catalog contract are superseded by [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). Its local-only storage, metadata, protection, import, recording, selection, fallback, export, and deletion rules control; the rest of this document remains the Paralux-provided catalog/offline contract.
+
 **Contract ID:** `AUDIO-P1-001`  
 **Status:** Delivery/lifecycle contract complete; candidate assets reported
 available but not yet received, hashed, rights-reviewed, or approved

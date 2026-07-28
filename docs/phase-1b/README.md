@@ -1,5 +1,7 @@
 # Phase 1B Evidence Index
 
+> **Phase 1B delta required - 29 July 2026.** This index and its CSV inventory describe the prior foundation. The approved persona/settings/local-personal-audio-metadata delta is [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md); it is not implemented or validated here, and personal audio bytes remain local-only.
+
 Phase 1B is the repository, simulator, and isolated-backend foundation authorized by Satyam Shree
 on 2026-07-28. Gate 0 remains **NOT PASSED**. No live Supabase project or website change is part
 of this phase.

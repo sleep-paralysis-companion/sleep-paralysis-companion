@@ -1,5 +1,7 @@
 # Privacy Policy Asset Review
 
+> **29 July 2026 product-change note.** This review predates the approved local-only personal-audio and just-in-time recording scope. Its exclusions are superseded by [Persona and Personal Audio Product Realignment](./PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md); the asset is still not publication authority.
+
 **Review ID:** `PRIV-P0-001`  
 **Reviewed:** 25 July 2026  
 **Reviewer/accountable owner:** Satyam Shree  

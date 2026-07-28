@@ -1,5 +1,7 @@
 # Local Schema and Migrations
 
+> **Phase 1B delta required - 29 July 2026.** The schema versions below predate the approved persona/settings/local-personal-audio-metadata change. They are historical implementation evidence, not approval to omit the required versioned delta described in [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md).
+
 Local schema version: **2**
 
 | Migration | Purpose |

@@ -1,5 +1,7 @@
 # Session Prompt: Phase 1B - Data, Authentication, Security, and Offline Foundation
 
+> **Scope delta required - 29 July 2026.** Before new Phase 1B work, apply the scoped persona/settings/local-personal-audio-metadata, RLS, export, deletion, and test requirements in [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). Personal audio bytes remain local-only and out of Supabase.
+
 Verified outcome (2026-07-28): Gate 1B passed for repository, simulator, and isolated-backend
 candidate `6b80c0d6269168b6f1a5494893869fc3278df47e` in hosted run
 `30322506101`. Gate 0 remains `NOT PASSED`; see `docs/phase-1b/GATE_1B_REVIEW.md`.
