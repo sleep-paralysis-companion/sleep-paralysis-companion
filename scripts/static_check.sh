@@ -20,7 +20,7 @@ if grep -R -l -E 'import[[:space:]]+Supabase' "$SOURCE_ROOT" \
 fi
 
 if grep -R -l -E '\bFileManager\b' "$SOURCE_ROOT" \
-  | grep -v -E '/DataRights/|/PlatformInterfaces/DataProtection\.swift$'; then
+  | grep -v -E '/DataRights/|/PlatformInterfaces/(DataProtection|LocalStoreLocation)\.swift$'; then
   echo "File access escaped the data-rights boundary." >&2
   exit 1
 fi

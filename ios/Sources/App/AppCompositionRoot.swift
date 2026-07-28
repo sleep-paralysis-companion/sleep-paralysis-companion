@@ -6,6 +6,7 @@ enum AppCompositionRoot {
         let environment = AppEnvironment.compiled
         let logger = ApplePrivacySafeLogger(subsystem: "com.satyamshree.spc")
         let values = BundlePublicConfigurationLoader().load(from: .main)
+        let namespace = ProcessInfo.processInfo.environment["SPC_LOCAL_STORE_NAMESPACE"] ?? "primary"
 
         if case .unavailable = AppConfiguration.resolve(
             environment: environment,
@@ -17,6 +18,9 @@ enum AppCompositionRoot {
         return AppModel(
             environment: environment,
             accessPolicy: AccessPolicy(),
+            profileStore: LocalOnboardingProfileStore(
+                location: LocalStoreLocation(namespace: namespace)
+            ),
             logger: logger
         )
     }

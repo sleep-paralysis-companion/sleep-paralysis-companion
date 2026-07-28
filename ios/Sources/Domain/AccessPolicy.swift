@@ -13,9 +13,9 @@ nonisolated enum AppUtility: Hashable, CaseIterable, Sendable {
 }
 
 nonisolated enum ProductCapability: Hashable, Sendable {
-    case foundationDetails
-    case futureGrounding
-    case futureHistory
+    case grounding
+    case preparation
+    case history
 }
 
 nonisolated enum PremiumAccess: Equatable, Sendable {
@@ -66,10 +66,45 @@ nonisolated struct AccessPolicy: Sendable {
             return .unavailable
         }
 
-        if capability == .foundationDetails {
-            return .allowed
-        }
-
         return premium == .active ? .allowed : .premiumRequired
+    }
+}
+
+nonisolated struct AccessPolicyPresentation: Equatable, Sendable {
+    let decision: AccessDecision
+    let trialEligibility: Bool?
+}
+
+nonisolated struct AccessPolicyPresenter: Sendable {
+    private let policy: AccessPolicy
+
+    init(policy: AccessPolicy) {
+        self.policy = policy
+    }
+
+    func utility(_ utility: AppUtility) -> AccessPolicyPresentation {
+        AccessPolicyPresentation(
+            decision: policy.decision(for: utility, premium: .unknown),
+            trialEligibility: nil
+        )
+    }
+
+    func capability(
+        _ capability: ProductCapability,
+        platform: PlatformCapabilities,
+        release: ReleaseGates,
+        premium: PremiumAccess,
+        external: ExternalAvailability
+    ) -> AccessPolicyPresentation {
+        AccessPolicyPresentation(
+            decision: policy.decision(
+                for: capability,
+                platform: platform,
+                release: release,
+                premium: premium,
+                external: external
+            ),
+            trialEligibility: nil
+        )
     }
 }

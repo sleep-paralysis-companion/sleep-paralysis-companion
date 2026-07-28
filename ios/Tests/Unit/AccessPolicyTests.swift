@@ -4,7 +4,7 @@ import XCTest
 final class AccessPolicyTests: XCTestCase {
     private let policy = AccessPolicy()
 
-    func testMandatoryUtilitiesIgnorePremiumState() {
+    func testMandatoryUtilitiesIncludingAlarmIgnorePremiumState() {
         for utility in AppUtility.allCases {
             XCTAssertEqual(
                 policy.decision(for: utility, premium: .unavailable),
@@ -20,7 +20,7 @@ final class AccessPolicyTests: XCTestCase {
     }
 
     func testCapabilityRequiresAllAvailabilityAuthorities() {
-        let capability = ProductCapability.futureGrounding
+        let capability = ProductCapability.grounding
         let supported = PlatformCapabilities(supported: [capability])
         let released = ReleaseGates(enabled: [capability])
         let available = ExternalAvailability(available: [capability])
@@ -35,7 +35,6 @@ final class AccessPolicyTests: XCTestCase {
             ),
             .allowed
         )
-
         XCTAssertEqual(
             policy.decision(
                 for: capability,
@@ -49,35 +48,36 @@ final class AccessPolicyTests: XCTestCase {
     }
 
     func testPremiumCapabilityNeverGuessesUnknownAccess() {
-        let capability = ProductCapability.futureHistory
-        let platform = PlatformCapabilities(supported: [capability])
-        let release = ReleaseGates(enabled: [capability])
-        let external = ExternalAvailability(available: [capability])
-
-        XCTAssertEqual(
-            policy.decision(
-                for: capability,
-                platform: platform,
-                release: release,
-                premium: .unknown,
-                external: external
-            ),
-            .premiumRequired
-        )
-    }
-
-    func testFoundationDetailsAreNotPremiumGated() {
-        let capability = ProductCapability.foundationDetails
-
+        let capability = ProductCapability.history
         XCTAssertEqual(
             policy.decision(
                 for: capability,
                 platform: PlatformCapabilities(supported: [capability]),
                 release: ReleaseGates(enabled: [capability]),
-                premium: .unavailable,
+                premium: .unknown,
                 external: ExternalAvailability(available: [capability])
             ),
-            .allowed
+            .premiumRequired
         )
+    }
+
+    func testPresentationNeverInventsTrialEligibility() {
+        let presentation = AccessPolicyPresenter(policy: policy).utility(.alarm)
+
+        XCTAssertEqual(presentation.decision, .allowed)
+        XCTAssertNil(presentation.trialEligibility)
+    }
+
+    func testPhase1CUnavailableCapabilityHasNoCommerceClaim() {
+        let presentation = AccessPolicyPresenter(policy: policy).capability(
+            .preparation,
+            platform: PlatformCapabilities(supported: []),
+            release: ReleaseGates(enabled: []),
+            premium: .unknown,
+            external: ExternalAvailability(available: [])
+        )
+
+        XCTAssertEqual(presentation.decision, .unavailable)
+        XCTAssertNil(presentation.trialEligibility)
     }
 }
