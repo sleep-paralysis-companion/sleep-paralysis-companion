@@ -159,7 +159,7 @@ nonisolated struct LocalExportService: Sendable {
     }
 }
 
-nonisolated private struct ExportManifest: Codable {
+private nonisolated struct ExportManifest: Codable {
     struct FileEntry: Codable {
         let name: String
         let sha256: String

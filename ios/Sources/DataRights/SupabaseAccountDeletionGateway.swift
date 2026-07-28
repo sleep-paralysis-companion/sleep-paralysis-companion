@@ -1,7 +1,7 @@
 import Foundation
 import Supabase
 
-nonisolated private struct AccountDeletionFunctionRequest: Encodable {
+private nonisolated struct AccountDeletionFunctionRequest: Encodable {
     let requestID: UUID
 
     enum CodingKeys: String, CodingKey {

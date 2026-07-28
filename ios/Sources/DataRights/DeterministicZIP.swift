@@ -65,7 +65,7 @@ nonisolated enum DeterministicZIP {
     }
 }
 
-nonisolated private enum CRC32 {
+private nonisolated enum CRC32 {
     static func checksum(_ data: Data) -> UInt32 {
         var value = UInt32.max
         for byte in data {
@@ -79,7 +79,7 @@ nonisolated private enum CRC32 {
     }
 }
 
-nonisolated private extension Data {
+private nonisolated extension Data {
     mutating func appendLittleEndian(_ value: some FixedWidthInteger) {
         var littleEndian = value.littleEndian
         Swift.withUnsafeBytes(of: &littleEndian) { append(contentsOf: $0) }
