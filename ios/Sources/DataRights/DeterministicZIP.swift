@@ -80,7 +80,7 @@ private nonisolated enum CRC32 {
 }
 
 private nonisolated extension Data {
-    mutating func appendLittleEndian<T: FixedWidthInteger>(_ value: T) {
+    mutating func appendLittleEndian(_ value: some FixedWidthInteger) {
         var littleEndian = value.littleEndian
         Swift.withUnsafeBytes(of: &littleEndian) { append(contentsOf: $0) }
     }

@@ -274,7 +274,7 @@ actor LocalDatabase {
                 deletedRevision: record.revision,
                 deletedAt: date.timeIntervalSince1970,
                 acknowledgedAt: nil,
-                purgeAfter: date.addingTimeInterval(30 * 86_400).timeIntervalSince1970
+                purgeAfter: date.addingTimeInterval(30 * 86400).timeIntervalSince1970
             )
             try tombstone.save(database)
 
@@ -449,7 +449,7 @@ actor LocalDatabase {
                 key: [
                     "profileID": profileID.uuidString,
                     "entityType": entityType.rawValue,
-                    "entityID": entityID.uuidString
+                    "entityID": entityID.uuidString,
                 ]
             ) else {
                 return nil

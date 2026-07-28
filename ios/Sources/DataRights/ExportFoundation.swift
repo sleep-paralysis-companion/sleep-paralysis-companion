@@ -49,7 +49,7 @@ nonisolated struct LocalExportService: Sendable {
             id: exportID,
             profileID: profileID,
             generatedAt: generatedAt,
-            expiresAt: generatedAt.addingTimeInterval(86_400),
+            expiresAt: generatedAt.addingTimeInterval(86400),
             scope: snapshot.scope,
             manifestVersion: 1
         )
@@ -88,7 +88,8 @@ nonisolated struct LocalExportService: Sendable {
             for entry in entries where entry.pathExtension == "zip" {
                 let values = try entry.resourceValues(forKeys: [.contentModificationDateKey])
                 if let modified = values.contentModificationDate,
-                   now.timeIntervalSince(modified) >= 86_400 {
+                   now.timeIntervalSince(modified) >= 86400
+                {
                     try FileManager.default.removeItem(at: entry)
                 }
             }

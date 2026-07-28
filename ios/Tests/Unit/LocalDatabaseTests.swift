@@ -1,6 +1,6 @@
-@testable import SleepParalysisCompanion
 import Foundation
 import GRDB
+@testable import SleepParalysisCompanion
 import XCTest
 
 final class LocalDatabaseTests: XCTestCase {
@@ -67,7 +67,7 @@ final class LocalDatabaseTests: XCTestCase {
             localeIdentifier: "en",
             integritySHA256: String(repeating: "a", count: 64),
             byteCount: 10,
-            durationMilliseconds: 1_000,
+            durationMilliseconds: 1000,
             provenanceReference: "TEST-AUDIO",
             rightsReference: "TEST-RIGHTS",
             approvalReference: "TEST-APPROVAL"
@@ -99,13 +99,13 @@ final class LocalDatabaseTests: XCTestCase {
             perceivedIntensity: nil,
             presentState: nil,
             note: nil,
-            draftUpdatedAt: Phase1BFixture.now.addingTimeInterval(-8 * 86_400)
+            draftUpdatedAt: Phase1BFixture.now.addingTimeInterval(-8 * 86400)
         )
         try await database.saveDraft(oldDraft)
         let drafts = try await database.drafts(profileID: Phase1BFixture.profileID)
         XCTAssertEqual(drafts, [oldDraft])
         let count = try await database.purgeDrafts(
-            olderThan: Phase1BFixture.now.addingTimeInterval(-7 * 86_400)
+            olderThan: Phase1BFixture.now.addingTimeInterval(-7 * 86400)
         )
         XCTAssertEqual(count, 1)
     }
@@ -153,7 +153,7 @@ final class LocalDatabaseTests: XCTestCase {
         try await database.acknowledgeTombstone(
             id: tombstones[0].id,
             at: Phase1BFixture.now.addingTimeInterval(120),
-            purgeAfter: Phase1BFixture.now.addingTimeInterval(31 * 86_400)
+            purgeAfter: Phase1BFixture.now.addingTimeInterval(31 * 86400)
         )
         let acknowledged = try await database.tombstones(profileID: Phase1BFixture.profileID)
         XCTAssertNotNil(acknowledged[0].acknowledgedAt)
@@ -179,7 +179,7 @@ final class LocalDatabaseTests: XCTestCase {
             id: Phase1BFixture.operationID,
             profileID: Phase1BFixture.profileID,
             generatedAt: Phase1BFixture.now,
-            expiresAt: Phase1BFixture.now.addingTimeInterval(86_400),
+            expiresAt: Phase1BFixture.now.addingTimeInterval(86400),
             scope: .localOnly,
             manifestVersion: 1
         )

@@ -20,7 +20,7 @@ cleanup() {
 trap cleanup EXIT
 
 "${SUPABASE[@]}" start \
-  -x studio,imgproxy,inbucket,storage-api,edge-runtime,logflare,vector,supavisor
+  -x studio,imgproxy,mailpit,storage-api,edge-runtime,logflare,vector,supavisor
 "${SUPABASE[@]}" db reset --local
 "${SUPABASE[@]}" test db
 "${SUPABASE[@]}" db lint --local --level warning --fail-on error

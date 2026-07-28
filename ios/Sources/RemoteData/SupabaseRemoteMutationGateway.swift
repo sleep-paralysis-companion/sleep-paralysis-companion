@@ -42,22 +42,22 @@ actor SupabaseRemoteMutationGateway: RemoteMutationGateway {
     ) async throws -> RemoteMutationRPCResult {
         switch request.payload {
         case let .profile(value):
-            return try await execute(request: request, receiptID: receiptID, payload: value)
+            try await execute(request: request, receiptID: receiptID, payload: value)
         case let .settings(value):
-            return try await execute(request: request, receiptID: receiptID, payload: value)
+            try await execute(request: request, receiptID: receiptID, payload: value)
         case let .alarm(value):
-            return try await execute(request: request, receiptID: receiptID, payload: value)
+            try await execute(request: request, receiptID: receiptID, payload: value)
         case let .checkIn(value):
-            return try await execute(request: request, receiptID: receiptID, payload: value)
+            try await execute(request: request, receiptID: receiptID, payload: value)
         case let .tombstone(value):
-            return try await execute(request: request, receiptID: receiptID, payload: value)
+            try await execute(request: request, receiptID: receiptID, payload: value)
         }
     }
 
-    private func execute<Payload: Encodable & Sendable>(
+    private func execute(
         request: RemoteMutationRequest,
         receiptID: UUID,
-        payload: Payload
+        payload: some Encodable & Sendable
     ) async throws -> RemoteMutationRPCResult {
         let parameters = RemoteMutationRPCParameters(
             receiptID: receiptID,

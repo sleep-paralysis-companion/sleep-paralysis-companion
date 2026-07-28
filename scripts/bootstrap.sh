@@ -53,9 +53,13 @@ XCODEGEN_BIN="$(cat "$XCODEGEN_BIN_RECORD")"
 (
   cd "$REPOSITORY_ROOT/ios"
   "$XCODEGEN_BIN" generate --spec project.yml
+  GENERATED_LOCK="SleepParalysisCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+  mkdir -p "$(dirname "$GENERATED_LOCK")"
+  cp Package.resolved "$GENERATED_LOCK"
   xcodebuild \
     -project SleepParalysisCompanion.xcodeproj \
     -resolvePackageDependencies \
     -clonedSourcePackagesDirPath .generated/SourcePackages
+  cmp Package.resolved "$GENERATED_LOCK"
   xcodebuild -project SleepParalysisCompanion.xcodeproj -list
 )

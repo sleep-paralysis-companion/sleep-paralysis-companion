@@ -153,12 +153,11 @@ actor AccountDeletionCoordinator {
             state = .reauthenticationRequired
             throw DeletionError.recentReauthenticationRequired
         }
-        let requestID: UUID
-        switch state {
+        let requestID: UUID = switch state {
         case let .failedRecoverable(existing):
-            requestID = existing
+            existing
         default:
-            requestID = identifier.next()
+            identifier.next()
         }
         state = .deleting(requestID: requestID)
         do {

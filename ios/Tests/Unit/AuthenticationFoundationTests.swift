@@ -1,5 +1,5 @@
-@testable import SleepParalysisCompanion
 import Foundation
+@testable import SleepParalysisCompanion
 import XCTest
 
 actor ScriptedAuthenticationGateway: AuthenticationGateway {
@@ -39,7 +39,7 @@ actor ScriptedAuthenticationGateway: AuthenticationGateway {
             provider: session.provider,
             accessToken: "refreshed-access",
             refreshToken: "refreshed-token",
-            expiresAt: session.expiresAt.addingTimeInterval(3_600)
+            expiresAt: session.expiresAt.addingTimeInterval(3600)
         )
         return refreshed
     }

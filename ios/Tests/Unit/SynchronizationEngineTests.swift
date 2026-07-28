@@ -1,5 +1,5 @@
-@testable import SleepParalysisCompanion
 import Foundation
+@testable import SleepParalysisCompanion
 import XCTest
 
 struct FixedPayloadProvider: OutboundPayloadProviding {

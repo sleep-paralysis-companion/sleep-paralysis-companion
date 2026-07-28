@@ -71,9 +71,9 @@ nonisolated struct OAuthChallengeFactory: Sendable {
     }
 
     func make(for provider: AuthenticationProvider) throws -> OAuthChallenge {
-        let state = base64URL(try random.bytes(count: 32))
-        let nonce = base64URL(try random.bytes(count: 32))
-        let verifier = base64URL(try random.bytes(count: 48))
+        let state = try base64URL(random.bytes(count: 32))
+        let nonce = try base64URL(random.bytes(count: 32))
+        let verifier = try base64URL(random.bytes(count: 48))
         return OAuthChallenge(
             provider: provider,
             state: state,

@@ -361,15 +361,18 @@ begin
       ]::text[] <> '{}'::jsonb then
         raise exception 'unsupported profile field' using errcode = '42501';
       end if;
-      insert into public.app_profiles (
-        id, owner_user_id, profile_created_at, revision
-      ) values (
-        p_entity_id, v_owner_user_id,
-        (p_payload ->> 'profile_created_at')::timestamptz, p_entity_revision
-      )
-      on conflict (id) do update set
-        profile_created_at = excluded.profile_created_at,
-        revision = excluded.revision;
+      update public.app_profiles set
+        profile_created_at = (p_payload ->> 'profile_created_at')::timestamptz,
+        revision = p_entity_revision
+      where id = p_entity_id;
+      if not found then
+        insert into public.app_profiles (
+          id, owner_user_id, profile_created_at, revision
+        ) values (
+          p_entity_id, v_owner_user_id,
+          (p_payload ->> 'profile_created_at')::timestamptz, p_entity_revision
+        );
+      end if;
     when 'settings' then
       if p_payload - array[
         'id', 'owner_user_id', 'preferred_grounding_asset_id',
@@ -377,21 +380,24 @@ begin
       ]::text[] <> '{}'::jsonb then
         raise exception 'unsupported settings field' using errcode = '42501';
       end if;
-      insert into public.app_settings (
-        id, owner_user_id, preferred_grounding_asset_id,
-        preferred_modality, haptics_enabled, revision
-      ) values (
-        p_entity_id, v_owner_user_id,
-        p_payload ->> 'preferred_grounding_asset_id',
-        p_payload ->> 'preferred_modality',
-        (p_payload ->> 'haptics_enabled')::boolean,
-        p_entity_revision
-      )
-      on conflict (id) do update set
-        preferred_grounding_asset_id = excluded.preferred_grounding_asset_id,
-        preferred_modality = excluded.preferred_modality,
-        haptics_enabled = excluded.haptics_enabled,
-        revision = excluded.revision;
+      update public.app_settings set
+        preferred_grounding_asset_id = p_payload ->> 'preferred_grounding_asset_id',
+        preferred_modality = p_payload ->> 'preferred_modality',
+        haptics_enabled = (p_payload ->> 'haptics_enabled')::boolean,
+        revision = p_entity_revision
+      where id = p_entity_id;
+      if not found then
+        insert into public.app_settings (
+          id, owner_user_id, preferred_grounding_asset_id,
+          preferred_modality, haptics_enabled, revision
+        ) values (
+          p_entity_id, v_owner_user_id,
+          p_payload ->> 'preferred_grounding_asset_id',
+          p_payload ->> 'preferred_modality',
+          (p_payload ->> 'haptics_enabled')::boolean,
+          p_entity_revision
+        );
+      end if;
     when 'alarm' then
       if p_payload - array[
         'id', 'owner_user_id', 'local_hour', 'local_minute',
@@ -399,25 +405,28 @@ begin
       ]::text[] <> '{}'::jsonb then
         raise exception 'unsupported alarm field' using errcode = '42501';
       end if;
-      insert into public.alarm_preferences (
-        id, owner_user_id, local_hour, local_minute, weekdays_mask,
-        snooze_minutes, enabled_intent, revision
-      ) values (
-        p_entity_id, v_owner_user_id,
-        (p_payload ->> 'local_hour')::smallint,
-        (p_payload ->> 'local_minute')::smallint,
-        (p_payload ->> 'weekdays_mask')::smallint,
-        (p_payload ->> 'snooze_minutes')::smallint,
-        (p_payload ->> 'enabled_intent')::boolean,
-        p_entity_revision
-      )
-      on conflict (id) do update set
-        local_hour = excluded.local_hour,
-        local_minute = excluded.local_minute,
-        weekdays_mask = excluded.weekdays_mask,
-        snooze_minutes = excluded.snooze_minutes,
-        enabled_intent = excluded.enabled_intent,
-        revision = excluded.revision;
+      update public.alarm_preferences set
+        local_hour = (p_payload ->> 'local_hour')::smallint,
+        local_minute = (p_payload ->> 'local_minute')::smallint,
+        weekdays_mask = (p_payload ->> 'weekdays_mask')::smallint,
+        snooze_minutes = (p_payload ->> 'snooze_minutes')::smallint,
+        enabled_intent = (p_payload ->> 'enabled_intent')::boolean,
+        revision = p_entity_revision
+      where id = p_entity_id;
+      if not found then
+        insert into public.alarm_preferences (
+          id, owner_user_id, local_hour, local_minute, weekdays_mask,
+          snooze_minutes, enabled_intent, revision
+        ) values (
+          p_entity_id, v_owner_user_id,
+          (p_payload ->> 'local_hour')::smallint,
+          (p_payload ->> 'local_minute')::smallint,
+          (p_payload ->> 'weekdays_mask')::smallint,
+          (p_payload ->> 'snooze_minutes')::smallint,
+          (p_payload ->> 'enabled_intent')::boolean,
+          p_entity_revision
+        );
+      end if;
     when 'checkin' then
       if p_payload - array[
         'id', 'owner_user_id', 'reported_for_local_date', 'reported_timezone_id', 'occurrence',
@@ -426,33 +435,36 @@ begin
       ]::text[] <> '{}'::jsonb then
         raise exception 'unsupported check-in field' using errcode = '42501';
       end if;
-      insert into public.submitted_checkins (
-        id, owner_user_id, reported_for_local_date, reported_timezone_id,
-        occurrence, perceived_intensity, present_state, note,
-        created_at, updated_at, revision, deleted_at
-      ) values (
-        p_entity_id, v_owner_user_id,
-        (p_payload ->> 'reported_for_local_date')::date,
-        p_payload ->> 'reported_timezone_id',
-        p_payload ->> 'occurrence',
-        p_payload ->> 'perceived_intensity',
-        p_payload ->> 'present_state',
-        p_payload ->> 'note',
-        (p_payload ->> 'created_at')::timestamptz,
-        (p_payload ->> 'updated_at')::timestamptz,
-        p_entity_revision,
-        (p_payload ->> 'deleted_at')::timestamptz
-      )
-      on conflict (id) do update set
-        reported_for_local_date = excluded.reported_for_local_date,
-        reported_timezone_id = excluded.reported_timezone_id,
-        occurrence = excluded.occurrence,
-        perceived_intensity = excluded.perceived_intensity,
-        present_state = excluded.present_state,
-        note = excluded.note,
-        updated_at = excluded.updated_at,
-        revision = excluded.revision,
-        deleted_at = excluded.deleted_at;
+      update public.submitted_checkins set
+        reported_for_local_date = (p_payload ->> 'reported_for_local_date')::date,
+        reported_timezone_id = p_payload ->> 'reported_timezone_id',
+        occurrence = p_payload ->> 'occurrence',
+        perceived_intensity = p_payload ->> 'perceived_intensity',
+        present_state = p_payload ->> 'present_state',
+        note = p_payload ->> 'note',
+        updated_at = (p_payload ->> 'updated_at')::timestamptz,
+        revision = p_entity_revision,
+        deleted_at = (p_payload ->> 'deleted_at')::timestamptz
+      where id = p_entity_id;
+      if not found then
+        insert into public.submitted_checkins (
+          id, owner_user_id, reported_for_local_date, reported_timezone_id,
+          occurrence, perceived_intensity, present_state, note,
+          created_at, updated_at, revision, deleted_at
+        ) values (
+          p_entity_id, v_owner_user_id,
+          (p_payload ->> 'reported_for_local_date')::date,
+          p_payload ->> 'reported_timezone_id',
+          p_payload ->> 'occurrence',
+          p_payload ->> 'perceived_intensity',
+          p_payload ->> 'present_state',
+          p_payload ->> 'note',
+          (p_payload ->> 'created_at')::timestamptz,
+          (p_payload ->> 'updated_at')::timestamptz,
+          p_entity_revision,
+          (p_payload ->> 'deleted_at')::timestamptz
+        );
+      end if;
     when 'tombstone' then
       if p_payload - array[
         'id', 'owner_user_id', 'entity_type', 'entity_id', 'deleted_revision',
@@ -460,21 +472,24 @@ begin
       ]::text[] <> '{}'::jsonb then
         raise exception 'unsupported tombstone field' using errcode = '42501';
       end if;
-      insert into public.deletion_tombstones (
-        id, owner_user_id, entity_type, entity_id, deleted_revision,
-        deleted_at, acknowledged_at, purge_after
-      ) values (
-        p_entity_id, v_owner_user_id,
-        p_payload ->> 'entity_type',
-        (p_payload ->> 'entity_id')::uuid,
-        (p_payload ->> 'deleted_revision')::bigint,
-        (p_payload ->> 'deleted_at')::timestamptz,
-        (p_payload ->> 'acknowledged_at')::timestamptz,
-        (p_payload ->> 'purge_after')::timestamptz
-      )
-      on conflict (id) do update set
-        acknowledged_at = excluded.acknowledged_at,
-        purge_after = excluded.purge_after;
+      update public.deletion_tombstones set
+        acknowledged_at = (p_payload ->> 'acknowledged_at')::timestamptz,
+        purge_after = (p_payload ->> 'purge_after')::timestamptz
+      where id = p_entity_id;
+      if not found then
+        insert into public.deletion_tombstones (
+          id, owner_user_id, entity_type, entity_id, deleted_revision,
+          deleted_at, acknowledged_at, purge_after
+        ) values (
+          p_entity_id, v_owner_user_id,
+          p_payload ->> 'entity_type',
+          (p_payload ->> 'entity_id')::uuid,
+          (p_payload ->> 'deleted_revision')::bigint,
+          (p_payload ->> 'deleted_at')::timestamptz,
+          (p_payload ->> 'acknowledged_at')::timestamptz,
+          (p_payload ->> 'purge_after')::timestamptz
+        );
+      end if;
     else
       raise exception 'unsupported entity type' using errcode = '22023';
   end case;

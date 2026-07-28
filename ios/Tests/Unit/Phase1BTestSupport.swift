@@ -1,6 +1,6 @@
-@testable import SleepParalysisCompanion
 import Foundation
 import os
+@testable import SleepParalysisCompanion
 
 struct FixedClock: Phase1BClock {
     let value: Date
@@ -127,7 +127,7 @@ enum Phase1BFixture {
             provider: .apple,
             accessToken: "synthetic-access",
             refreshToken: "synthetic-refresh",
-            expiresAt: now.addingTimeInterval(3_600)
+            expiresAt: now.addingTimeInterval(3600)
         )
     }
 

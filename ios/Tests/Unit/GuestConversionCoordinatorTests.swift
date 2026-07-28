@@ -1,5 +1,5 @@
-@testable import SleepParalysisCompanion
 import Foundation
+@testable import SleepParalysisCompanion
 import XCTest
 
 actor ScriptedGuestConversionGateway: GuestConversionGateway {
