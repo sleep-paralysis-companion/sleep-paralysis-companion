@@ -95,6 +95,17 @@ final class AppModel {
 
     func send(_ intent: Intent) {
         switch intent {
+        case .continueFromWelcome, .continueFromProductNotice, .retryLaunch:
+            handleOnboarding(intent)
+        case .open, .openDeepLink, .setPath, .selectTab, .present, .dismissSheet:
+            handleNavigation(intent)
+        case .authenticationChanged, .clearFeedback:
+            handleContext(intent)
+        }
+    }
+
+    private func handleOnboarding(_ intent: Intent) {
+        switch intent {
         case .continueFromWelcome:
             guard launchDestination == .welcome else {
                 return
@@ -106,6 +117,13 @@ final class AppModel {
             continueFromProductNotice()
         case .retryLaunch:
             activate()
+        default:
+            break
+        }
+    }
+
+    private func handleNavigation(_ intent: Intent) {
+        switch intent {
         case let .open(route):
             open(route)
         case let .openDeepLink(url):
@@ -124,6 +142,13 @@ final class AppModel {
             presentedSheet = sheet
         case .dismissSheet:
             presentedSheet = nil
+        default:
+            break
+        }
+    }
+
+    private func handleContext(_ intent: Intent) {
+        switch intent {
         case let .authenticationChanged(state):
             accountAccessState = state
             if state == .wrongAccount || state == .authenticationRequired {
@@ -131,6 +156,8 @@ final class AppModel {
             }
         case .clearFeedback:
             feedbackMessage = nil
+        default:
+            break
         }
     }
 
