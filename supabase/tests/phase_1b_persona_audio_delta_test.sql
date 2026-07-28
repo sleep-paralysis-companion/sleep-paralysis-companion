@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(54);
+select plan(57);
 
 select has_table('public', 'persona_answer_aggregates', 'complete persona aggregate exists remotely');
 select ok((select relrowsecurity from pg_class where oid = 'public.persona_answer_aggregates'::regclass), 'persona aggregate enables RLS');
@@ -245,8 +245,8 @@ select lives_ok(
   $test$,
   'persona deletion is tombstoned through the trusted mutation boundary'
 );
-select is((select count(*)::integer from public.persona_answer_aggregates), 0, 'persona deletion removes the aggregate');
-select is((select count(*)::integer from public.deletion_tombstones where entity_type = 'persona'), 1, 'persona deletion records one tombstone');
+select is((select count(*)::integer from public.persona_answer_aggregates where owner_user_id = 'a1000000-0000-4000-8000-000000000001'), 0, 'persona deletion removes the first owner aggregate');
+select is((select count(*)::integer from public.deletion_tombstones where owner_user_id = 'a1000000-0000-4000-8000-000000000001' and entity_type = 'persona'), 1, 'persona deletion records one first-owner tombstone');
 
 select lives_ok(
   $test$
@@ -325,11 +325,32 @@ select throws_ok(
 );
 set local role authenticated;
 
+select set_config('request.jwt.claim.sub', 'a2000000-0000-4000-8000-000000000002', true);
+select lives_ok(
+  $test$
+  select * from public.apply_sync_mutation(
+    'e1000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000002', 'persona',
+    'e3000000-0000-4000-8000-000000000003', 'upsert', 0, 1,
+    '{"id":"e3000000-0000-4000-8000-000000000003","owner_user_id":"a2000000-0000-4000-8000-000000000002","episode_frequency":"weekly","post_episode_feeling":"awake_scared","calming_person_context":"beside_me","routing_rule_version":"2026-07-29-v1","calculated_at":"2026-07-29T00:04:00Z","updated_at":"2026-07-29T00:04:00Z","revision":1}'::jsonb
+  )
+  $test$, 'cascade-test owner can create a live persona through the public mutation boundary'
+);
+select is(
+  (select count(*)::integer from public.persona_answer_aggregates where owner_user_id = 'a2000000-0000-4000-8000-000000000002'),
+  1,
+  'cascade-test owner has one live persona immediately before account deletion'
+);
+select is(
+  (select count(*)::integer from public.mutation_receipts where owner_user_id = 'a2000000-0000-4000-8000-000000000002'),
+  1,
+  'cascade-test owner has the corresponding mutation receipt before account deletion'
+);
+
 reset role;
-delete from auth.users where id = 'a1000000-0000-4000-8000-000000000001';
-select is((select count(*)::integer from public.persona_answer_aggregates), 0, 'account deletion leaves no persona rows');
-select is((select count(*)::integer from public.mutation_receipts), 0, 'account deletion cascades owned mutation receipts');
-select is((select count(*)::integer from public.deletion_tombstones), 0, 'account deletion cascades owned persona tombstones');
+delete from auth.users where id = 'a2000000-0000-4000-8000-000000000002';
+select is((select count(*)::integer from public.persona_answer_aggregates where owner_user_id = 'a2000000-0000-4000-8000-000000000002'), 0, 'account deletion cascades the live cascade-test persona');
+select is((select count(*)::integer from public.mutation_receipts where owner_user_id = 'a2000000-0000-4000-8000-000000000002'), 0, 'account deletion cascades the cascade-test mutation receipt');
+select is((select count(*)::integer from public.deletion_tombstones where owner_user_id = 'a1000000-0000-4000-8000-000000000001' and entity_type = 'persona'), 1, 'account deletion preserves the first owner tombstone evidence');
 
 set local role anon;
 select throws_ok($test$select * from public.persona_answer_aggregates$test$, '42501', null, 'anon cannot select persona rows');
