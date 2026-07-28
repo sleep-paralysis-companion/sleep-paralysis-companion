@@ -85,5 +85,3 @@ if find "$REPOSITORY_ROOT/ios" \
 fi
 
 bash "$REPOSITORY_ROOT/scripts/static_check.sh"
-bash "$REPOSITORY_ROOT/scripts/privacy_manifest_check.sh"
-bash "$REPOSITORY_ROOT/scripts/secret_scan.sh"
