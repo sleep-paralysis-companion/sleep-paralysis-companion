@@ -43,17 +43,25 @@ actor RecordingFileRemoval: ProtectedLocalFilesRemoving {
 actor ScriptedAccountDeletionGateway: AccountDeletionGateway {
     private var failuresRemaining: Int
     private(set) var requestIDs: [UUID] = []
+    private(set) var retryTokens: [String?] = []
 
     init(failuresRemaining: Int = 0) {
         self.failuresRemaining = failuresRemaining
     }
 
-    func deleteAccount(requestID: UUID, accessToken: String) async throws {
+    func deleteAccount(
+        requestID: UUID,
+        accessToken: String,
+        retryToken: String?
+    ) async throws {
         _ = accessToken
         requestIDs.append(requestID)
+        retryTokens.append(retryToken)
         if failuresRemaining > 0 {
             failuresRemaining -= 1
-            throw RemoteMutationError.backendUnavailable
+            throw AccountDeletionGatewayError.recoverable(
+                retryToken: "ephemeral-retry-proof"
+            )
         }
     }
 }
@@ -99,6 +107,7 @@ final class DataRightsFoundationTests: XCTestCase {
             ["manifest.json", "settings.json", "alarm.json", "checkins.json", "checkins.csv"]
         )
         XCTAssertFalse(visibleBytes.contains("synthetic-access"))
+        XCTAssertFalse(visibleBytes.contains("provider-revocation-proof"))
         XCTAssertFalse(visibleBytes.contains("sync_operations"))
         XCTAssertFalse(visibleBytes.contains("tombstone"))
         XCTAssertEqual(protection.paths.count, 4)
@@ -189,6 +198,7 @@ final class DataRightsFoundationTests: XCTestCase {
                 session: Phase1BFixture.session(),
                 reauthentication: RecentReauthentication(
                     userID: Phase1BFixture.userID,
+                    provider: .apple,
                     authenticatedAt: Phase1BFixture.now.addingTimeInterval(-301)
                 ),
                 removeLocalData: false
@@ -198,11 +208,32 @@ final class DataRightsFoundationTests: XCTestCase {
         XCTAssertEqual(state, .reauthenticationRequired)
     }
 
+    func testAccountDeletionRejectsReauthenticationFromDifferentProvider() async throws {
+        let coordinator = try await accountDeletionCoordinator(
+            gateway: ScriptedAccountDeletionGateway()
+        )
+        do {
+            try await coordinator.deleteAccount(
+                session: Phase1BFixture.session(),
+                reauthentication: RecentReauthentication(
+                    userID: Phase1BFixture.userID,
+                    provider: .google,
+                    authenticatedAt: Phase1BFixture.now
+                ),
+                removeLocalData: false
+            )
+            XCTFail("Expected provider mismatch rejection.")
+        } catch let error as DeletionError {
+            XCTAssertEqual(error, .wrongAccount)
+        }
+    }
+
     func testInterruptedAccountDeletionRetriesWithSameRequestID() async throws {
         let gateway = ScriptedAccountDeletionGateway(failuresRemaining: 1)
         let coordinator = try await accountDeletionCoordinator(gateway: gateway)
         let reauthentication = RecentReauthentication(
             userID: Phase1BFixture.userID,
+            provider: .apple,
             authenticatedAt: Phase1BFixture.now
         )
         await XCTAssertThrowsErrorAsync {
@@ -218,9 +249,12 @@ final class DataRightsFoundationTests: XCTestCase {
             removeLocalData: false
         )
         let requestIDs = await gateway.requestIDs
+        let retryTokens = await gateway.retryTokens
         let state = await coordinator.state
         XCTAssertEqual(requestIDs.count, 2)
         XCTAssertEqual(Set(requestIDs).count, 1)
+        XCTAssertNil(retryTokens[0])
+        XCTAssertEqual(retryTokens[1], "ephemeral-retry-proof")
         XCTAssertEqual(state, .completed)
     }
 
@@ -254,7 +288,7 @@ final class DataRightsFoundationTests: XCTestCase {
                 pendingWork: true,
                 pendingChoice: .keepLocallyAndSignOut,
                 localChoice: .keepProtectedLocalCopy,
-                revokeProvider: false
+                providerRevocationCredential: nil
             )
         )
 

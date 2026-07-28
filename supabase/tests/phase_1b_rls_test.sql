@@ -458,16 +458,20 @@ select lives_ok(
     entity_type,
     entity_id,
     operation,
+    base_revision,
     entity_revision,
+    payload_hash,
     expires_at
   ) values (
     '88888888-8888-4888-8888-888888888888',
     '11111111-1111-4111-8111-111111111111',
     '77777777-7777-4777-8777-777777777777',
     'tombstone',
-    'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    '99999999-9999-4999-8999-999999999999',
     'delete',
+    2,
     3,
+    repeat('0', 64),
     now() + interval '30 days'
   )
   $test$,
@@ -483,16 +487,20 @@ select throws_ok(
     entity_type,
     entity_id,
     operation,
+    base_revision,
     entity_revision,
+    payload_hash,
     expires_at
   ) values (
     '66666666-6666-4666-8666-666666666666',
     '11111111-1111-4111-8111-111111111111',
     '77777777-7777-4777-8777-777777777777',
     'tombstone',
-    'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    '99999999-9999-4999-8999-999999999999',
     'delete',
+    2,
     3,
+    repeat('0', 64),
     now() + interval '30 days'
   )
   $test$,
@@ -509,6 +517,7 @@ select lives_ok(
     'settings',
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     'upsert',
+    1,
     2,
     '{
       "id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -531,6 +540,7 @@ select results_eq(
     'settings',
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     'upsert',
+    1,
     2,
     '{
       "id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -554,6 +564,7 @@ select throws_ok(
     'settings',
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     'upsert',
+    2,
     3,
     '{
       "id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -565,8 +576,8 @@ select throws_ok(
     }'::jsonb
   )
   $test$,
-  '42501',
-  'unsupported settings field',
+  '22023',
+  'malformed settings payload',
   'RPC rejects over-posted server-owned fields'
 );
 
@@ -578,6 +589,7 @@ select throws_ok(
     'settings',
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     'upsert',
+    2,
     3,
     '{
       "id":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -589,14 +601,14 @@ select throws_ok(
   )
   $test$,
   '42501',
-  'payload ownership mismatch',
+  'payload ownership or identity mismatch',
   'RPC rejects forged ownership'
 );
 
 select ok(
   not has_function_privilege(
     'anon',
-    'public.apply_sync_mutation(uuid,uuid,text,uuid,text,bigint,jsonb)',
+    'public.apply_sync_mutation(uuid,uuid,text,uuid,text,bigint,bigint,jsonb)',
     'execute'
   ),
   'anon cannot execute the mutation RPC'

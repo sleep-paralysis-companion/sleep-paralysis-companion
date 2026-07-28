@@ -26,6 +26,46 @@ nonisolated struct NativeIdentityCredential: Equatable, Sendable {
     let rawNonce: String
 }
 
+nonisolated enum ProviderGrantCredential: Sendable {
+    case appleAuthorizationCode(String)
+    case googleOAuthAccessToken(String)
+
+    var provider: AuthenticationProvider {
+        switch self {
+        case .appleAuthorizationCode:
+            .apple
+        case .googleOAuthAccessToken:
+            .google
+        }
+    }
+}
+
+nonisolated struct ProviderGrantRevocationRequest: Sendable {
+    let userID: UUID
+    let provider: AuthenticationProvider
+    let credential: ProviderGrantCredential
+}
+
+nonisolated struct RecentReauthentication: Equatable, Sendable {
+    let userID: UUID
+    let provider: AuthenticationProvider
+    let authenticatedAt: Date
+
+    func isValid(now: Date, maximumAge: TimeInterval = 5 * 60) -> Bool {
+        authenticatedAt <= now && now.timeIntervalSince(authenticatedAt) <= maximumAge
+    }
+}
+
+nonisolated struct ReauthenticatedSession: Equatable, Sendable {
+    let session: AuthenticationSessionMaterial
+    let proof: RecentReauthentication
+}
+
+nonisolated enum SignOutAuthenticationResult: Equatable, Sendable {
+    case signedOut
+    case signedOutProviderGrantNotRevoked
+}
+
 nonisolated enum AuthenticationError: Error, Equatable, Sendable {
     case cancelled
     case invalidState
@@ -107,7 +147,7 @@ nonisolated protocol AuthenticationGateway: Sendable {
         challenge: OAuthChallenge
     ) async throws -> AuthenticationSessionMaterial
     func refresh(_ session: AuthenticationSessionMaterial) async throws -> AuthenticationSessionMaterial
-    func revoke(_ session: AuthenticationSessionMaterial) async throws
+    func revokeProviderGrant(_ request: ProviderGrantRevocationRequest) async throws
     func signOut(_ session: AuthenticationSessionMaterial) async throws
 }
 
@@ -162,6 +202,7 @@ actor AuthenticationCoordinator {
         let session = try await gateway.exchange(credential: credential, challenge: challenge)
         try Task.checkCancellation()
         if let expectedFormerUserID, expectedFormerUserID != session.userID {
+            try? await gateway.signOut(session)
             throw AuthenticationError.wrongAccount
         }
         do {
@@ -187,11 +228,74 @@ actor AuthenticationCoordinator {
         return refreshed
     }
 
-    func signOut(revokeProvider: Bool) async throws {
+    func reauthenticate(
+        credential: NativeIdentityCredential,
+        currentSession: AuthenticationSessionMaterial,
+        authenticatedAt: Date
+    ) async throws -> ReauthenticatedSession {
+        guard let challenge = pendingChallenge else {
+            throw AuthenticationError.missingChallenge
+        }
+        guard challenge.provider == credential.provider,
+              challenge.provider == currentSession.provider,
+              challenge.state == credential.returnedState
+        else {
+            throw AuthenticationError.invalidState
+        }
+        guard challenge.rawNonce == credential.rawNonce else {
+            throw AuthenticationError.invalidNonce
+        }
+
+        try Task.checkCancellation()
+        let refreshed = try await gateway.exchange(
+            credential: credential,
+            challenge: challenge
+        )
+        try Task.checkCancellation()
+        guard refreshed.userID == currentSession.userID,
+              refreshed.provider == currentSession.provider
+        else {
+            try? await gateway.signOut(refreshed)
+            throw AuthenticationError.wrongAccount
+        }
+        do {
+            try sessionStore.write(refreshed)
+        } catch {
+            try? await gateway.signOut(refreshed)
+            throw AuthenticationError.keychainFailure
+        }
+        pendingChallenge = nil
+        return ReauthenticatedSession(
+            session: refreshed,
+            proof: RecentReauthentication(
+                userID: refreshed.userID,
+                provider: refreshed.provider,
+                authenticatedAt: authenticatedAt
+            )
+        )
+    }
+
+    func signOut(
+        providerRevocationCredential: ProviderGrantCredential?
+    ) async throws -> SignOutAuthenticationResult {
         let session = try sessionStore.read()
+        var providerRevocationFailed = false
         if let session {
-            if revokeProvider {
-                try await gateway.revoke(session)
+            if let providerRevocationCredential {
+                guard providerRevocationCredential.provider == session.provider else {
+                    throw AuthenticationError.providerCollision
+                }
+                do {
+                    try await gateway.revokeProviderGrant(
+                        ProviderGrantRevocationRequest(
+                            userID: session.userID,
+                            provider: session.provider,
+                            credential: providerRevocationCredential
+                        )
+                    )
+                } catch {
+                    providerRevocationFailed = true
+                }
             }
             try await gateway.signOut(session)
         }
@@ -200,5 +304,6 @@ actor AuthenticationCoordinator {
         } catch {
             throw AuthenticationError.keychainFailure
         }
+        return providerRevocationFailed ? .signedOutProviderGrantNotRevoked : .signedOut
     }
 }

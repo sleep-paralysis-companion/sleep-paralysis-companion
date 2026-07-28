@@ -2,7 +2,7 @@ import Foundation
 import Supabase
 
 nonisolated protocol ProviderGrantRevoking: Sendable {
-    func revoke(provider: AuthenticationProvider, accessToken: String) async throws
+    func revoke(_ request: ProviderGrantRevocationRequest) async throws
 }
 
 actor SupabaseAuthenticationGateway: AuthenticationGateway {
@@ -42,8 +42,11 @@ actor SupabaseAuthenticationGateway: AuthenticationGateway {
         return material(from: refreshed, provider: session.provider)
     }
 
-    func revoke(_ session: AuthenticationSessionMaterial) async throws {
-        try await providerRevoker.revoke(provider: session.provider, accessToken: session.accessToken)
+    func revokeProviderGrant(_ request: ProviderGrantRevocationRequest) async throws {
+        guard request.provider == request.credential.provider else {
+            throw AuthenticationError.providerCollision
+        }
+        try await providerRevoker.revoke(request)
     }
 
     func signOut(_ session: AuthenticationSessionMaterial) async throws {

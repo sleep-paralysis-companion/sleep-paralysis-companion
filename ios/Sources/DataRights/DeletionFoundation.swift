@@ -11,15 +11,6 @@ nonisolated enum PendingWorkSignOutChoice: String, Codable, CaseIterable, Sendab
     case cancel
 }
 
-nonisolated struct RecentReauthentication: Equatable, Sendable {
-    let userID: UUID
-    let authenticatedAt: Date
-
-    func isValid(now: Date, maximumAge: TimeInterval = 5 * 60) -> Bool {
-        authenticatedAt <= now && now.timeIntervalSince(authenticatedAt) <= maximumAge
-    }
-}
-
 nonisolated enum AccountDeletionState: Equatable, Sendable {
     case idle
     case reauthenticationRequired
@@ -37,7 +28,16 @@ nonisolated protocol ProtectedLocalFilesRemoving: Sendable {
 }
 
 nonisolated protocol AccountDeletionGateway: Sendable {
-    func deleteAccount(requestID: UUID, accessToken: String) async throws
+    func deleteAccount(
+        requestID: UUID,
+        accessToken: String,
+        retryToken: String?
+    ) async throws
+}
+
+nonisolated enum AccountDeletionGatewayError: Error, Equatable, Sendable {
+    case recoverable(retryToken: String?)
+    case rejected
 }
 
 nonisolated enum DeletionError: Error, Equatable, Sendable {
@@ -53,7 +53,7 @@ nonisolated struct SignOutRequest: Sendable {
     let pendingWork: Bool
     let pendingChoice: PendingWorkSignOutChoice?
     let localChoice: SignOutLocalDataChoice
-    let revokeProvider: Bool
+    let providerRevocationCredential: ProviderGrantCredential?
 }
 
 actor SignOutCoordinator {
@@ -78,7 +78,9 @@ actor SignOutCoordinator {
             }
         }
 
-        try await authentication.signOut(revokeProvider: request.revokeProvider)
+        _ = try await authentication.signOut(
+            providerRevocationCredential: request.providerRevocationCredential
+        )
         switch request.localChoice {
         case .keepProtectedLocalCopy:
             try await database.protectFormerAccountData(
@@ -129,6 +131,7 @@ actor AccountDeletionCoordinator {
     private let localDeletion: LocalDataDeletionCoordinator
     private let identifier: any IdentifierGenerating
     private let clock: any Phase1BClock
+    private var retryToken: String?
     private(set) var state: AccountDeletionState = .idle
 
     init(
@@ -151,6 +154,9 @@ actor AccountDeletionCoordinator {
         guard reauthentication.userID == session.userID else {
             throw DeletionError.wrongAccount
         }
+        guard reauthentication.provider == session.provider else {
+            throw DeletionError.wrongAccount
+        }
         guard reauthentication.isValid(now: clock.now()) else {
             state = .reauthenticationRequired
             throw DeletionError.recentReauthenticationRequired
@@ -163,14 +169,25 @@ actor AccountDeletionCoordinator {
         }
         state = .deleting(requestID: requestID)
         do {
-            try await remote.deleteAccount(requestID: requestID, accessToken: session.accessToken)
+            try await remote.deleteAccount(
+                requestID: requestID,
+                accessToken: session.accessToken,
+                retryToken: retryToken
+            )
             if removeLocalData {
                 try await localDeletion.deleteAllLocalData()
             }
+            retryToken = nil
             state = .completed
         } catch is CancellationError {
             state = .failedRecoverable(requestID: requestID)
             throw CancellationError()
+        } catch let error as AccountDeletionGatewayError {
+            if case let .recoverable(nextRetryToken) = error {
+                retryToken = nextRetryToken ?? retryToken
+            }
+            state = .failedRecoverable(requestID: requestID)
+            throw DeletionError.remoteDeletionFailedRecoverable
         } catch {
             state = .failedRecoverable(requestID: requestID)
             throw DeletionError.remoteDeletionFailedRecoverable

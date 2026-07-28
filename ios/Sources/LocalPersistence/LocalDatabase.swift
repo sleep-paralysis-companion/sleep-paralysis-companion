@@ -114,6 +114,18 @@ actor LocalDatabase {
         }
     }
 
+    func alarm(id: UUID, profileID: UUID) throws -> AlarmPreference? {
+        try pool.read { database in
+            guard let record = try AlarmPreferenceRecord.fetchOne(
+                database,
+                key: id.uuidString
+            ), record.profileID == profileID.uuidString else {
+                return nil
+            }
+            return try record.domainValue()
+        }
+    }
+
     func saveAudioCatalogItem(_ item: AudioCatalogItem) throws {
         let record = AudioCatalogRecord(
             id: item.id,
@@ -256,6 +268,18 @@ actor LocalDatabase {
         }
     }
 
+    func checkIn(id: UUID, profileID: UUID) throws -> SubmittedCheckIn? {
+        try pool.read { database in
+            guard let record = try SubmittedCheckInRecord.fetchOne(
+                database,
+                key: id.uuidString
+            ), record.profileID == profileID.uuidString else {
+                return nil
+            }
+            return try record.domainValue()
+        }
+    }
+
     func deleteCheckIn(_ request: DeleteCheckInRequest) throws {
         try write { database in
             guard var record = try SubmittedCheckInRecord.fetchOne(
@@ -287,7 +311,7 @@ actor LocalDatabase {
                 id: request.operationID.uuidString,
                 profileID: request.profileID.uuidString,
                 entityType: SyncEntityType.tombstone.rawValue,
-                entityID: request.id.uuidString,
+                entityID: request.tombstoneID.uuidString,
                 operation: SyncOperationKind.delete.rawValue,
                 idempotencyKey: request.idempotencyKey.uuidString,
                 baseRevision: record.revision - 1,
@@ -417,6 +441,64 @@ actor LocalDatabase {
         try write { try SynchronizationOperationRecord(operation).update($0) }
     }
 
+    func acknowledgeRemoteMutation(
+        operation: SynchronizationOperation,
+        acknowledgment: RemoteMutationAcknowledgment
+    ) throws {
+        guard acknowledgment.idempotencyKey == operation.idempotencyKey,
+              acknowledgment.entityID == operation.entityID,
+              acknowledgment.acceptedRevision == operation.localRevision
+        else {
+            throw LocalDatabaseError.constraintViolation
+        }
+
+        try write { database in
+            guard var operationRecord = try SynchronizationOperationRecord.fetchOne(
+                database,
+                key: operation.id.uuidString
+            ),
+                operationRecord.profileID == operation.profileID.uuidString,
+                operationRecord.entityType == operation.entityType.rawValue,
+                operationRecord.entityID == operation.entityID.uuidString
+            else {
+                throw LocalDatabaseError.constraintViolation
+            }
+
+            operationRecord.state = operation.state.rawValue
+            operationRecord.attemptCount = operation.attemptCount
+            operationRecord.nextAttemptAt = operation.nextAttemptAt?.timeIntervalSince1970
+            operationRecord.lastErrorCategory = operation.lastErrorCategory?.rawValue
+            operationRecord.updatedAt = operation.updatedAt.timeIntervalSince1970
+            try operationRecord.update(database)
+
+            try EntityRevisionRecord(
+                profileID: operation.profileID.uuidString,
+                entityType: operation.entityType.rawValue,
+                entityID: operation.entityID.uuidString,
+                localRevision: operation.localRevision,
+                acknowledgedRemoteRevision: acknowledgment.acceptedRevision,
+                lastRemoteMutationID: acknowledgment.serverMutationID.uuidString
+            ).save(database)
+
+            if operation.entityType == .tombstone {
+                guard let acknowledgedAt = acknowledgment.acknowledgedAt,
+                      let purgeAfter = acknowledgment.purgeAfter,
+                      purgeAfter >= acknowledgedAt,
+                      var tombstone = try DeletionTombstoneRecord.fetchOne(
+                          database,
+                          key: operation.entityID.uuidString
+                      ),
+                      tombstone.profileID == operation.profileID.uuidString
+                else {
+                    throw LocalDatabaseError.constraintViolation
+                }
+                tombstone.acknowledgedAt = acknowledgedAt.timeIntervalSince1970
+                tombstone.purgeAfter = purgeAfter.timeIntervalSince1970
+                try tombstone.update(database)
+            }
+        }
+    }
+
     func operations(profileID: UUID) throws -> [SynchronizationOperation] {
         try pool.read { database in
             try SynchronizationOperationRecord
@@ -494,6 +576,31 @@ actor LocalDatabase {
                         purgeAfter: Date(timeIntervalSince1970: record.purgeAfter)
                     )
                 }
+        }
+    }
+
+    func tombstone(id: UUID, profileID: UUID) throws -> DeletionTombstone? {
+        try pool.read { database in
+            guard let record = try DeletionTombstoneRecord.fetchOne(
+                database,
+                key: id.uuidString
+            ),
+                record.profileID == profileID.uuidString,
+                let entityID = UUID(uuidString: record.entityID),
+                let entityType = SyncEntityType(rawValue: record.entityType)
+            else {
+                return nil
+            }
+            return DeletionTombstone(
+                id: id,
+                profileID: profileID,
+                entityType: entityType,
+                entityID: entityID,
+                deletedRevision: record.deletedRevision,
+                deletedAt: Date(timeIntervalSince1970: record.deletedAt),
+                acknowledgedAt: record.acknowledgedAt.map(Date.init(timeIntervalSince1970:)),
+                purgeAfter: Date(timeIntervalSince1970: record.purgeAfter)
+            )
         }
     }
 
@@ -720,6 +827,8 @@ actor LocalDatabase {
         } catch let error as Phase1BValidationError {
             throw error
         } catch let error as AuthenticationError {
+            throw error
+        } catch let error as LocalDatabaseError {
             throw error
         } catch let error as DatabaseError where error.extendedResultCode == .SQLITE_CONSTRAINT_CHECK
             || error.extendedResultCode == .SQLITE_CONSTRAINT_UNIQUE

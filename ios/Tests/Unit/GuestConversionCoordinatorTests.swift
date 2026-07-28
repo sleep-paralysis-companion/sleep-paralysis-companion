@@ -201,7 +201,9 @@ final class GuestConversionCoordinatorTests: XCTestCase {
         do {
             _ = try await task.value
             XCTFail("Expected cancellation.")
-        } catch is CancellationError {}
+        } catch is CancellationError {
+            XCTAssertTrue(task.isCancelled)
+        }
 
         let profile = try await database.profile(id: Phase1BFixture.profileID)
         let checkpoint = try await database.conversionCheckpoint(profileID: Phase1BFixture.profileID)

@@ -30,6 +30,22 @@ if grep -R -n -E "$FORBIDDEN_RESOURCE" "$RESOURCE_ROOT"; then
   exit 1
 fi
 
+if grep -R -n -E \
+  'ProviderGrantCredential|appleAuthorizationCode|googleOAuthAccessToken|provider-revocation-proof' \
+  "$SOURCE_ROOT/LocalPersistence" \
+  "$SOURCE_ROOT/DataRights/ExportFoundation.swift" \
+  "$RESOURCE_ROOT"; then
+  echo "Provider revocation credential escaped its ephemeral authentication boundary." >&2
+  exit 1
+fi
+
+if grep -R -n -E '\b(Logger|os_log|print)\b' \
+  "$SOURCE_ROOT/Authentication" \
+  "$SOURCE_ROOT/DataRights/SupabaseAccountDeletionGateway.swift"; then
+  echo "Authentication or provider credentials could cross a logging boundary." >&2
+  exit 1
+fi
+
 if find "$REPOSITORY_ROOT/ios" \
   -path "$REPOSITORY_ROOT/ios/.generated" -prune -o \
   -type f \( -name '*.entitlements' -o -name '*.mobileprovision' -o -name '*.p8' \) \

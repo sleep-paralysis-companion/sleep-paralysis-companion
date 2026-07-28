@@ -78,11 +78,19 @@ actor SynchronizationEngine {
             else {
                 throw RemoteMutationError.staleResponse
             }
+            if operation.entityType == .tombstone,
+               (acknowledgment.acknowledgedAt == nil || acknowledgment.purgeAfter == nil)
+            {
+                throw RemoteMutationError.staleResponse
+            }
             operation.state = operation.operation == .delete ? .deleted : .synced
             operation.lastErrorCategory = nil
             operation.nextAttemptAt = nil
             operation.updatedAt = clock.now()
-            try await database.saveOperation(operation)
+            try await database.acknowledgeRemoteMutation(
+                operation: operation,
+                acknowledgment: acknowledgment
+            )
             return true
         } catch is CancellationError {
             operation.state = .failedRecoverable

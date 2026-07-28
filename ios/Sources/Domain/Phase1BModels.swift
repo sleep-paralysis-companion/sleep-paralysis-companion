@@ -179,6 +179,15 @@ nonisolated enum SyncEntityType: String, Codable, CaseIterable, Sendable {
     case alarm
     case checkIn
     case tombstone
+
+    var remoteName: String {
+        switch self {
+        case .checkIn:
+            "checkin"
+        default:
+            rawValue
+        }
+    }
 }
 
 nonisolated enum SyncOperationKind: String, Codable, CaseIterable, Sendable {

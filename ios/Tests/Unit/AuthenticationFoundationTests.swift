@@ -9,12 +9,18 @@ actor ScriptedAuthenticationGateway: AuthenticationGateway {
     }
 
     private let behavior: Behavior
+    private let revokeFailure: AuthenticationError?
     private(set) var refreshCount = 0
     private(set) var revokeCount = 0
     private(set) var signOutCount = 0
+    private(set) var revokedProvider: AuthenticationProvider?
 
-    init(behavior: Behavior) {
+    init(
+        behavior: Behavior,
+        revokeFailure: AuthenticationError? = nil
+    ) {
         self.behavior = behavior
+        self.revokeFailure = revokeFailure
     }
 
     func exchange(
@@ -44,9 +50,12 @@ actor ScriptedAuthenticationGateway: AuthenticationGateway {
         return refreshed
     }
 
-    func revoke(_ session: AuthenticationSessionMaterial) async throws {
-        _ = session
+    func revokeProviderGrant(_ request: ProviderGrantRevocationRequest) async throws {
         revokeCount += 1
+        revokedProvider = request.provider
+        if let revokeFailure {
+            throw revokeFailure
+        }
     }
 
     func signOut(_ session: AuthenticationSessionMaterial) async throws {
@@ -154,6 +163,8 @@ final class AuthenticationFoundationTests: XCTestCase {
             )
         }
         XCTAssertNil(try store.read())
+        let signOutCount = await gateway.signOutCount
+        XCTAssertEqual(signOutCount, 1)
     }
 
     func testProviderCollisionIsSurfaced() async throws {
@@ -225,7 +236,7 @@ final class AuthenticationFoundationTests: XCTestCase {
         XCTAssertEqual(refreshCount, 1)
     }
 
-    func testSignOutRevokesAndCleansSession() async throws {
+    func testSignOutUsesProviderCredentialAndSeparatelyCleansSupabaseSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
         try store.write(Phase1BFixture.session())
@@ -236,11 +247,126 @@ final class AuthenticationFoundationTests: XCTestCase {
             sessionStore: store
         )
 
-        try await coordinator.signOut(revokeProvider: true)
+        let result = try await coordinator.signOut(
+            providerRevocationCredential: .appleAuthorizationCode("ephemeral-proof")
+        )
         let revokeCount = await gateway.revokeCount
         let signOutCount = await gateway.signOutCount
+        let revokedProvider = await gateway.revokedProvider
         XCTAssertNil(try store.read())
         XCTAssertEqual(revokeCount, 1)
+        XCTAssertEqual(signOutCount, 1)
+        XCTAssertEqual(revokedProvider, .apple)
+        XCTAssertEqual(result, .signedOut)
+    }
+
+    func testProviderRevocationFailureStillSignsOutAndPreservesGuestUsability() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        try store.write(Phase1BFixture.session())
+        let gateway = ScriptedAuthenticationGateway(
+            behavior: .success(Phase1BFixture.session()),
+            revokeFailure: .externalProviderUnavailable
+        )
+        let coordinator = AuthenticationCoordinator(
+            challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 2)),
+            gateway: gateway,
+            sessionStore: store
+        )
+
+        let result = try await coordinator.signOut(
+            providerRevocationCredential: .appleAuthorizationCode("ephemeral-proof")
+        )
+
+        XCTAssertEqual(result, .signedOutProviderGrantNotRevoked)
+        XCTAssertNil(try store.read())
+        let revokeCount = await gateway.revokeCount
+        let signOutCount = await gateway.signOutCount
+        XCTAssertEqual(revokeCount, 1)
+        XCTAssertEqual(signOutCount, 1)
+    }
+
+    func testProviderCredentialMustMatchSignedInProvider() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        try store.write(Phase1BFixture.session())
+        let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
+        let coordinator = AuthenticationCoordinator(
+            challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 2)),
+            gateway: gateway,
+            sessionStore: store
+        )
+
+        await XCTAssertThrowsErrorAsync {
+            _ = try await coordinator.signOut(
+                providerRevocationCredential: .googleOAuthAccessToken("ephemeral-proof")
+            )
+        }
+        XCTAssertEqual(try store.read(), Phase1BFixture.session())
+        let revokeCount = await gateway.revokeCount
+        let signOutCount = await gateway.signOutCount
+        XCTAssertEqual(revokeCount, 0)
+        XCTAssertEqual(signOutCount, 0)
+    }
+
+    func testRecentReauthenticationRequiresMatchingAccountAndProvider() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        try store.write(Phase1BFixture.session())
+        let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
+        let coordinator = AuthenticationCoordinator(
+            challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 6)),
+            gateway: gateway,
+            sessionStore: store
+        )
+        let challenge = try await coordinator.begin(provider: .apple)
+        let result = try await coordinator.reauthenticate(
+            credential: NativeIdentityCredential(
+                provider: .apple,
+                idToken: "ephemeral-proof",
+                returnedState: challenge.state,
+                rawNonce: challenge.rawNonce
+            ),
+            currentSession: Phase1BFixture.session(),
+            authenticatedAt: Phase1BFixture.now
+        )
+
+        XCTAssertEqual(result.session.userID, Phase1BFixture.userID)
+        XCTAssertEqual(result.proof.userID, Phase1BFixture.userID)
+        XCTAssertEqual(result.proof.provider, .apple)
+        XCTAssertTrue(result.proof.isValid(now: Phase1BFixture.now))
+    }
+
+    func testWrongAccountReauthenticationStopsWithoutReplacingStoredSession() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        try store.write(Phase1BFixture.session())
+        let different = Phase1BFixture.session(
+            userID: Phase1BFixture.uuid("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+        )
+        let gateway = ScriptedAuthenticationGateway(behavior: .success(different))
+        let coordinator = AuthenticationCoordinator(
+            challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 6)),
+            gateway: gateway,
+            sessionStore: store
+        )
+        let challenge = try await coordinator.begin(provider: .apple)
+
+        await XCTAssertThrowsErrorAsync {
+            _ = try await coordinator.reauthenticate(
+                credential: NativeIdentityCredential(
+                    provider: .apple,
+                    idToken: "ephemeral-proof",
+                    returnedState: challenge.state,
+                    rawNonce: challenge.rawNonce
+                ),
+                currentSession: Phase1BFixture.session(),
+                authenticatedAt: Phase1BFixture.now
+            )
+        }
+
+        XCTAssertEqual(try store.read(), Phase1BFixture.session())
+        let signOutCount = await gateway.signOutCount
         XCTAssertEqual(signOutCount, 1)
     }
 

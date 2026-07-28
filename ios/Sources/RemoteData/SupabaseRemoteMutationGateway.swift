@@ -5,21 +5,58 @@ nonisolated protocol RemoteMutationGateway: Sendable {
     func apply(_ request: RemoteMutationRequest) async throws -> RemoteMutationAcknowledgment
 }
 
-actor SupabaseRemoteMutationGateway: RemoteMutationGateway {
+nonisolated protocol RemoteMutationRPCExecuting: Sendable {
+    func execute(_ parameters: RemoteMutationRPCParameters) async throws -> RemoteMutationRPCResult
+}
+
+actor SupabaseRemoteMutationRPCExecutor: RemoteMutationRPCExecuting {
     private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func execute(_ parameters: RemoteMutationRPCParameters) async throws -> RemoteMutationRPCResult {
+        let results: [RemoteMutationRPCResult] = try await client
+            .rpc("apply_sync_mutation", params: parameters)
+            .execute()
+            .value
+        guard let result = results.first else {
+            throw RemoteMutationError.backendUnavailable
+        }
+        return result
+    }
+}
+
+actor SupabaseRemoteMutationGateway: RemoteMutationGateway {
+    private let executor: any RemoteMutationRPCExecuting
     private let identifier: any IdentifierGenerating
 
     init(
         client: SupabaseClient,
         identifier: any IdentifierGenerating
     ) {
-        self.client = client
+        executor = SupabaseRemoteMutationRPCExecutor(client: client)
+        self.identifier = identifier
+    }
+
+    init(
+        executor: any RemoteMutationRPCExecuting,
+        identifier: any IdentifierGenerating
+    ) {
+        self.executor = executor
         self.identifier = identifier
     }
 
     func apply(_ request: RemoteMutationRequest) async throws -> RemoteMutationAcknowledgment {
-        guard request.authenticatedUserID == ownerID(for: request.payload) else {
+        guard request.authenticatedUserID == request.payload.ownerUserID else {
             throw RemoteMutationError.authorization
+        }
+        guard SyncMutationCompatibility.validates(
+            operation: request.operation,
+            payload: request.payload
+        ) else {
+            throw RemoteMutationError.validation
         }
         try Task.checkCancellation()
 
@@ -32,7 +69,9 @@ actor SupabaseRemoteMutationGateway: RemoteMutationGateway {
             idempotencyKey: request.operation.idempotencyKey,
             entityID: request.operation.entityID,
             acceptedRevision: result.acceptedRevision,
-            serverMutationID: result.serverMutationID
+            serverMutationID: result.serverMutationID,
+            acknowledgedAt: result.acknowledgedAt,
+            purgeAfter: result.purgeAfter
         )
     }
 
@@ -40,56 +79,16 @@ actor SupabaseRemoteMutationGateway: RemoteMutationGateway {
         request: RemoteMutationRequest,
         receiptID: UUID
     ) async throws -> RemoteMutationRPCResult {
-        switch request.payload {
-        case let .profile(value):
-            try await execute(request: request, receiptID: receiptID, payload: value)
-        case let .settings(value):
-            try await execute(request: request, receiptID: receiptID, payload: value)
-        case let .alarm(value):
-            try await execute(request: request, receiptID: receiptID, payload: value)
-        case let .checkIn(value):
-            try await execute(request: request, receiptID: receiptID, payload: value)
-        case let .tombstone(value):
-            try await execute(request: request, receiptID: receiptID, payload: value)
-        }
-    }
-
-    private func execute(
-        request: RemoteMutationRequest,
-        receiptID: UUID,
-        payload: some Encodable & Sendable
-    ) async throws -> RemoteMutationRPCResult {
         let parameters = RemoteMutationRPCParameters(
             receiptID: receiptID,
             idempotencyKey: request.operation.idempotencyKey,
-            entityType: request.operation.entityType.rawValue,
+            entityType: request.operation.entityType.remoteName,
             entityID: request.operation.entityID,
             operation: request.operation.operation.rawValue,
+            baseRevision: request.operation.baseRevision,
             entityRevision: request.operation.localRevision,
-            payload: payload
+            payload: request.payload
         )
-        let results: [RemoteMutationRPCResult] = try await client
-            .rpc("apply_sync_mutation", params: parameters)
-            .execute()
-            .value
-        guard let result = results.first else {
-            throw RemoteMutationError.backendUnavailable
-        }
-        return result
-    }
-
-    private func ownerID(for payload: RemoteMutationPayload) -> UUID {
-        switch payload {
-        case let .profile(value):
-            value.ownerUserID
-        case let .settings(value):
-            value.ownerUserID
-        case let .alarm(value):
-            value.ownerUserID
-        case let .checkIn(value):
-            value.ownerUserID
-        case let .tombstone(value):
-            value.ownerUserID
-        }
+        return try await executor.execute(parameters)
     }
 }

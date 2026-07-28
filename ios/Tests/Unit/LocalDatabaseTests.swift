@@ -151,6 +151,10 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertNotNil(includingDeleted.first?.deletedAt)
         let operations = try await database.operations(profileID: Phase1BFixture.profileID)
         XCTAssertEqual(operations.count, 1)
+        XCTAssertEqual(
+            operations.first?.entityID,
+            Phase1BFixture.uuid("66666666-6666-4666-8666-666666666666")
+        )
         XCTAssertEqual(operations.first?.idempotencyKey, Phase1BFixture.key)
         let tombstones = try await database.tombstones(profileID: Phase1BFixture.profileID)
         XCTAssertEqual(tombstones.count, 1)
@@ -329,5 +333,7 @@ func XCTAssertThrowsErrorAsync(
     do {
         try await expression()
         XCTFail("Expected an error.", file: file, line: line)
-    } catch {}
+    } catch {
+        _ = error
+    }
 }

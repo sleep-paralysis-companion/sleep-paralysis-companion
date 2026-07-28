@@ -27,6 +27,7 @@ trap cleanup EXIT
 
 deno fmt --check supabase/functions
 deno lint supabase/functions
+deno check supabase/functions/delete-account/index.ts
 deno test --allow-env --allow-net supabase/functions/delete-account/handler_test.ts
 
 bash scripts/secret_scan.sh

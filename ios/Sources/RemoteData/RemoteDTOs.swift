@@ -91,8 +91,6 @@ nonisolated struct RemoteTombstoneDTO: Codable, Equatable, Sendable {
     let entityID: UUID
     let deletedRevision: Int64
     let deletedAt: Date
-    let acknowledgedAt: Date?
-    let purgeAfter: Date
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -101,8 +99,6 @@ nonisolated struct RemoteTombstoneDTO: Codable, Equatable, Sendable {
         case entityID = "entity_id"
         case deletedRevision = "deleted_revision"
         case deletedAt = "deleted_at"
-        case acknowledgedAt = "acknowledged_at"
-        case purgeAfter = "purge_after"
     }
 }
 
@@ -113,7 +109,9 @@ nonisolated struct RemoteMutationReceiptDTO: Codable, Equatable, Sendable {
     let entityType: String
     let entityID: UUID
     let operation: String
+    let baseRevision: Int64
     let entityRevision: Int64
+    let payloadHash: String
     let expiresAt: Date
 
     enum CodingKeys: String, CodingKey {
@@ -123,19 +121,22 @@ nonisolated struct RemoteMutationReceiptDTO: Codable, Equatable, Sendable {
         case entityType = "entity_type"
         case entityID = "entity_id"
         case operation
+        case baseRevision = "base_revision"
         case entityRevision = "entity_revision"
+        case payloadHash = "payload_hash"
         case expiresAt = "expires_at"
     }
 }
 
-nonisolated struct RemoteMutationRPCParameters<Payload: Encodable & Sendable>: Encodable, Sendable {
+nonisolated struct RemoteMutationRPCParameters: Encodable, Sendable {
     let receiptID: UUID
     let idempotencyKey: UUID
     let entityType: String
     let entityID: UUID
     let operation: String
+    let baseRevision: Int64
     let entityRevision: Int64
-    let payload: Payload
+    let payload: RemoteMutationPayload
 
     enum CodingKeys: String, CodingKey {
         case receiptID = "p_receipt_id"
@@ -143,6 +144,7 @@ nonisolated struct RemoteMutationRPCParameters<Payload: Encodable & Sendable>: E
         case entityType = "p_entity_type"
         case entityID = "p_entity_id"
         case operation = "p_operation"
+        case baseRevision = "p_base_revision"
         case entityRevision = "p_entity_revision"
         case payload = "p_payload"
     }
@@ -151,19 +153,98 @@ nonisolated struct RemoteMutationRPCParameters<Payload: Encodable & Sendable>: E
 nonisolated struct RemoteMutationRPCResult: Decodable, Sendable {
     let serverMutationID: UUID
     let acceptedRevision: Int64
+    let acknowledgedAt: Date?
+    let purgeAfter: Date?
 
     enum CodingKeys: String, CodingKey {
         case serverMutationID = "server_mutation_id"
         case acceptedRevision = "accepted_revision"
+        case acknowledgedAt = "acknowledged_at"
+        case purgeAfter = "purge_after"
     }
 }
 
-nonisolated enum RemoteMutationPayload: Sendable {
+nonisolated enum RemoteMutationPayload: Encodable, Sendable {
     case profile(RemoteProfileDTO)
     case settings(RemoteSettingsDTO)
     case alarm(RemoteAlarmPreferenceDTO)
     case checkIn(RemoteCheckInDTO)
     case tombstone(RemoteTombstoneDTO)
+
+    var entityType: SyncEntityType {
+        switch self {
+        case .profile:
+            .profile
+        case .settings:
+            .settings
+        case .alarm:
+            .alarm
+        case .checkIn:
+            .checkIn
+        case .tombstone:
+            .tombstone
+        }
+    }
+
+    var entityID: UUID {
+        switch self {
+        case let .profile(value):
+            value.id
+        case let .settings(value):
+            value.id
+        case let .alarm(value):
+            value.id
+        case let .checkIn(value):
+            value.id
+        case let .tombstone(value):
+            value.id
+        }
+    }
+
+    var ownerUserID: UUID {
+        switch self {
+        case let .profile(value):
+            value.ownerUserID
+        case let .settings(value):
+            value.ownerUserID
+        case let .alarm(value):
+            value.ownerUserID
+        case let .checkIn(value):
+            value.ownerUserID
+        case let .tombstone(value):
+            value.ownerUserID
+        }
+    }
+
+    var revision: Int64 {
+        switch self {
+        case let .profile(value):
+            value.revision
+        case let .settings(value):
+            value.revision
+        case let .alarm(value):
+            value.revision
+        case let .checkIn(value):
+            value.revision
+        case let .tombstone(value):
+            value.deletedRevision
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case let .profile(value):
+            try value.encode(to: encoder)
+        case let .settings(value):
+            try value.encode(to: encoder)
+        case let .alarm(value):
+            try value.encode(to: encoder)
+        case let .checkIn(value):
+            try value.encode(to: encoder)
+        case let .tombstone(value):
+            try value.encode(to: encoder)
+        }
+    }
 }
 
 nonisolated struct RemoteMutationRequest: Sendable {
@@ -177,6 +258,8 @@ nonisolated struct RemoteMutationAcknowledgment: Equatable, Sendable {
     let entityID: UUID
     let acceptedRevision: Int64
     let serverMutationID: UUID
+    let acknowledgedAt: Date?
+    let purgeAfter: Date?
 }
 
 nonisolated enum RemoteMutationError: Error, Equatable, Sendable {

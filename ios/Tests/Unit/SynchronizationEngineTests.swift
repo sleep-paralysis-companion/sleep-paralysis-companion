@@ -54,14 +54,18 @@ actor ScriptedRemoteMutationGateway: RemoteMutationGateway {
                 idempotencyKey: request.operation.idempotencyKey,
                 entityID: request.operation.entityID,
                 acceptedRevision: request.operation.localRevision,
-                serverMutationID: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777")
+                serverMutationID: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777"),
+                acknowledgedAt: nil,
+                purgeAfter: nil
             )
         case .stale:
             return RemoteMutationAcknowledgment(
                 idempotencyKey: request.operation.idempotencyKey,
                 entityID: request.operation.entityID,
                 acceptedRevision: request.operation.localRevision + 1,
-                serverMutationID: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777")
+                serverMutationID: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777"),
+                acknowledgedAt: nil,
+                purgeAfter: nil
             )
         case let .failure(error):
             throw error
@@ -69,6 +73,43 @@ actor ScriptedRemoteMutationGateway: RemoteMutationGateway {
             try await Task.sleep(for: .seconds(60))
             throw RemoteMutationError.network
         }
+    }
+}
+
+actor TombstoneContractRPCExecutor: RemoteMutationRPCExecuting {
+    private(set) var callCount = 0
+    private(set) var receiptCount = 0
+    private(set) var remoteTombstoneCount = 0
+    private(set) var lastParameters: RemoteMutationRPCParameters?
+    private var acceptedIdempotencyKeys: Set<UUID> = []
+
+    func execute(_ parameters: RemoteMutationRPCParameters) async throws -> RemoteMutationRPCResult {
+        callCount += 1
+        guard parameters.entityType == "tombstone",
+              parameters.operation == SyncOperationKind.delete.rawValue,
+              parameters.baseRevision == 1,
+              parameters.entityRevision == 2,
+              case let .tombstone(payload) = parameters.payload,
+              payload.id == parameters.entityID,
+              payload.ownerUserID == Phase1BFixture.userID,
+              payload.entityType == "checkin",
+              payload.entityID == Phase1BFixture.entityID,
+              payload.deletedRevision == parameters.entityRevision
+        else {
+            throw RemoteMutationError.validation
+        }
+
+        lastParameters = parameters
+        if acceptedIdempotencyKeys.insert(parameters.idempotencyKey).inserted {
+            receiptCount += 1
+            remoteTombstoneCount += 1
+        }
+        return RemoteMutationRPCResult(
+            serverMutationID: parameters.receiptID,
+            acceptedRevision: parameters.entityRevision,
+            acknowledgedAt: Phase1BFixture.now.addingTimeInterval(120),
+            purgeAfter: Phase1BFixture.now.addingTimeInterval(31 * 86_400)
+        )
     }
 }
 
@@ -191,7 +232,9 @@ final class SynchronizationEngineTests: XCTestCase {
         do {
             _ = try await task.value
             XCTFail("Expected cancellation.")
-        } catch is CancellationError {}
+        } catch is CancellationError {
+            XCTAssertTrue(task.isCancelled)
+        }
 
         let operation = try await database.operations(profileID: Phase1BFixture.profileID).first
         XCTAssertEqual(operation?.state, .failedRecoverable)
@@ -205,6 +248,100 @@ final class SynchronizationEngineTests: XCTestCase {
         try await database.enqueue(operation)
         let operations = try await database.operations(profileID: Phase1BFixture.profileID)
         XCTAssertEqual(operations.count, 1)
+    }
+
+    func testDeletionContractUsesTombstoneIdentityThroughDatabasePayloadAndGateway() async throws {
+        let database = try await linkedDatabase()
+        try await database.submitCheckIn(Phase1BFixture.checkIn(), draftID: nil)
+        let tombstoneID = Phase1BFixture.uuid("66666666-6666-4666-8666-666666666666")
+        try await database.deleteCheckIn(
+            DeleteCheckInRequest(
+                id: Phase1BFixture.entityID,
+                profileID: Phase1BFixture.profileID,
+                date: Phase1BFixture.now.addingTimeInterval(60),
+                tombstoneID: tombstoneID,
+                operationID: Phase1BFixture.operationID,
+                idempotencyKey: Phase1BFixture.key
+            )
+        )
+
+        let executor = TombstoneContractRPCExecutor()
+        let gateway = SupabaseRemoteMutationGateway(
+            executor: executor,
+            identifier: FixedIdentifierGenerator(
+                value: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777")
+            )
+        )
+        let engine = SynchronizationEngine(
+            database: database,
+            payloadProvider: LocalDatabaseOutboundPayloadProvider(database: database),
+            remote: gateway,
+            clock: FixedClock(value: Phase1BFixture.now.addingTimeInterval(120)),
+            random: FixedUnitRandom(value: 0)
+        )
+
+        XCTAssertTrue(
+            try await engine.synchronizeNext(
+                profileID: Phase1BFixture.profileID,
+                authenticatedUserID: Phase1BFixture.userID
+            )
+        )
+        XCTAssertFalse(
+            try await engine.synchronizeNext(
+                profileID: Phase1BFixture.profileID,
+                authenticatedUserID: Phase1BFixture.userID
+            )
+        )
+
+        let operations = try await database.operations(profileID: Phase1BFixture.profileID)
+        let tombstone = try await database.tombstone(
+            id: tombstoneID,
+            profileID: Phase1BFixture.profileID
+        )
+        let revision = try await database.entityRevision(
+            profileID: Phase1BFixture.profileID,
+            entityType: .tombstone,
+            entityID: tombstoneID
+        )
+        let deletedCheckIn = try await database.checkIn(
+            id: Phase1BFixture.entityID,
+            profileID: Phase1BFixture.profileID
+        )
+        let parameters = await executor.lastParameters
+        let callCount = await executor.callCount
+        let receiptCount = await executor.receiptCount
+        let remoteTombstoneCount = await executor.remoteTombstoneCount
+
+        XCTAssertEqual(operations.first?.entityID, tombstoneID)
+        XCTAssertEqual(operations.first?.state, .deleted)
+        XCTAssertEqual(parameters?.entityID, tombstoneID)
+        XCTAssertEqual(parameters?.payload.entityID, tombstoneID)
+        XCTAssertEqual(tombstone?.id, tombstoneID)
+        XCTAssertNotNil(tombstone?.acknowledgedAt)
+        XCTAssertEqual(revision?.entityID, tombstoneID)
+        XCTAssertEqual(revision?.acknowledgedRemoteRevision, 2)
+        XCTAssertNotNil(deletedCheckIn?.deletedAt)
+        XCTAssertEqual(callCount, 1)
+        XCTAssertEqual(receiptCount, 1)
+        XCTAssertEqual(remoteTombstoneCount, 1)
+    }
+
+    func testProductionPayloadProviderRejectsForgedAuthenticatedOwner() async throws {
+        let database = try await linkedDatabase()
+        try await database.submitCheckIn(Phase1BFixture.checkIn(), draftID: nil)
+        let provider = LocalDatabaseOutboundPayloadProvider(database: database)
+
+        do {
+            _ = try await provider.payload(
+                for: Phase1BFixture.operation(),
+                authenticatedUserID: Phase1BFixture.uuid(
+                    "99999999-9999-4999-8999-999999999999"
+                )
+            )
+            XCTFail("Expected forged owner rejection.")
+        } catch let error as RemoteMutationError {
+            XCTAssertEqual(error, .authorization)
+        }
     }
 
     func testOneInFlightMutationPerEntity() async throws {
@@ -278,6 +415,16 @@ final class SynchronizationEngineTests: XCTestCase {
     private func seededDatabase() async throws -> LocalDatabase {
         let database = try LocalDatabase(path: temporaryDatabasePath())
         try await database.createProfile(Phase1BFixture.profile(), settings: Phase1BFixture.settings())
+        return database
+    }
+
+    private func linkedDatabase() async throws -> LocalDatabase {
+        let database = try LocalDatabase(path: temporaryDatabasePath())
+        var profile = Phase1BFixture.profile()
+        profile.ownership = .accountLinked
+        profile.accountUserID = Phase1BFixture.userID
+        profile.accountLinkState = .linked
+        try await database.createProfile(profile, settings: Phase1BFixture.settings())
         return database
     }
 
