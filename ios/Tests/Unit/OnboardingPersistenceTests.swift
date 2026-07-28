@@ -33,7 +33,7 @@ final class OnboardingPersistenceTests: XCTestCase {
         )
 
         await XCTAssertThrowsErrorAsync {
-            try await database.createGuestProfileIfAbsent(Phase1CFixture.profile())
+            _ = try await database.createGuestProfileIfAbsent(Phase1CFixture.profile())
         }
 
         let profile = try await database.activeProfile()
@@ -44,7 +44,7 @@ final class OnboardingPersistenceTests: XCTestCase {
         let database = try LocalDatabase(path: temporaryDatabasePath())
 
         await XCTAssertThrowsErrorAsync {
-            try await database.createGuestProfileIfAbsent(
+            _ = try await database.createGuestProfileIfAbsent(
                 Phase1CFixture.profile(completed: false)
             )
         }
