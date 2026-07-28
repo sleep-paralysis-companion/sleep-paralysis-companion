@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(57);
+select plan(59);
 
 select has_table('public', 'persona_answer_aggregates', 'complete persona aggregate exists remotely');
 select ok((select relrowsecurity from pg_class where oid = 'public.persona_answer_aggregates'::regclass), 'persona aggregate enables RLS');
@@ -351,6 +351,10 @@ delete from auth.users where id = 'a2000000-0000-4000-8000-000000000002';
 select is((select count(*)::integer from public.persona_answer_aggregates where owner_user_id = 'a2000000-0000-4000-8000-000000000002'), 0, 'account deletion cascades the live cascade-test persona');
 select is((select count(*)::integer from public.mutation_receipts where owner_user_id = 'a2000000-0000-4000-8000-000000000002'), 0, 'account deletion cascades the cascade-test mutation receipt');
 select is((select count(*)::integer from public.deletion_tombstones where owner_user_id = 'a1000000-0000-4000-8000-000000000001' and entity_type = 'persona'), 1, 'account deletion preserves the first owner tombstone evidence');
+
+delete from auth.users where id = 'a1000000-0000-4000-8000-000000000001';
+select is((select count(*)::integer from public.deletion_tombstones where owner_user_id = 'a1000000-0000-4000-8000-000000000001'), 0, 'account deletion cascades the first owner persona tombstone');
+select is((select count(*)::integer from public.mutation_receipts where owner_user_id = 'a1000000-0000-4000-8000-000000000001'), 0, 'account deletion cascades the first owner mutation receipts');
 
 set local role anon;
 select throws_ok($test$select * from public.persona_answer_aggregates$test$, '42501', null, 'anon cannot select persona rows');
