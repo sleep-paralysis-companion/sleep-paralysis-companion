@@ -79,7 +79,7 @@ actor SynchronizationEngine {
                 throw RemoteMutationError.staleResponse
             }
             if operation.entityType == .tombstone,
-               (acknowledgment.acknowledgedAt == nil || acknowledgment.purgeAfter == nil)
+               acknowledgment.acknowledgedAt == nil || acknowledgment.purgeAfter == nil
             {
                 throw RemoteMutationError.staleResponse
             }

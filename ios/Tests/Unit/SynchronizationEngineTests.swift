@@ -108,7 +108,7 @@ actor TombstoneContractRPCExecutor: RemoteMutationRPCExecuting {
             serverMutationID: parameters.receiptID,
             acceptedRevision: parameters.entityRevision,
             acknowledgedAt: Phase1BFixture.now.addingTimeInterval(120),
-            purgeAfter: Phase1BFixture.now.addingTimeInterval(31 * 86_400)
+            purgeAfter: Phase1BFixture.now.addingTimeInterval(31 * 86400)
         )
     }
 }
@@ -280,18 +280,16 @@ final class SynchronizationEngineTests: XCTestCase {
             random: FixedUnitRandom(value: 0)
         )
 
-        XCTAssertTrue(
-            try await engine.synchronizeNext(
-                profileID: Phase1BFixture.profileID,
-                authenticatedUserID: Phase1BFixture.userID
-            )
+        let firstAttemptDidWork = try await engine.synchronizeNext(
+            profileID: Phase1BFixture.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
-        XCTAssertFalse(
-            try await engine.synchronizeNext(
-                profileID: Phase1BFixture.profileID,
-                authenticatedUserID: Phase1BFixture.userID
-            )
+        let secondAttemptDidWork = try await engine.synchronizeNext(
+            profileID: Phase1BFixture.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
+        XCTAssertTrue(firstAttemptDidWork)
+        XCTAssertFalse(secondAttemptDidWork)
 
         let operations = try await database.operations(profileID: Phase1BFixture.profileID)
         let tombstone = try await database.tombstone(

@@ -150,8 +150,11 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
         guard let alarm = try await database.alarm(
             id: operation.entityID,
             profileID: operation.profileID
-        ), alarm.profileID == operation.profileID,
-            alarm.revision == operation.localRevision
+        ) else {
+            throw RemoteMutationError.validation
+        }
+        guard alarm.profileID == operation.profileID,
+              alarm.revision == operation.localRevision
         else {
             throw RemoteMutationError.validation
         }
@@ -176,9 +179,12 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
         guard let checkIn = try await database.checkIn(
             id: operation.entityID,
             profileID: operation.profileID
-        ), checkIn.profileID == operation.profileID,
-            checkIn.revision == operation.localRevision,
-            checkIn.deletedAt == nil
+        ) else {
+            throw RemoteMutationError.validation
+        }
+        guard checkIn.profileID == operation.profileID,
+              checkIn.revision == operation.localRevision,
+              checkIn.deletedAt == nil
         else {
             throw RemoteMutationError.validation
         }
@@ -207,9 +213,12 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
         guard let tombstone = try await database.tombstone(
             id: operation.entityID,
             profileID: operation.profileID
-        ), tombstone.profileID == operation.profileID,
-            tombstone.id == operation.entityID,
-            tombstone.deletedRevision == operation.localRevision
+        ) else {
+            throw RemoteMutationError.validation
+        }
+        guard tombstone.profileID == operation.profileID,
+              tombstone.id == operation.entityID,
+              tombstone.deletedRevision == operation.localRevision
         else {
             throw RemoteMutationError.validation
         }
