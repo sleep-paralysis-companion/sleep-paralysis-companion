@@ -9,8 +9,21 @@ plutil -lint "$MANIFEST"
 
 plutil -convert json -o - "$MANIFEST" | jq -e '
   .NSPrivacyTracking == false
-  and (.NSPrivacyCollectedDataTypes | length) == 0
-  and (.NSPrivacyAccessedAPITypes | length) == 0
+  and ([.NSPrivacyCollectedDataTypes[].NSPrivacyCollectedDataType] | sort)
+      == ([
+        "NSPrivacyCollectedDataTypeHealth",
+        "NSPrivacyCollectedDataTypeOtherUserContent",
+        "NSPrivacyCollectedDataTypeUserID"
+      ] | sort)
+  and ([.NSPrivacyCollectedDataTypes[] |
+        .NSPrivacyCollectedDataTypeLinked == true
+        and .NSPrivacyCollectedDataTypeTracking == false
+        and .NSPrivacyCollectedDataTypePurposes
+            == ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]] | all)
+  and .NSPrivacyAccessedAPITypes == [{
+    "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryFileTimestamp",
+    "NSPrivacyAccessedAPITypeReasons": ["C617.1"]
+  }]
   and (.NSPrivacyTrackingDomains | length) == 0
 '
 
@@ -24,7 +37,9 @@ grep -Fq "PrivacyInfo.xcprivacy" "$PROJECT_FILE" || {
   exit 1
 }
 
-if grep -R -n -E 'UserDefaults|systemUptime|volumeAvailableCapacity|creationDate|contentModificationDate|statfs|\bstat\(' "$REPOSITORY_ROOT/ios/Sources"; then
+if grep -R -n -E 'UserDefaults|systemUptime|volumeAvailableCapacity|creationDate|statfs|\bstat\(' "$REPOSITORY_ROOT/ios/Sources"; then
   echo "Potential required-reason API usage needs manifest review." >&2
   exit 1
 fi
+
+grep -R -n 'contentModificationDate' "$REPOSITORY_ROOT/ios/Sources/DataRights"

@@ -1,0 +1,174 @@
+import Foundation
+
+nonisolated struct LocalExportSnapshot: Sendable {
+    let appVersion: String
+    let profileCreatedAt: Date
+    let policyVersions: [String: String]
+    let settings: AppSettings
+    let alarm: AlarmPreference?
+    let checkIns: [SubmittedCheckIn]
+    let scope: ExportScope
+}
+
+nonisolated struct ExportArtifact: Equatable, Sendable {
+    let archiveURL: URL
+    let metadata: ExportMetadata
+    let includedFileNames: [String]
+}
+
+nonisolated enum ExportError: Error, Equatable, Sendable {
+    case temporaryDirectoryUnavailable
+    case encodingFailed
+    case protectionFailed
+    case cleanupFailed
+}
+
+nonisolated struct LocalExportService: Sendable {
+    private let clock: any Phase1BClock
+    private let identifier: any IdentifierGenerating
+    private let protection: any ProtectedFileApplying
+
+    init(
+        clock: any Phase1BClock,
+        identifier: any IdentifierGenerating,
+        protection: any ProtectedFileApplying
+    ) {
+        self.clock = clock
+        self.identifier = identifier
+        self.protection = protection
+    }
+
+    func create(
+        snapshot: LocalExportSnapshot,
+        profileID: UUID,
+        in directory: URL
+    ) throws -> ExportArtifact {
+        let generatedAt = clock.now()
+        let exportID = identifier.next()
+        let metadata = ExportMetadata(
+            id: exportID,
+            profileID: profileID,
+            generatedAt: generatedAt,
+            expiresAt: generatedAt.addingTimeInterval(86_400),
+            scope: snapshot.scope,
+            manifestVersion: 1
+        )
+
+        do {
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+            try protection.applyProtection(to: directory, kind: .sensitiveTemporaryExport)
+            let files = try encodedFiles(snapshot: snapshot, metadata: metadata)
+            let archiveURL = directory.appendingPathComponent(
+                "spc-export-\(exportID.uuidString.lowercased()).zip"
+            )
+            try DeterministicZIP.make(files: files).write(to: archiveURL, options: .atomic)
+            try protection.applyProtection(to: archiveURL, kind: .sensitiveTemporaryExport)
+            return ExportArtifact(
+                archiveURL: archiveURL,
+                metadata: metadata,
+                includedFileNames: files.map(\.name)
+            )
+        } catch let error as ExportError {
+            throw error
+        } catch {
+            throw ExportError.encodingFailed
+        }
+    }
+
+    func cleanupExpired(in directory: URL, now: Date) throws {
+        do {
+            let entries = try FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+            for entry in entries where entry.pathExtension == "zip" {
+                let values = try entry.resourceValues(forKeys: [.contentModificationDateKey])
+                if let modified = values.contentModificationDate,
+                   now.timeIntervalSince(modified) >= 86_400 {
+                    try FileManager.default.removeItem(at: entry)
+                }
+            }
+        } catch {
+            throw ExportError.cleanupFailed
+        }
+    }
+
+    private func encodedFiles(
+        snapshot: LocalExportSnapshot,
+        metadata: ExportMetadata
+    ) throws -> [(name: String, data: Data)] {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        encoder.dateEncodingStrategy = .iso8601
+
+        let settingsData = try encoder.encode(snapshot.settings)
+        let alarmData = try encoder.encode(snapshot.alarm)
+        let visibleCheckIns = snapshot.checkIns.filter { $0.deletedAt == nil }
+        let checkInsData = try encoder.encode(visibleCheckIns)
+        let checkInsCSV = Data(csv(checkIns: visibleCheckIns).utf8)
+
+        let provisional = [
+            ("settings.json", settingsData),
+            ("alarm.json", alarmData),
+            ("checkins.json", checkInsData),
+            ("checkins.csv", checkInsCSV),
+        ]
+        let manifest = ExportManifest(
+            exportVersion: metadata.manifestVersion,
+            appVersion: snapshot.appVersion,
+            generatedAt: metadata.generatedAt,
+            profileCreatedAt: snapshot.profileCreatedAt,
+            policyVersions: snapshot.policyVersions,
+            scope: snapshot.scope,
+            files: provisional.map {
+                ExportManifest.FileEntry(
+                    name: $0.0,
+                    sha256: SHA256Digest.hex($0.1)
+                )
+            }
+        )
+        let manifestData = try encoder.encode(manifest)
+        return [("manifest.json", manifestData)] + provisional
+    }
+
+    private func csv(checkIns: [SubmittedCheckIn]) -> String {
+        let header = "reported_for_local_date,reported_timezone_id,occurrence,perceived_intensity,present_state,note"
+        let rows = checkIns.map {
+            [
+                $0.reportedForLocalDate,
+                $0.reportedTimezoneID,
+                $0.occurrence.rawValue,
+                $0.perceivedIntensity?.rawValue ?? "",
+                $0.presentState?.rawValue ?? "",
+                $0.note ?? "",
+            ].map(csvEscape).joined(separator: ",")
+        }
+        return ([header] + rows).joined(separator: "\r\n") + "\r\n"
+    }
+
+    private func csvEscape(_ value: String) -> String {
+        guard value.contains(",") || value.contains("\"") || value.contains("\n") else {
+            return value
+        }
+        return "\"\(value.replacingOccurrences(of: "\"", with: "\"\""))\""
+    }
+}
+
+private nonisolated struct ExportManifest: Codable {
+    struct FileEntry: Codable {
+        let name: String
+        let sha256: String
+    }
+
+    let exportVersion: Int
+    let appVersion: String
+    let generatedAt: Date
+    let profileCreatedAt: Date
+    let policyVersions: [String: String]
+    let scope: ExportScope
+    let files: [FileEntry]
+}

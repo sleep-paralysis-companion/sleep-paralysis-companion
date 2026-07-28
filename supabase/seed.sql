@@ -1,0 +1,2 @@
+-- Intentionally empty. Phase 1B policy tests create only synthetic identities
+-- inside transactions that are rolled back by the pgTAP harness.

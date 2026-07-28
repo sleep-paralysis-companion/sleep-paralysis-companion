@@ -1,0 +1,126 @@
+location,entity,field,requirement_source,purpose,sensitivity,owner,retention,export,deletion,privacy_category
+local,local_profiles,id,DATA-SYNC-001,stable installation profile key,identifier,installation,until local deletion,manifest profile id,delete with profile,user id
+local,local_profiles,createdAt,DATA-SYNC-001,profile creation instant,metadata,installation,until local deletion,include,delete with profile,other data
+local,local_profiles,onboardingCompletedAt,UX-001,onboarding completion state,metadata,installation,until local deletion,include,delete with profile,other data
+local,local_profiles,productNoticeVersion,PRIV-001,notice version shown,metadata,installation,until replaced,include,delete with profile,other data
+local,local_profiles,productNoticeSeenAt,PRIV-001,notice acknowledgment instant,metadata,installation,until replaced,include,delete with profile,other data
+local,local_profiles,ownership,DATA-SYNC-001,guest or account ownership boundary,account,installation,until local deletion,include,delete with profile,user id
+local,local_profiles,accountUserID,AUTH-001,bind profile to exact account,account,authenticated user,until unlink/deletion,include only as profile owner,clear/delete by sign-out choice,user id
+local,local_profiles,accountLinkState,AUTH-001,resumable linkage state,account,installation,until conversion completes,include status,delete with profile,user id
+local,app_settings,profileID,DATA-SYNC-001,settings ownership key,identifier,profile,until profile deletion,implicit in settings,delete cascade,user id
+local,app_settings,preferredGroundingAssetID,AUDIO-001,selected approved asset,preference,profile,until changed/deleted,include,delete cascade,other user content
+local,app_settings,preferredModality,UX-001,grounding mode preference,preference,profile,until changed/deleted,include,delete cascade,other user content
+local,app_settings,hapticsEnabled,UX-001,haptic preference,preference,profile,until changed/deleted,include,delete cascade,other user content
+local,app_settings,lastSelectedHistoryPeriod,UX-001,local history display preference,preference,profile,until changed/deleted,include,delete cascade,other user content
+local,app_settings,diagnosticsEnabled,PRIV-001,enforce diagnostics off,privacy,profile,until profile deletion,exclude,delete cascade,other data
+local,app_settings,updatedAt,DATA-SYNC-001,local modification instant,metadata,profile,until settings deletion,include,delete cascade,other data
+local,app_settings,revision,DATA-SYNC-001,causal revision,metadata,profile,until settings deletion,include,delete cascade,other data
+local,alarm_preferences,id,ALARM-001,stable alarm intent key,identifier,profile,until deleted,include,delete/tombstone,user id
+local,alarm_preferences,profileID,ALARM-001,alarm ownership,identifier,profile,until deleted,implicit,delete cascade,user id
+local,alarm_preferences,systemAlarmID,ALARM-001,reconcile app-created system alarm,identifier,device,until alarm deletion,exclude,delete with alarm,other data
+local,alarm_preferences,localHour,ALARM-001,user alarm intent,time,profile,until changed/deleted,include,delete with alarm,other user content
+local,alarm_preferences,localMinute,ALARM-001,user alarm intent,time,profile,until changed/deleted,include,delete with alarm,other user content
+local,alarm_preferences,weekdaysMask,ALARM-001,repeat intent,schedule,profile,until changed/deleted,include,delete with alarm,other user content
+local,alarm_preferences,snoozeMinutes,ALARM-001,snooze preference,schedule,profile,until changed/deleted,include,delete with alarm,other user content
+local,alarm_preferences,enabledIntent,ALARM-001,desired enabled state,schedule,profile,until changed/deleted,include,delete with alarm,other user content
+local,alarm_preferences,systemState,ALARM-001,last device schedule state,metadata,device,until changed/deleted,include,delete with alarm,other data
+local,alarm_preferences,lastScheduleResult,ALARM-001,last scheduling result,metadata,device,until changed/deleted,include,delete with alarm,other data
+local,alarm_preferences,createdAt,ALARM-001,creation instant,metadata,profile,until deleted,include,delete with alarm,other data
+local,alarm_preferences,updatedAt,DATA-SYNC-001,modification instant,metadata,profile,until deleted,include,delete with alarm,other data
+local,alarm_preferences,revision,DATA-SYNC-001,causal revision,metadata,profile,until deleted,include,delete with alarm,other data
+local,audio_catalog,id,AUDIO-001,approved asset key,public catalog,product owner,while approved,include reference only,purge when revoked,other data
+local,audio_catalog,version,AUDIO-001,catalog compatibility,public catalog,product owner,while approved,include,purge when revoked,other data
+local,audio_catalog,localeIdentifier,AUDIO-001,localized asset selection,public catalog,product owner,while approved,include,purge when revoked,other data
+local,audio_catalog,integritySHA256,AUDIO-001,verify cache bytes,security,product owner,while approved,exclude,purge when revoked,other data
+local,audio_catalog,byteCount,AUDIO-001,cache validation,metadata,product owner,while approved,exclude,purge when revoked,other data
+local,audio_catalog,durationMilliseconds,AUDIO-001,approved playback metadata,public catalog,product owner,while approved,include,purge when revoked,other data
+local,audio_catalog,provenanceReference,AUDIO-001,audio provenance evidence,public catalog,product owner,while approved,include,purge when revoked,other data
+local,audio_catalog,rightsReference,AUDIO-001,audio rights evidence,public catalog,product owner,while approved,include,purge when revoked,other data
+local,audio_catalog,approvalReference,AUDIO-001,audio approval evidence,public catalog,product owner,while approved,include,purge when revoked,other data
+local,audio_cache,assetID,AUDIO-001,bind cached asset,cache,device,until purge/revocation,exclude,purge independently,other data
+local,audio_cache,catalogVersion,AUDIO-001,cache compatibility,cache,device,until purge/revocation,exclude,purge independently,other data
+local,audio_cache,state,AUDIO-001,cache verification state,cache,device,until purge/revocation,exclude,purge independently,other data
+local,audio_cache,relativeFileName,AUDIO-001,locate protected asset,local path,device,until purge/revocation,exclude,purge independently,other data
+local,audio_cache,verifiedAt,AUDIO-001,cache verification instant,metadata,device,until purge/revocation,exclude,purge independently,other data
+local,audio_cache,byteCount,AUDIO-001,cache validation,metadata,device,until purge/revocation,exclude,purge independently,other data
+local,submitted_checkins,id,CHECKIN-001,stable submitted record key,identifier,profile,until deletion/purge,include,soft delete then purge,user id
+local,submitted_checkins,profileID,CHECKIN-001,record ownership,identifier,profile,until deletion/purge,implicit,delete cascade,user id
+local,submitted_checkins,reportedForLocalDate,CHECKIN-001,calendar day reported,date,profile,until deletion/purge,include,soft delete then purge,health
+local,submitted_checkins,reportedTimezoneID,CHECKIN-001,preserve local-date semantics,location metadata,profile,until deletion/purge,include,soft delete then purge,health
+local,submitted_checkins,occurrence,CHECKIN-001,approved occurrence answer,health,profile,until deletion/purge,include,soft delete then purge,health
+local,submitted_checkins,perceivedIntensity,CHECKIN-001,approved perceived intensity,health,profile,until deletion/purge,include,soft delete then purge,health
+local,submitted_checkins,presentState,CHECKIN-001,approved present-state answer,health,profile,until deletion/purge,include,soft delete then purge,health
+local,submitted_checkins,note,CHECKIN-001,optional user note,sensitive content,profile,until deletion/purge,include,soft delete then purge,health
+local,submitted_checkins,createdAt,DATA-SYNC-001,creation instant,metadata,profile,until deletion/purge,include,soft delete then purge,other data
+local,submitted_checkins,updatedAt,DATA-SYNC-001,modification instant,metadata,profile,until deletion/purge,include,soft delete then purge,other data
+local,submitted_checkins,revision,DATA-SYNC-001,causal revision,metadata,profile,until deletion/purge,include,soft delete then purge,other data
+local,submitted_checkins,deletedAt,DELETE-001,deletion marker,metadata,profile,until purge,exclude,final purge after acknowledgment,other data
+local,checkin_drafts,id,CHECKIN-001,stable draft key,identifier,profile,seven days,exclude,purge after seven days,user id
+local,checkin_drafts,profileID,CHECKIN-001,draft ownership,identifier,profile,seven days,exclude,delete cascade,user id
+local,checkin_drafts,reportedForLocalDate,CHECKIN-001,in-progress date,health,profile,seven days,exclude,purge after seven days,health
+local,checkin_drafts,reportedTimezoneID,CHECKIN-001,in-progress date semantics,location metadata,profile,seven days,exclude,purge after seven days,health
+local,checkin_drafts,occurrence,CHECKIN-001,in-progress answer,health,profile,seven days,exclude,purge after seven days,health
+local,checkin_drafts,perceivedIntensity,CHECKIN-001,in-progress answer,health,profile,seven days,exclude,purge after seven days,health
+local,checkin_drafts,presentState,CHECKIN-001,in-progress answer,health,profile,seven days,exclude,purge after seven days,health
+local,checkin_drafts,note,CHECKIN-001,in-progress note,sensitive content,profile,seven days,exclude,purge after seven days,health
+local,checkin_drafts,draftUpdatedAt,CHECKIN-001,draft expiry anchor,metadata,profile,seven days,exclude,purge after seven days,other data
+local,account_bindings,profileID,AUTH-001,local account binding,identifier,profile,until unlink/deletion,exclude,delete on sign-out/user choice,user id
+local,account_bindings,userID,AUTH-001,wrong-account protection,account,authenticated user,until unlink/deletion,exclude,delete on sign-out/user choice,user id
+local,account_bindings,provider,AUTH-001,Apple or Google identity source,account,authenticated user,until unlink/deletion,exclude,delete on sign-out/user choice,user id
+local,account_bindings,maskedIdentifier,AUTH-001,user-recognizable masked identity,account,authenticated user,until unlink/deletion,exclude,delete on sign-out/user choice,user id
+local,account_bindings,linkedAt,AUTH-001,link audit instant,metadata,authenticated user,until unlink/deletion,exclude,delete on sign-out/user choice,other data
+local,account_bindings,sessionExpiresAt,AUTH-001,refresh decision without token,account metadata,authenticated user,until unlink/deletion,exclude,delete on sign-out/user choice,user id
+local,account_bindings,requiresReauthentication,AUTH-001,sensitive-action gate,account metadata,authenticated user,until unlink/deletion,exclude,delete on sign-out/user choice,user id
+local,sync_operations,id,DATA-SYNC-001,stable operation key,internal identifier,profile,until acknowledged/bounded cleanup,exclude,delete after completion,user id
+local,sync_operations,profileID,DATA-SYNC-001,operation ownership,internal identifier,profile,until acknowledged/bounded cleanup,exclude,delete cascade,user id
+local,sync_operations,entityType,DATA-SYNC-001,route mutation,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,entityID,DATA-SYNC-001,target stable key,internal identifier,profile,until acknowledged/bounded cleanup,exclude,delete after completion,user id
+local,sync_operations,operation,DATA-SYNC-001,mutation kind,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,idempotencyKey,DATA-SYNC-001,replay prevention,internal identifier,profile,until acknowledged/bounded cleanup,exclude,delete after completion,user id
+local,sync_operations,baseRevision,DATA-SYNC-001,conflict precondition,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,localRevision,DATA-SYNC-001,mutation revision,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,state,DATA-SYNC-001,explicit state machine,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,attemptCount,DATA-SYNC-001,backoff calculation,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,nextAttemptAt,DATA-SYNC-001,retry schedule,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,lastErrorCategory,DATA-SYNC-001,content-free retry classification,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,createdAt,DATA-SYNC-001,stable queue order,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,sync_operations,updatedAt,DATA-SYNC-001,state transition instant,internal metadata,profile,until acknowledged/bounded cleanup,exclude,delete after completion,other data
+local,entity_revisions,profileID,DATA-SYNC-001,revision ownership,internal identifier,profile,until entity purge,exclude,delete cascade,user id
+local,entity_revisions,entityType,DATA-SYNC-001,revision namespace,internal metadata,profile,until entity purge,exclude,delete with entity,other data
+local,entity_revisions,entityID,DATA-SYNC-001,revision target,internal identifier,profile,until entity purge,exclude,delete with entity,user id
+local,entity_revisions,localRevision,DATA-SYNC-001,local causal version,internal metadata,profile,until entity purge,exclude,delete with entity,other data
+local,entity_revisions,acknowledgedRemoteRevision,DATA-SYNC-001,remote precondition,internal metadata,profile,until entity purge,exclude,delete with entity,other data
+local,entity_revisions,lastRemoteMutationID,DATA-SYNC-001,stale response rejection,internal identifier,profile,until entity purge,exclude,delete with entity,user id
+local,deletion_tombstones,id,DELETE-001,stable deletion fact,internal identifier,profile,ack plus 30 days,exclude,purge after acknowledgment,user id
+local,deletion_tombstones,profileID,DELETE-001,deletion ownership,internal identifier,profile,ack plus 30 days,exclude,delete cascade,user id
+local,deletion_tombstones,entityType,DELETE-001,deleted namespace,internal metadata,profile,ack plus 30 days,exclude,purge after acknowledgment,other data
+local,deletion_tombstones,entityID,DELETE-001,deleted stable key,internal identifier,profile,ack plus 30 days,exclude,purge after acknowledgment,user id
+local,deletion_tombstones,deletedRevision,DELETE-001,prevent resurrection,internal metadata,profile,ack plus 30 days,exclude,purge after acknowledgment,other data
+local,deletion_tombstones,deletedAt,DELETE-001,deletion instant,internal metadata,profile,ack plus 30 days,exclude,purge after acknowledgment,other data
+local,deletion_tombstones,acknowledgedAt,DELETE-001,remote acknowledgment,internal metadata,profile,ack plus 30 days,exclude,purge after acknowledgment,other data
+local,deletion_tombstones,purgeAfter,DELETE-001,bounded final purge,internal metadata,profile,ack plus 30 days,exclude,purge on due date,other data
+local,policy_notices,profileID,PRIV-001,notice ownership,identifier,profile,until profile deletion,include,delete cascade,user id
+local,policy_notices,noticeKind,PRIV-001,notice identity,metadata,product owner,until superseded,include,delete cascade,other data
+local,policy_notices,version,PRIV-001,accepted notice version,metadata,product owner,until superseded,include,delete cascade,other data
+local,policy_notices,seenAt,PRIV-001,acknowledgment instant,metadata,profile,until superseded,include,delete cascade,other data
+local,export_metadata,id,EXPORT-001,export operation key,internal identifier,profile,24 hours,exclude,purge with file,user id
+local,export_metadata,profileID,EXPORT-001,export ownership,internal identifier,profile,24 hours,exclude,purge with file,user id
+local,export_metadata,generatedAt,EXPORT-001,manifest generation instant,metadata,profile,24 hours,include in manifest,purge with file,other data
+local,export_metadata,expiresAt,EXPORT-001,bounded cleanup instant,metadata,profile,24 hours,include in manifest,purge with file,other data
+local,export_metadata,scope,EXPORT-001,export reconciliation scope,metadata,profile,24 hours,include in manifest,purge with file,other data
+local,export_metadata,manifestVersion,EXPORT-001,export compatibility,metadata,product owner,24 hours,include in manifest,purge with file,other data
+local,conversion_checkpoints,conversionID,AUTH-001,idempotent conversion key,internal identifier,profile,until linked/cancelled,exclude,delete on completion/cancel,user id
+local,conversion_checkpoints,profileID,AUTH-001,conversion ownership,internal identifier,profile,until linked/cancelled,exclude,delete on completion/cancel,user id
+local,conversion_checkpoints,expectedUserID,AUTH-001,wrong-user prevention,account,authenticated user,until linked/cancelled,exclude,delete on completion/cancel,user id
+local,conversion_checkpoints,state,AUTH-001,resumable conversion state,internal metadata,profile,until linked/cancelled,exclude,delete on completion/cancel,other data
+local,conversion_checkpoints,mergeChoice,DATA-SYNC-001,explicit merge decision,preference,profile,until linked/cancelled,exclude,delete on completion/cancel,other user content
+local,conversion_checkpoints,startedAt,AUTH-001,conversion start instant,metadata,profile,until linked/cancelled,exclude,delete on completion/cancel,other data
+local,conversion_checkpoints,updatedAt,AUTH-001,conversion recovery instant,metadata,profile,until linked/cancelled,exclude,delete on completion/cancel,other data
+remote,all_user_tables,owner_user_id,AUTH-001,RLS ownership authority,account,authenticated user,until account deletion,profile owner only,delete cascade,user id
+remote,app_profiles,id|profile_created_at|revision|server_updated_at,DATA-SYNC-001,account profile synchronization,identifier and metadata,authenticated user,until account deletion,profile subset,delete cascade,user id
+remote,app_settings,id|preferred_grounding_asset_id|preferred_modality|haptics_enabled|revision|server_updated_at,DATA-SYNC-001,settings synchronization,preferences,authenticated user,until account deletion,settings subset,delete cascade,other user content
+remote,alarm_preferences,id|local_hour|local_minute|weekdays_mask|snooze_minutes|enabled_intent|revision|server_updated_at,ALARM-001,alarm intent synchronization,schedule,authenticated user,until deletion/account deletion,alarm subset,delete/tombstone,other user content
+remote,submitted_checkins,id|reported_for_local_date|reported_timezone_id|occurrence|perceived_intensity|present_state|note|created_at|updated_at|revision|deleted_at|server_updated_at,CHECKIN-001,submitted record synchronization,health and sensitive content,authenticated user,until deletion/purge,submitted records,delete/tombstone,health
+remote,deletion_tombstones,id|entity_type|entity_id|deleted_revision|deleted_at|acknowledged_at|purge_after|server_updated_at,DELETE-001,prevent multi-device resurrection,internal deletion metadata,authenticated user,ack plus 30 days,exclude,purge after acknowledgment,other data
+remote,mutation_receipts,id|idempotency_key|entity_type|entity_id|operation|entity_revision|received_at|expires_at,DATA-SYNC-001,atomic replay protection,internal metadata,authenticated user,30 days,exclude,purge at expiry,other data
+remote,account_deletion_audit,request_id|completed_at|outcome|purge_after,DELETE-001,idempotent privileged deletion recovery,minimal audit,system,30 days,exclude,purge at due date,other data

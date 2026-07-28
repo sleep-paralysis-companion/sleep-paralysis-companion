@@ -53,5 +53,9 @@ XCODEGEN_BIN="$(cat "$XCODEGEN_BIN_RECORD")"
 (
   cd "$REPOSITORY_ROOT/ios"
   "$XCODEGEN_BIN" generate --spec project.yml
+  xcodebuild \
+    -project SleepParalysisCompanion.xcodeproj \
+    -resolvePackageDependencies \
+    -clonedSourcePackagesDirPath .generated/SourcePackages
   xcodebuild -project SleepParalysisCompanion.xcodeproj -list
 )

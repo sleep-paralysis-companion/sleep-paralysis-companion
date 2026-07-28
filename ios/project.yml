@@ -74,6 +74,14 @@ settings:
     TARGETED_DEVICE_FAMILY: "1"
     VERSIONING_SYSTEM: apple-generic
 
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift.git
+    exactVersion: 7.11.1
+  Supabase:
+    url: https://github.com/supabase/supabase-swift.git
+    exactVersion: 2.53.0
+
 targets:
   SleepParalysisCompanion:
     type: application
@@ -92,6 +100,11 @@ targets:
         PRODUCT_NAME: SleepParalysisCompanion
         SWIFT_APPROACHABLE_CONCURRENCY: YES
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    dependencies:
+      - package: GRDB
+        product: GRDB
+      - package: Supabase
+        product: Supabase
     preBuildScripts: []
 
   SPCUnitTests:
@@ -101,6 +114,8 @@ targets:
       - path: Tests/Unit
     dependencies:
       - target: SleepParalysisCompanion
+      - package: GRDB
+        product: GRDB
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

@@ -1,0 +1,281 @@
+import Foundation
+import GRDB
+
+nonisolated enum LocalSchema {
+    static let currentVersion = 2
+
+    static func migrator() -> DatabaseMigrator {
+        var migrator = DatabaseMigrator()
+        migrator.registerMigration("v1_core_local_data") { database in
+            try database.execute(
+                sql: """
+                CREATE TABLE spc_schema_metadata (
+                    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+                    schema_version INTEGER NOT NULL CHECK (schema_version > 0)
+                );
+                INSERT INTO spc_schema_metadata (singleton, schema_version) VALUES (1, 1);
+
+                CREATE TABLE local_profiles (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    createdAt REAL NOT NULL,
+                    onboardingCompletedAt REAL,
+                    productNoticeVersion TEXT NOT NULL CHECK (length(productNoticeVersion) BETWEEN 1 AND 64),
+                    productNoticeSeenAt REAL NOT NULL,
+                    ownership TEXT NOT NULL CHECK (
+                        ownership IN ('guestLocal', 'accountLinked', 'formerAccountProtected')
+                    ),
+                    accountUserID TEXT,
+                    accountLinkState TEXT NOT NULL CHECK (
+                        accountLinkState IN (
+                            'localOnly', 'authenticating', 'awaitingMergeChoice', 'converting',
+                            'linked', 'conflict', 'authRequired', 'failedRecoverable'
+                        )
+                    ),
+                    CHECK (
+                        (ownership = 'guestLocal' AND accountUserID IS NULL)
+                        OR ownership <> 'guestLocal'
+                    )
+                );
+                CREATE UNIQUE INDEX local_profiles_single_installation
+                    ON local_profiles ((1));
+
+                CREATE TABLE app_settings (
+                    profileID TEXT PRIMARY KEY NOT NULL
+                        REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    preferredGroundingAssetID TEXT,
+                    preferredModality TEXT NOT NULL CHECK (
+                        preferredModality IN ('audio', 'visual', 'silent')
+                    ),
+                    hapticsEnabled INTEGER NOT NULL CHECK (hapticsEnabled IN (0, 1)),
+                    lastSelectedHistoryPeriod TEXT NOT NULL CHECK (
+                        lastSelectedHistoryPeriod IN ('sevenDays', 'thirtyDays', 'all')
+                    ),
+                    diagnosticsEnabled INTEGER NOT NULL DEFAULT 0
+                        CHECK (diagnosticsEnabled IN (0, 1)),
+                    updatedAt REAL NOT NULL,
+                    revision INTEGER NOT NULL CHECK (revision > 0)
+                );
+
+                CREATE TABLE submitted_checkins (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    reportedForLocalDate TEXT NOT NULL CHECK (
+                        reportedForLocalDate GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                    ),
+                    reportedTimezoneID TEXT NOT NULL CHECK (length(reportedTimezoneID) BETWEEN 1 AND 128),
+                    occurrence TEXT NOT NULL CHECK (occurrence IN ('yes', 'no')),
+                    perceivedIntensity TEXT CHECK (
+                        perceivedIntensity IN ('mild', 'moderate', 'severe', 'extreme')
+                    ),
+                    presentState TEXT CHECK (
+                        presentState IN ('fine_now', 'still_shaken', 'exhausted')
+                    ),
+                    note TEXT CHECK (note IS NULL OR length(note) BETWEEN 1 AND 500),
+                    createdAt REAL NOT NULL,
+                    updatedAt REAL NOT NULL CHECK (updatedAt >= createdAt),
+                    revision INTEGER NOT NULL CHECK (revision > 0),
+                    deletedAt REAL,
+                    UNIQUE (profileID, reportedForLocalDate),
+                    CHECK (occurrence = 'yes' OR perceivedIntensity IS NULL)
+                );
+                CREATE INDEX submitted_checkins_profile_active_date
+                    ON submitted_checkins(profileID, reportedForLocalDate DESC)
+                    WHERE deletedAt IS NULL;
+
+                CREATE TABLE checkin_drafts (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    reportedForLocalDate TEXT,
+                    reportedTimezoneID TEXT,
+                    occurrence TEXT CHECK (occurrence IN ('yes', 'no')),
+                    perceivedIntensity TEXT CHECK (
+                        perceivedIntensity IN ('mild', 'moderate', 'severe', 'extreme')
+                    ),
+                    presentState TEXT CHECK (
+                        presentState IN ('fine_now', 'still_shaken', 'exhausted')
+                    ),
+                    note TEXT CHECK (note IS NULL OR length(note) BETWEEN 1 AND 500),
+                    draftUpdatedAt REAL NOT NULL,
+                    UNIQUE (profileID, reportedForLocalDate),
+                    CHECK (occurrence = 'yes' OR perceivedIntensity IS NULL)
+                );
+                CREATE INDEX checkin_drafts_expiry ON checkin_drafts(draftUpdatedAt);
+                """
+            )
+        }
+
+        migrator.registerMigration("v2_sync_security_foundation") { database in
+            try database.execute(
+                sql: """
+                CREATE TABLE alarm_preferences (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    systemAlarmID TEXT,
+                    localHour INTEGER NOT NULL CHECK (localHour BETWEEN 0 AND 23),
+                    localMinute INTEGER NOT NULL CHECK (localMinute BETWEEN 0 AND 59),
+                    weekdaysMask INTEGER NOT NULL CHECK (weekdaysMask BETWEEN 0 AND 127),
+                    snoozeMinutes INTEGER CHECK (snoozeMinutes IN (5, 10, 15)),
+                    enabledIntent INTEGER NOT NULL CHECK (enabledIntent IN (0, 1)),
+                    systemState TEXT NOT NULL CHECK (
+                        systemState IN (
+                            'notScheduled', 'scheduled', 'denied', 'unsupported',
+                            'failed', 'needsAttention'
+                        )
+                    ),
+                    lastScheduleResult TEXT NOT NULL CHECK (
+                        lastScheduleResult IN ('none', 'success', 'denied', 'unsupported', 'failed')
+                    ),
+                    createdAt REAL NOT NULL,
+                    updatedAt REAL NOT NULL CHECK (updatedAt >= createdAt),
+                    revision INTEGER NOT NULL CHECK (revision > 0)
+                );
+                CREATE INDEX alarm_preferences_profile ON alarm_preferences(profileID);
+
+                CREATE TABLE audio_catalog (
+                    id TEXT PRIMARY KEY NOT NULL CHECK (length(id) BETWEEN 1 AND 128),
+                    version INTEGER NOT NULL CHECK (version > 0),
+                    localeIdentifier TEXT NOT NULL CHECK (length(localeIdentifier) BETWEEN 1 AND 64),
+                    integritySHA256 TEXT NOT NULL CHECK (length(integritySHA256) = 64),
+                    byteCount INTEGER NOT NULL CHECK (byteCount >= 0),
+                    durationMilliseconds INTEGER NOT NULL CHECK (durationMilliseconds >= 0),
+                    provenanceReference TEXT NOT NULL,
+                    rightsReference TEXT NOT NULL,
+                    approvalReference TEXT NOT NULL
+                );
+
+                CREATE TABLE audio_cache (
+                    assetID TEXT PRIMARY KEY NOT NULL REFERENCES audio_catalog(id) ON DELETE CASCADE,
+                    catalogVersion INTEGER NOT NULL CHECK (catalogVersion > 0),
+                    state TEXT NOT NULL CHECK (
+                        state IN ('notCached', 'downloading', 'verified', 'invalid', 'revoked')
+                    ),
+                    relativeFileName TEXT,
+                    verifiedAt REAL,
+                    byteCount INTEGER NOT NULL CHECK (byteCount >= 0)
+                );
+
+                CREATE TABLE account_bindings (
+                    profileID TEXT PRIMARY KEY NOT NULL
+                        REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    userID TEXT NOT NULL UNIQUE,
+                    provider TEXT NOT NULL CHECK (provider IN ('apple', 'google')),
+                    maskedIdentifier TEXT,
+                    linkedAt REAL NOT NULL,
+                    sessionExpiresAt REAL NOT NULL,
+                    requiresReauthentication INTEGER NOT NULL
+                        CHECK (requiresReauthentication IN (0, 1))
+                );
+
+                CREATE TABLE sync_operations (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    entityType TEXT NOT NULL CHECK (
+                        entityType IN ('profile', 'settings', 'alarm', 'checkIn', 'tombstone')
+                    ),
+                    entityID TEXT NOT NULL,
+                    operation TEXT NOT NULL CHECK (operation IN ('upsert', 'delete', 'convert')),
+                    idempotencyKey TEXT NOT NULL UNIQUE,
+                    baseRevision INTEGER NOT NULL CHECK (baseRevision >= 0),
+                    localRevision INTEGER NOT NULL CHECK (localRevision > 0),
+                    state TEXT NOT NULL CHECK (
+                        state IN (
+                            'pending', 'syncing', 'synced', 'conflicted',
+                            'failedRecoverable', 'authRequired', 'deleted'
+                        )
+                    ),
+                    attemptCount INTEGER NOT NULL CHECK (attemptCount >= 0),
+                    nextAttemptAt REAL,
+                    lastErrorCategory TEXT CHECK (
+                        lastErrorCategory IN (
+                            'network', 'backendUnavailable', 'authentication',
+                            'authorization', 'validation', 'conflict', 'cancelled'
+                        )
+                    ),
+                    createdAt REAL NOT NULL,
+                    updatedAt REAL NOT NULL,
+                    UNIQUE (profileID, entityType, entityID, operation, localRevision)
+                );
+                CREATE INDEX sync_operations_ready
+                    ON sync_operations(profileID, state, nextAttemptAt, createdAt);
+                CREATE UNIQUE INDEX sync_operations_one_inflight
+                    ON sync_operations(profileID, entityType, entityID)
+                    WHERE state = 'syncing';
+
+                CREATE TABLE entity_revisions (
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    entityType TEXT NOT NULL,
+                    entityID TEXT NOT NULL,
+                    localRevision INTEGER NOT NULL CHECK (localRevision > 0),
+                    acknowledgedRemoteRevision INTEGER,
+                    lastRemoteMutationID TEXT,
+                    PRIMARY KEY (profileID, entityType, entityID)
+                );
+
+                CREATE TABLE deletion_tombstones (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    entityType TEXT NOT NULL,
+                    entityID TEXT NOT NULL,
+                    deletedRevision INTEGER NOT NULL CHECK (deletedRevision > 0),
+                    deletedAt REAL NOT NULL,
+                    acknowledgedAt REAL,
+                    purgeAfter REAL NOT NULL,
+                    UNIQUE (profileID, entityType, entityID),
+                    CHECK (acknowledgedAt IS NULL OR acknowledgedAt >= deletedAt),
+                    CHECK (purgeAfter >= COALESCE(acknowledgedAt, deletedAt))
+                );
+                CREATE INDEX deletion_tombstones_retention
+                    ON deletion_tombstones(acknowledgedAt, purgeAfter);
+
+                CREATE TABLE policy_notices (
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    noticeKind TEXT NOT NULL,
+                    version TEXT NOT NULL,
+                    seenAt REAL NOT NULL,
+                    PRIMARY KEY (profileID, noticeKind)
+                );
+
+                CREATE TABLE export_metadata (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    generatedAt REAL NOT NULL,
+                    expiresAt REAL NOT NULL CHECK (expiresAt > generatedAt),
+                    scope TEXT NOT NULL CHECK (
+                        scope IN ('localOnly', 'lastSyncedLocalSnapshot', 'serverReconciled')
+                    ),
+                    manifestVersion INTEGER NOT NULL CHECK (manifestVersion > 0)
+                );
+                CREATE INDEX export_metadata_expiry ON export_metadata(expiresAt);
+
+                CREATE TABLE conversion_checkpoints (
+                    conversionID TEXT PRIMARY KEY NOT NULL,
+                    profileID TEXT NOT NULL UNIQUE REFERENCES local_profiles(id) ON DELETE CASCADE,
+                    expectedUserID TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK (
+                        state IN (
+                            'authenticating', 'awaitingMergeChoice', 'converting',
+                            'linked', 'conflict', 'authRequired', 'failedRecoverable'
+                        )
+                    ),
+                    mergeChoice TEXT CHECK (
+                        mergeChoice IN ('devicePreferences', 'accountPreferences', 'cancel')
+                    ),
+                    startedAt REAL NOT NULL,
+                    updatedAt REAL NOT NULL
+                );
+
+                UPDATE spc_schema_metadata SET schema_version = 2 WHERE singleton = 1;
+                """
+            )
+        }
+        return migrator
+    }
+}
+
+nonisolated enum LocalDatabaseError: Error, Equatable, Sendable {
+    case unsupportedNewerSchema(found: Int, supported: Int)
+    case corruptOrUnreadable
+    case migrationFailed
+    case writeFailed
+    case constraintViolation
+}

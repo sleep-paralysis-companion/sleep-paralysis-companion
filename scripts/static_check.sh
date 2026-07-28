@@ -5,11 +5,23 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_ROOT="$REPOSITORY_ROOT/ios/Sources"
 RESOURCE_ROOT="$REPOSITORY_ROOT/ios/Resources"
 
-FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(Supabase|RevenueCat|StoreKit|AlarmKit|AVFoundation|HealthKit|AdSupport)|UserDefaults|FileManager|URLSession|try!|as!'
+FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|AlarmKit|AVFoundation|HealthKit|AdSupport)|UserDefaults|URLSession|try!|as!'
 FORBIDDEN_RESOURCE='NSMicrophoneUsageDescription|NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription|UIBackgroundModes'
 
 if grep -R -n -E "$FORBIDDEN_SOURCE" "$SOURCE_ROOT"; then
-  echo "Forbidden Phase 1A source pattern found." >&2
+  echo "Forbidden Phase 1B source pattern found." >&2
+  exit 1
+fi
+
+if grep -R -l -E 'import[[:space:]]+Supabase' "$SOURCE_ROOT" \
+  | grep -v -E '/(Authentication|RemoteData)/|/DataRights/SupabaseAccountDeletionGateway\.swift$'; then
+  echo "Supabase import escaped the authentication or remote-data boundary." >&2
+  exit 1
+fi
+
+if grep -R -l -E '\bFileManager\b' "$SOURCE_ROOT" \
+  | grep -v -E '/DataRights/|/PlatformInterfaces/DataProtection\.swift$'; then
+  echo "File access escaped the data-rights boundary." >&2
   exit 1
 fi
 
@@ -31,6 +43,9 @@ grep -Fx "SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc" \
   "$REPOSITORY_ROOT/ios/Configurations/Production.xcconfig"
 grep -Fx "IPHONEOS_DEPLOYMENT_TARGET = 26.0" \
   "$REPOSITORY_ROOT/ios/Configurations/Base.xcconfig"
+
+grep -Fq 'exactVersion: 7.11.1' "$REPOSITORY_ROOT/ios/project.yml"
+grep -Fq 'exactVersion: 2.53.0' "$REPOSITORY_ROOT/ios/project.yml"
 
 if grep -R -n -E 'https?://|nfzvlvukbeapcnlmyecf' \
   "$REPOSITORY_ROOT/ios/Configurations/"*.xcconfig; then
