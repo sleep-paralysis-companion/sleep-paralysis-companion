@@ -47,6 +47,15 @@ nonisolated enum DeletionError: Error, Equatable, Sendable {
     case remoteDeletionFailedRecoverable
 }
 
+nonisolated struct SignOutRequest: Sendable {
+    let profileID: UUID
+    let userID: UUID
+    let pendingWork: Bool
+    let pendingChoice: PendingWorkSignOutChoice?
+    let localChoice: SignOutLocalDataChoice
+    let revokeProvider: Bool
+}
+
 actor SignOutCoordinator {
     private let database: LocalDatabase
     private let authentication: AuthenticationCoordinator
@@ -56,16 +65,9 @@ actor SignOutCoordinator {
         self.authentication = authentication
     }
 
-    func signOut(
-        profileID: UUID,
-        userID: UUID,
-        pendingWork: Bool,
-        pendingChoice: PendingWorkSignOutChoice?,
-        localChoice: SignOutLocalDataChoice,
-        revokeProvider: Bool
-    ) async throws {
-        if pendingWork {
-            guard let pendingChoice else {
+    func signOut(_ request: SignOutRequest) async throws {
+        if request.pendingWork {
+            guard let pendingChoice = request.pendingChoice else {
                 throw DeletionError.localCleanupFailed
             }
             switch pendingChoice {
@@ -76,17 +78,17 @@ actor SignOutCoordinator {
             }
         }
 
-        try await authentication.signOut(revokeProvider: revokeProvider)
-        switch localChoice {
+        try await authentication.signOut(revokeProvider: request.revokeProvider)
+        switch request.localChoice {
         case .keepProtectedLocalCopy:
             try await database.protectFormerAccountData(
-                profileID: profileID,
-                expectedUserID: userID
+                profileID: request.profileID,
+                expectedUserID: request.userID
             )
         case .removeAccountDataFromDevice:
             try await database.removeProfileFromDevice(
-                profileID: profileID,
-                expectedUserID: userID
+                profileID: request.profileID,
+                expectedUserID: request.userID
             )
         }
     }

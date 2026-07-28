@@ -89,12 +89,15 @@ export async function handleDeleteAccount(
   );
   let userID = claims.sub;
   if (!retrying) {
-    const userResponse = await runtime.fetch(`${runtime.supabaseURL}/auth/v1/user`, {
-      headers: {
-        apikey: runtime.anonKey,
-        Authorization: authorization,
+    const userResponse = await runtime.fetch(
+      `${runtime.supabaseURL}/auth/v1/user`,
+      {
+        headers: {
+          apikey: runtime.anonKey,
+          Authorization: authorization,
+        },
       },
-    });
+    );
     if (!userResponse.ok) {
       return response(401, { error: "authentication_required" });
     }
@@ -118,7 +121,8 @@ export async function handleDeleteAccount(
           request_id: body.request_id,
           completed_at: runtime.now().toISOString(),
           outcome: "failed_recoverable",
-          purge_after: new Date(runtime.now().getTime() + 30 * 86_400_000).toISOString(),
+          purge_after: new Date(runtime.now().getTime() + 30 * 86_400_000)
+            .toISOString(),
         }),
       },
     );
@@ -155,7 +159,8 @@ export async function handleDeleteAccount(
       body: JSON.stringify({
         completed_at: completedAt.toISOString(),
         outcome: "completed",
-        purge_after: new Date(completedAt.getTime() + 30 * 86_400_000).toISOString(),
+        purge_after: new Date(completedAt.getTime() + 30 * 86_400_000)
+          .toISOString(),
       }),
     },
   );
@@ -180,7 +185,8 @@ function decodeClaims(token: string): AccessClaims | null {
 }
 
 function isUUID(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(value);
 }
 
 function response(status: number, body: Record<string, string>): Response {

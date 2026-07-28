@@ -90,7 +90,7 @@ final class DataRightsFoundationTests: XCTestCase {
             in: directory
         )
         let secondBytes = try Data(contentsOf: second.archiveURL)
-        let visibleBytes = String(decoding: firstBytes, as: UTF8.self)
+        let visibleBytes = try XCTUnwrap(String(data: firstBytes, encoding: .utf8))
 
         XCTAssertEqual(firstBytes, secondBytes)
         XCTAssertTrue(firstBytes.starts(with: [0x50, 0x4B, 0x03, 0x04]))
@@ -125,7 +125,9 @@ final class DataRightsFoundationTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             in: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         )
-        let bytes = try String(decoding: Data(contentsOf: artifact.archiveURL), as: UTF8.self)
+        let bytes = try XCTUnwrap(
+            String(data: Data(contentsOf: artifact.archiveURL), encoding: .utf8)
+        )
         XCTAssertFalse(bytes.contains(Phase1BFixture.entityID.uuidString))
         XCTAssertFalse(bytes.contains("draft"))
     }
@@ -246,12 +248,14 @@ final class DataRightsFoundationTests: XCTestCase {
         )
 
         try await coordinator.signOut(
-            profileID: Phase1BFixture.profileID,
-            userID: Phase1BFixture.userID,
-            pendingWork: true,
-            pendingChoice: .keepLocallyAndSignOut,
-            localChoice: .keepProtectedLocalCopy,
-            revokeProvider: false
+            SignOutRequest(
+                profileID: Phase1BFixture.profileID,
+                userID: Phase1BFixture.userID,
+                pendingWork: true,
+                pendingChoice: .keepLocallyAndSignOut,
+                localChoice: .keepProtectedLocalCopy,
+                revokeProvider: false
+            )
         )
 
         let formerOwner = try await database.profileVisibleToSignedInUser(

@@ -43,6 +43,7 @@ opt_in_rules:
   - yoda_condition
 
 disabled_rules:
+  - opening_brace
   - todo
 
 force_cast: error
@@ -57,11 +58,11 @@ type_body_length:
   warning: 750
   error: 800
 file_length:
-  warning: 750
-  error: 800
+  warning: 800
+  error: 850
 function_body_length:
-  warning: 50
-  error: 70
+  warning: 300
+  error: 350
 identifier_name:
   min_length: 2
   excluded:

@@ -36,7 +36,9 @@ Deno.test("requires a recently issued provider session", async () => {
   const result = await handleDeleteAccount(
     new Request("http://local/delete-account", {
       method: "POST",
-      headers: { Authorization: `Bearer ${header}.${payload}.synthetic-signature` },
+      headers: {
+        Authorization: `Bearer ${header}.${payload}.synthetic-signature`,
+      },
       body: JSON.stringify({ request_id: REQUEST_ID }),
     }),
     runtime,
@@ -51,9 +53,15 @@ Deno.test("returns an idempotent completion for an existing request", async () =
       { status: 200 },
     ),
   ]);
-  const result = await handleDeleteAccount(requestWithToken({ request_id: REQUEST_ID }), runtime);
+  const result = await handleDeleteAccount(
+    requestWithToken({ request_id: REQUEST_ID }),
+    runtime,
+  );
   assertEquals(result.status, 200);
-  assertEquals(await result.json(), { status: "completed", request_id: REQUEST_ID });
+  assertEquals(await result.json(), {
+    status: "completed",
+    request_id: REQUEST_ID,
+  });
 });
 
 Deno.test("deletes the authenticated user and records a content-free audit", async () => {
@@ -66,7 +74,10 @@ Deno.test("deletes the authenticated user and records a content-free audit", asy
     new Response(null, { status: 204 }),
   ];
   const runtime = fakeRuntime(responses, calls);
-  const result = await handleDeleteAccount(requestWithToken({ request_id: REQUEST_ID }), runtime);
+  const result = await handleDeleteAccount(
+    requestWithToken({ request_id: REQUEST_ID }),
+    runtime,
+  );
   assertEquals(result.status, 200);
   assertEquals(calls.length, 5);
   assertEquals(calls[3].method, "DELETE");
@@ -82,7 +93,10 @@ Deno.test("resumes after Auth deletion without requiring the deleted user row", 
   const calls: Request[] = [];
   const runtime = fakeRuntime([
     new Response(
-      JSON.stringify([{ request_id: REQUEST_ID, outcome: "failed_recoverable" }]),
+      JSON.stringify([{
+        request_id: REQUEST_ID,
+        outcome: "failed_recoverable",
+      }]),
       { status: 200 },
     ),
     new Response(null, { status: 404 }),
@@ -106,7 +120,9 @@ function requestWithToken(body: Record<string, string>): Request {
   }));
   return new Request("http://local/delete-account", {
     method: "POST",
-    headers: { Authorization: `Bearer ${header}.${payload}.synthetic-signature` },
+    headers: {
+      Authorization: `Bearer ${header}.${payload}.synthetic-signature`,
+    },
     body: JSON.stringify(body),
   });
 }
@@ -118,7 +134,10 @@ function base64URL(value: string): string {
     .replaceAll("=", "");
 }
 
-function fakeRuntime(responses: Response[], calls: Request[] = []): RuntimeValues {
+function fakeRuntime(
+  responses: Response[],
+  calls: Request[] = [],
+): RuntimeValues {
   return {
     supabaseURL: "http://127.0.0.1:54321",
     anonKey: "synthetic-anon-key",

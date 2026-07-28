@@ -130,12 +130,16 @@ final class LocalDatabaseTests: XCTestCase {
         let database = try await seededDatabase()
         try await database.submitCheckIn(Phase1BFixture.checkIn(), draftID: nil)
         try await database.deleteCheckIn(
-            id: Phase1BFixture.entityID,
-            profileID: Phase1BFixture.profileID,
-            at: Phase1BFixture.now.addingTimeInterval(60),
-            tombstoneID: Phase1BFixture.uuid("66666666-6666-4666-8666-666666666666"),
-            operationID: Phase1BFixture.operationID,
-            idempotencyKey: Phase1BFixture.key
+            DeleteCheckInRequest(
+                id: Phase1BFixture.entityID,
+                profileID: Phase1BFixture.profileID,
+                date: Phase1BFixture.now.addingTimeInterval(60),
+                tombstoneID: Phase1BFixture.uuid(
+                    "66666666-6666-4666-8666-666666666666"
+                ),
+                operationID: Phase1BFixture.operationID,
+                idempotencyKey: Phase1BFixture.key
+            )
         )
 
         let visible = try await database.checkIns(profileID: Phase1BFixture.profileID)

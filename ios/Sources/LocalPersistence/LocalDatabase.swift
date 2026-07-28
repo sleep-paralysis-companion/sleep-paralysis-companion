@@ -1,6 +1,15 @@
 import Foundation
 import GRDB
 
+nonisolated struct DeleteCheckInRequest: Sendable {
+    let id: UUID
+    let profileID: UUID
+    let date: Date
+    let tombstoneID: UUID
+    let operationID: UUID
+    let idempotencyKey: UUID
+}
+
 actor LocalDatabase {
     private let pool: DatabasePool
     private let writeFault: any LocalWriteFaultInjecting
@@ -247,52 +256,48 @@ actor LocalDatabase {
         }
     }
 
-    func deleteCheckIn(
-        id: UUID,
-        profileID: UUID,
-        at date: Date,
-        tombstoneID: UUID,
-        operationID: UUID,
-        idempotencyKey: UUID
-    ) throws {
+    func deleteCheckIn(_ request: DeleteCheckInRequest) throws {
         try write { database in
-            guard var record = try SubmittedCheckInRecord.fetchOne(database, key: id.uuidString),
-                  record.profileID == profileID.uuidString
+            guard var record = try SubmittedCheckInRecord.fetchOne(
+                database,
+                key: request.id.uuidString
+            ),
+                record.profileID == request.profileID.uuidString
             else {
                 return
             }
-            record.deletedAt = date.timeIntervalSince1970
-            record.updatedAt = date.timeIntervalSince1970
+            record.deletedAt = request.date.timeIntervalSince1970
+            record.updatedAt = request.date.timeIntervalSince1970
             record.revision += 1
             try record.update(database)
 
             let tombstone = DeletionTombstoneRecord(
-                id: tombstoneID.uuidString,
-                profileID: profileID.uuidString,
+                id: request.tombstoneID.uuidString,
+                profileID: request.profileID.uuidString,
                 entityType: SyncEntityType.checkIn.rawValue,
-                entityID: id.uuidString,
+                entityID: request.id.uuidString,
                 deletedRevision: record.revision,
-                deletedAt: date.timeIntervalSince1970,
+                deletedAt: request.date.timeIntervalSince1970,
                 acknowledgedAt: nil,
-                purgeAfter: date.addingTimeInterval(30 * 86400).timeIntervalSince1970
+                purgeAfter: request.date.addingTimeInterval(30 * 86400).timeIntervalSince1970
             )
             try tombstone.save(database)
 
             let operation = SynchronizationOperationRecord(
-                id: operationID.uuidString,
-                profileID: profileID.uuidString,
+                id: request.operationID.uuidString,
+                profileID: request.profileID.uuidString,
                 entityType: SyncEntityType.tombstone.rawValue,
-                entityID: id.uuidString,
+                entityID: request.id.uuidString,
                 operation: SyncOperationKind.delete.rawValue,
-                idempotencyKey: idempotencyKey.uuidString,
+                idempotencyKey: request.idempotencyKey.uuidString,
                 baseRevision: record.revision - 1,
                 localRevision: record.revision,
                 state: SynchronizationState.pending.rawValue,
                 attemptCount: 0,
                 nextAttemptAt: nil,
                 lastErrorCategory: nil,
-                createdAt: date.timeIntervalSince1970,
-                updatedAt: date.timeIntervalSince1970
+                createdAt: request.date.timeIntervalSince1970,
+                updatedAt: request.date.timeIntervalSince1970
             )
             try operation.save(database)
         }
