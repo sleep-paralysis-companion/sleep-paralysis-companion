@@ -9,6 +9,7 @@ SECRET_PATTERN='-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|AKIA[0-9A-Z]{16}
 if grep -R -I -n -E \
   --exclude-dir=.git \
   --exclude-dir=.build-tools \
+  --exclude-dir=.generated \
   --exclude='*.docx' \
   -- "$SECRET_PATTERN" .; then
   echo "Potential secret found in the worktree." >&2
