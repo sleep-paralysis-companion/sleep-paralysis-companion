@@ -90,7 +90,7 @@ final class DataRightsFoundationTests: XCTestCase {
             in: directory
         )
         let secondBytes = try Data(contentsOf: second.archiveURL)
-        let visibleBytes = String(decoding: firstBytes, as: UTF8.self)
+        let visibleBytes = try XCTUnwrap(searchableArchiveText(firstBytes))
 
         XCTAssertEqual(firstBytes, secondBytes)
         XCTAssertTrue(firstBytes.starts(with: [0x50, 0x4B, 0x03, 0x04]))
@@ -125,9 +125,8 @@ final class DataRightsFoundationTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             in: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         )
-        let bytes = try String(
-            decoding: Data(contentsOf: artifact.archiveURL),
-            as: UTF8.self
+        let bytes = try XCTUnwrap(
+            searchableArchiveText(Data(contentsOf: artifact.archiveURL))
         )
         XCTAssertFalse(bytes.contains(Phase1BFixture.entityID.uuidString))
         XCTAssertFalse(bytes.contains("draft"))
@@ -301,5 +300,12 @@ final class DataRightsFoundationTests: XCTestCase {
             identifier: FixedIdentifierGenerator(value: Phase1BFixture.key),
             clock: FixedClock(value: Phase1BFixture.now)
         )
+    }
+
+    private func searchableArchiveText(_ archive: Data) -> String? {
+        let printableASCII = archive.map { byte in
+            (0x20 ... 0x7E).contains(byte) ? byte : 0x20
+        }
+        return String(bytes: printableASCII, encoding: .utf8)
     }
 }
