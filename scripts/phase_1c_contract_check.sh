@@ -84,4 +84,11 @@ if find "$REPOSITORY_ROOT/ios" \
   exit 1
 fi
 
+if grep -n -E \
+  'ios_signing|app_store_connect|submit_to_testflight|submit_to_app_store|publishing:' \
+  "$REPOSITORY_ROOT/codemagic.yaml"; then
+  echo "Codemagic Phase 1C verification must not sign or publish." >&2
+  exit 1
+fi
+
 bash "$REPOSITORY_ROOT/scripts/static_check.sh"

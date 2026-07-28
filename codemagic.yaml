@@ -1,51 +1,61 @@
-# DISPOSABLE PHASE 0 SPIKE ONLY - NOT A PRODUCTION PIPELINE
+# Phase 1C repository, simulator, and isolated-backend verification only.
+# This configuration performs no signing, deployment, TestFlight upload, or live Supabase access.
 workflows:
-  phase0-platform-feasibility:
-    name: Phase 0 iOS 26 Feasibility Spike
-    max_build_duration: 60
+  phase-1c-ios:
+    name: Phase 1C - Xcode 26.6 / iPhone 17 / iOS 26.5
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: codemagic
+    max_build_duration: 60
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.satyamshree.spc.phase0spike
-      vars:
-        XCODE_PROJECT: SPCPhase0Spike.xcodeproj
-        XCODE_SCHEME: SPCPhase0Spike
-        SPIKE_DIR: spikes/phase0-platform-feasibility
-      xcode: latest
+      xcode: 26.6
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/.build-tools
+        - $CM_BUILD_DIR/ios/.generated/SourcePackages
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: codex/phase-1c-onboarding
+          include: true
+          source: true
+      cancel_previous_builds: true
     scripts:
-      - name: Install XcodeGen
-        script: brew install xcodegen
-      - name: Generate disposable Xcode project
-        script: |
-          cd "$CM_BUILD_DIR/$SPIKE_DIR"
-          xcodegen generate
-      - name: Confirm excluded capabilities are absent
-        script: |
-          cd "$CM_BUILD_DIR/$SPIKE_DIR"
-          if grep -R -n -E 'import (Supabase|HealthKit)|NSMicrophoneUsageDescription|AVAudioRecorder|requestRecordPermission' Sources Resources; then
-            echo "Excluded capability reference found"
-            exit 1
-          fi
-      - name: Apply App Store signing profiles
-        script: |
-          cd "$CM_BUILD_DIR/$SPIKE_DIR"
-          xcode-project use-profiles \
-            --custom-export-options='{"testFlightInternalTestingOnly": true}'
-      - name: Build signed internal-TestFlight IPA
-        script: |
-          cd "$CM_BUILD_DIR/$SPIKE_DIR"
-          xcode-project build-ipa \
-            --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+      - name: Verify exact Phase 1C iOS head
+        script: bash scripts/verify_phase_1c_codemagic_ios.sh
     artifacts:
-      - spikes/phase0-platform-feasibility/build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
+      - scripts/versions.env
+      - ios/TestResults/CodemagicEnvironment.txt
+      - ios/TestResults/*.xcresult
+      - ios/TestResults/Screenshots
+      - ios/SleepParalysisCompanion.xcodeproj/project.pbxproj
+      - ios/SleepParalysisCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+      - ios/SleepParalysisCompanion.xcodeproj/xcshareddata/xcschemes/*.xcscheme
+
+  phase-1c-isolated-backend:
+    name: Phase 1C - Supabase 2.110.0 / Postgres 17 / pgTAP
+    instance_type: linux_x2
+    max_build_duration: 35
+    environment:
+      ubuntu: 24.04
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.cache/deno
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: codex/phase-1c-onboarding
+          include: true
+          source: true
+      cancel_previous_builds: true
+    scripts:
+      - name: Verify exact Phase 1C isolated backend head
+        script: bash scripts/verify_phase_1c_codemagic_backend.sh
+    artifacts:
+      - scripts/versions.env
+      - supabase/TestResults/CodemagicEnvironment.txt
+      - supabase/config.toml
+      - supabase/migrations
+      - supabase/tests
+      - supabase/functions/delete-account

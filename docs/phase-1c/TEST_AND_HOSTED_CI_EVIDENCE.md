@@ -1,16 +1,35 @@
 # Phase 1C Test and Hosted-CI Evidence
 
-Workflow: `.github/workflows/phase-1c-onboarding.yml`
+Workflows:
+
+- `.github/workflows/phase-1c-onboarding.yml`
+- `codemagic.yaml`
 
 Status: **PENDING EXACT FINAL HEAD**
 
-The workflow has two jobs:
+The hosted configurations have two equivalent verification jobs:
 
 1. Xcode 26.6 / iPhone 17 / iOS 26.5: pinned bootstrap, formatting, lint, contract/static/privacy/
    secret scans, warnings-as-errors build, unit tests, and UI tests on the exact created simulator
    UDID. Unit/UI xcresults and exported screenshot attachments are retained for 30 days.
 2. Supabase 2.110.0 / PostgreSQL 17 / pgTAP: isolated reset, database tests/lint, Edge Function
    formatting/lint/type-check/tests, and secret scan. It never links the live project.
+
+## Hosted provider recovery
+
+GitHub Actions run `30359181461` for pushed head
+`f66bbaf18ecdbfa1d0a3af635aef4d616ed596d8` was rejected before runner assignment
+because the repository owner's Actions payment or spending limit blocked both jobs. It executed
+zero steps and is not passing evidence.
+
+The Codemagic workflows perform no signing, deployment, TestFlight upload, or live Supabase
+access. The iOS workflow pins Xcode 26.6 and uses the repository's exact iPhone 17/iOS 26.5
+simulator-UDID preparation. The backend workflow uses Ubuntu 24.04, Docker, pinned Supabase CLI
+2.110.0, Postgres 17, pgTAP, and Deno 2.8.1. Both wrappers assert that the checked-out Git SHA
+equals Codemagic's `CM_COMMIT` before testing.
+
+Codemagic build IDs, URLs, test counts, artifacts, and the final evidence SHA remain pending until
+both workflows complete successfully.
 
 ## Coverage map
 

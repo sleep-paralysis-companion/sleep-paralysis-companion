@@ -6,10 +6,10 @@
 *.yaml text eol=lf
 *.plist text eol=lf
 *.py text eol=lf
+*.sh text eol=lf
 
 *.docx binary
 *.pdf binary
 *.png binary
 *.jpg binary
 *.jpeg binary
-

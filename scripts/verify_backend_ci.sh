@@ -6,7 +6,7 @@ source "$REPOSITORY_ROOT/scripts/versions.env"
 cd "$REPOSITORY_ROOT"
 
 if grep -R -n -E 'nfzvlvukbeapcnlmyecf|public\.waitlist|CREATE[[:space:]]+TABLE[[:space:]]+.*waitlist' \
-  supabase .github/workflows; then
+  supabase .github/workflows codemagic.yaml; then
   echo "Live project or waitlist reference found in executable backend files." >&2
   exit 1
 fi

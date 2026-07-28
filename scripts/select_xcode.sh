@@ -4,9 +4,18 @@ set -euo pipefail
 REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPOSITORY_ROOT/scripts/versions.env"
 
-XCODE_PATH="/Applications/Xcode_${XCODE_VERSION}.app"
-if [[ ! -d "$XCODE_PATH" ]]; then
-  echo "Required Xcode not found: $XCODE_PATH" >&2
+XCODE_PATH=""
+for candidate in \
+  "/Applications/Xcode_${XCODE_VERSION}.app" \
+  "/Applications/Xcode-${XCODE_VERSION}.app"; do
+  if [[ -d "$candidate" ]]; then
+    XCODE_PATH="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$XCODE_PATH" ]]; then
+  echo "Required Xcode $XCODE_VERSION was not found in a supported hosted-runner path." >&2
   exit 1
 fi
 

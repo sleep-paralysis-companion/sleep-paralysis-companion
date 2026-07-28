@@ -16,6 +16,7 @@ xcuserdata/
 ios/.generated/
 ios/TestResults/
 ios/*.xcodeproj/
+supabase/TestResults/
 
 # Secrets and local environment
 .env
