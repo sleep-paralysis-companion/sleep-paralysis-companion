@@ -90,7 +90,7 @@ final class DataRightsFoundationTests: XCTestCase {
             in: directory
         )
         let secondBytes = try Data(contentsOf: second.archiveURL)
-        let visibleBytes = try XCTUnwrap(String(data: firstBytes, encoding: .utf8))
+        let visibleBytes = String(decoding: firstBytes, as: UTF8.self)
 
         XCTAssertEqual(firstBytes, secondBytes)
         XCTAssertTrue(firstBytes.starts(with: [0x50, 0x4B, 0x03, 0x04]))
@@ -125,8 +125,9 @@ final class DataRightsFoundationTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             in: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         )
-        let bytes = try XCTUnwrap(
-            String(data: Data(contentsOf: artifact.archiveURL), encoding: .utf8)
+        let bytes = String(
+            decoding: try Data(contentsOf: artifact.archiveURL),
+            as: UTF8.self
         )
         XCTAssertFalse(bytes.contains(Phase1BFixture.entityID.uuidString))
         XCTAssertFalse(bytes.contains("draft"))

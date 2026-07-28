@@ -143,13 +143,13 @@ function fakeRuntime(
     anonKey: "synthetic-anon-key",
     serviceRoleKey: "synthetic-service-role-key",
     now: () => NOW,
-    fetch: async (input, init) => {
+    fetch: (input, init) => {
       calls.push(new Request(input, init));
       const response = responses.shift();
       if (!response) {
         throw new Error("Unexpected fetch");
       }
-      return response;
+      return Promise.resolve(response);
     },
   };
 }
