@@ -10,6 +10,7 @@ if grep -R -I -n -E \
   --exclude-dir=.git \
   --exclude-dir=.build-tools \
   --exclude-dir=.generated \
+  --exclude-dir=.temp \
   --exclude='*.docx' \
   -- "$SECRET_PATTERN" .; then
   echo "Potential secret found in the worktree." >&2

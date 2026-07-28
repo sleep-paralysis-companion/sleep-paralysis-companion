@@ -125,8 +125,8 @@ final class DataRightsFoundationTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             in: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         )
-        let bytes = String(
-            decoding: try Data(contentsOf: artifact.archiveURL),
+        let bytes = try String(
+            decoding: Data(contentsOf: artifact.archiveURL),
             as: UTF8.self
         )
         XCTAssertFalse(bytes.contains(Phase1BFixture.entityID.uuidString))
