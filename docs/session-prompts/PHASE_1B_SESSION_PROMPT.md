@@ -1,10 +1,18 @@
 # Session Prompt: Phase 1B - Data, Authentication, Security, and Offline Foundation
 
+Verified outcome (2026-07-28): Gate 1B passed for repository, simulator, and isolated-backend
+candidate `6b80c0d6269168b6f1a5494893869fc3278df47e` in hosted run
+`30322506101`. Gate 0 remains `NOT PASSED`; see `docs/phase-1b/GATE_1B_REVIEW.md`.
+
 You are working in the SP / Paralux repository. This session is exclusively for **Phase 1B: Data, authentication, security, and offline foundation**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate
 
-Read the execution plan, both engineering guides, all approved Phase 0 artifacts, the Phase 1A handoff, migration conventions, and repository guidance. Inspect `git status` and preserve unrelated changes. Confirm Gate 0 and Gate 1A passed. If an entry gate is missing, do not implement dependent data/auth code; report the precise blocker.
+Read the execution plan, both engineering guides, all approved Phase 0 artifacts, the Phase 1A
+handoff, migration conventions, and repository guidance. Inspect `git status` and preserve
+unrelated changes. Confirm the current Gate 0 verdict, Gate 1A evidence, and any explicit narrow
+implementation exception before changing dependent data/auth code. Gate 0 did not pass during
+Phase 1B; its dated owner authorization was the controlling exception.
 
 ## Objective
 

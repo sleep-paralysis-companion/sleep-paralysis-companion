@@ -22,7 +22,9 @@ Default privileges revoke future table, sequence, and function exposure.
 unknown/forged/server-owned payload fields, writes the receipt and entity in one transaction,
 enforces revision preconditions, and returns an existing acknowledgment for an exact replay.
 
-The pgTAP suite has 61 assertions covering owner-positive operations, cross-user/anonymous denial,
-forged ownership, owner reassignment, over-posting, revisions, deleted accounts, function
-privileges, default privileges, replay, and resurrection prevention. It uses only synthetic
-`.invalid` identities.
+The policy pgTAP suite has 61 assertions covering owner-positive operations,
+cross-user/anonymous denial, forged ownership, owner reassignment, over-posting, revisions,
+deleted accounts, function privileges, default privileges, replay, and resurrection prevention.
+Seven local advisor-equivalent assertions cover RLS/forced-RLS, public `SECURITY DEFINER`
+functions, RLS init-plan form, foreign-key indexes, primary keys, and invalid indexes. Both suites
+use only synthetic `.invalid` identities.

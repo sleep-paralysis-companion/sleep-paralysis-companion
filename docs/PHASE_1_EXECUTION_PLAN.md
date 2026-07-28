@@ -293,6 +293,12 @@ Figma, signing, or production-service changes.
 
 ### Phase 1B — Data, authentication, security, and offline foundation
 
+**Verified status — 28 July 2026:** Gate 1B passed for repository, simulator, and isolated-backend
+candidate `6b80c0d6269168b6f1a5494893869fc3278df47e` in
+[hosted run 30322506101](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30322506101).
+Gate 0 remains `NOT PASSED`; production provider configuration, live deployment, physical-device
+Data Protection, TestFlight, and production deletion remain external evidence.
+
 **Objective:** Make local persistence and Supabase synchronization predictable before UI features depend on them.
 
 #### Required work
