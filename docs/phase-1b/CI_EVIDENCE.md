@@ -2,26 +2,26 @@
 
 Workflow: `.github/workflows/phase-1b-foundation.yml`
 
-Previously verified implementation candidate:
-`6b80c0d6269168b6f1a5494893869fc3278df47e`
+Verified Phase 1B closure implementation head:
+`2cd106ce561d6562dd3eabf38a534c780b116f51`
 
 Hosted run:
-[30322506101](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30322506101)
+[30350985687](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30350985687)
 
-| Job | Result | Evidence |
-|---|---|---|
-| Xcode 26.6 / iPhone 17 / iOS 26.5 | PASS | build succeeded; 70 unit tests and 2 UI smoke tests passed with zero failures |
-| Supabase 2.110.0 / PostgreSQL 17 / pgTAP | PASS | isolated start/reset succeeded; 61 RLS/schema assertions and 6 Edge tests passed; schema lint reported no errors |
+| Job | Job ID | Result | Evidence |
+|---|---:|---|---|
+| [Xcode 26.6 / iPhone 17 / iOS 26.5](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30350985687/job/90248170918) | `90248170918` | PASS | build succeeded; 77 unit tests and 2 UI smoke tests passed with zero failures on simulator UDID `4F368A51-D5B4-493C-9A9D-81BF201DDFA6` |
+| [Supabase 2.110.0 / PostgreSQL 17 / pgTAP](https://github.com/sleep-paralysis-companion/sleep-paralysis-companion/actions/runs/30350985687/job/90248170851) | `90248170851` | PASS | isolated start/reset succeeded; 102 pgTAP assertions across 3 files and 11 Edge Function tests passed; schema lint reported no errors |
 
-That run predates the Phase 1B closure repairs and is retained only as historical evidence. It does
-not verify the current branch head. The closure head must pass both hosted jobs before Gate 1B can
-be restored to PASS. Its exact SHA, run ID, job IDs, counts, and artifact names will replace this
-pending statement only after GitHub reports a green run for that exact pushed head.
+The exact implementation head passed SwiftFormat 0.62.1, SwiftLint 0.65.0,
+warnings-as-errors, privacy-manifest validation, static architecture checks, provider-credential
+non-persistence checks, and worktree/full-history secret scanning. The hosted artifacts are
+retained for 30 days:
 
-The run also passed SwiftFormat 0.62.1, SwiftLint 0.65.0, warnings-as-errors, privacy-manifest
-validation, static architecture checks, and worktree/full-history secret scanning. Artifacts were
-retained for 30 days as `phase-1b-ios-evidence-30322506101-1` and
-`phase-1b-backend-evidence-30322506101-1`.
+- `phase-1b-ios-evidence-30350985687-1` (`8685124696`),
+  SHA-256 `18086bd708accfa03cb1194bf10da03cef5eee9c93d56ac33c7acdacb86487f2`;
+- `phase-1b-backend-evidence-30350985687-1` (`8684937196`),
+  SHA-256 `c05b89e82c0a6e2fd783b4bfd255a3937d90c5f7217e33f3f9ffb46195b1d68f`.
 
 Runner-reported toolchain:
 
