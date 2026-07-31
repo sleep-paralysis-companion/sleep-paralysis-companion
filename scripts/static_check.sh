@@ -48,11 +48,29 @@ fi
 
 if find "$REPOSITORY_ROOT/ios" \
   -path "$REPOSITORY_ROOT/ios/.generated" -prune -o \
-  -type f \( -name '*.entitlements' -o -name '*.mobileprovision' -o -name '*.p8' \) \
+  -type f \( -name '*.mobileprovision' -o -name '*.p8' \) \
   -print | grep -q .; then
-  echo "Unexpected entitlement or credential file found." >&2
+  echo "Unexpected signing or provider credential file found." >&2
   exit 1
 fi
+
+while IFS= read -r entitlement; do
+  case "$entitlement" in
+    "$REPOSITORY_ROOT/ios/Resources/SleepParalysisCompanion.entitlements" | \
+    "$REPOSITORY_ROOT/ios/Widget/SPCWidgetExtension.entitlements")
+      grep -Fq 'com.apple.security.application-groups' "$entitlement"
+      grep -Fq '$(SPC_APP_GROUP_IDENTIFIER)' "$entitlement"
+      ;;
+    *)
+      echo "Unexpected entitlement file found: $entitlement" >&2
+      exit 1
+      ;;
+  esac
+done < <(
+  find "$REPOSITORY_ROOT/ios" \
+    -path "$REPOSITORY_ROOT/ios/.generated" -prune -o \
+    -type f -name '*.entitlements' -print
+)
 
 grep -Fx "SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc.dev" \
   "$REPOSITORY_ROOT/ios/Configurations/Development.xcconfig"

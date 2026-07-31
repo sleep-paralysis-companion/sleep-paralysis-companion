@@ -107,20 +107,38 @@ nonisolated struct LocalExportService: Sendable {
         }
     }
 
-    func cleanupExpired(in directory: URL, now: Date) throws {
+    func cleanupExpired(
+        in directory: URL,
+        now: Date,
+        maximumEntries: Int = 64
+    ) throws {
         do {
+            guard FileManager.default.fileExists(atPath: directory.path) else { return }
             let entries = try FileManager.default.contentsOfDirectory(
                 at: directory,
                 includingPropertiesForKeys: [.contentModificationDateKey],
                 options: [.skipsHiddenFiles]
             )
-            for entry in entries where entry.pathExtension == "zip" {
+            for entry in entries
+                .filter({ $0.pathExtension == "zip" })
+                .prefix(max(0, maximumEntries))
+            {
                 let values = try entry.resourceValues(forKeys: [.contentModificationDateKey])
                 if let modified = values.contentModificationDate,
                    now.timeIntervalSince(modified) >= 86400
                 {
                     try FileManager.default.removeItem(at: entry)
                 }
+            }
+        } catch {
+            throw ExportError.cleanupFailed
+        }
+    }
+
+    func remove(_ artifactURL: URL) throws {
+        do {
+            if FileManager.default.fileExists(atPath: artifactURL.path) {
+                try FileManager.default.removeItem(at: artifactURL)
             }
         } catch {
             throw ExportError.cleanupFailed

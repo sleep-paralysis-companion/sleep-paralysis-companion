@@ -94,6 +94,7 @@ targets:
           - Info.plist
     settings:
       base:
+        CODE_SIGN_ENTITLEMENTS: Resources/SleepParalysisCompanion.entitlements
         INFOPLIST_FILE: Resources/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: "$(SPC_BUNDLE_IDENTIFIER)"
         PRODUCT_MODULE_NAME: SleepParalysisCompanion
@@ -113,15 +114,17 @@ targets:
     platform: iOS
     sources:
       - path: Widget
+        excludes:
+          - Info.plist
       - path: Sources/AppIntents/ManualEpisodeIntent.swift
     settings:
       base:
         APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGN_ENTITLEMENTS: Widget/SPCWidgetExtension.entitlements
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Paralux
-        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Widget/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: "$(SPC_BUNDLE_IDENTIFIER).widget"
         SKIP_INSTALL: YES
 

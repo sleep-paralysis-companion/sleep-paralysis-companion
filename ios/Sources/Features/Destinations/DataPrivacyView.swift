@@ -15,10 +15,8 @@ struct DataPrivacyView: View {
                 Button("Create structured export", systemImage: "square.and.arrow.up") {
                     model.createStructuredExport()
                 }
-                if let url = model.exportURL {
-                    ShareLink(item: url) {
-                        Label("Share prepared ZIP", systemImage: "archivebox")
-                    }
+                if model.exportURL != nil {
+                    Label("Protected ZIP ready to share", systemImage: "archivebox")
                 }
             }
             Section("Delete app data") {
@@ -36,6 +34,16 @@ struct DataPrivacyView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This removes protected local records, schedules, reminders, exports, and all personal audio from this device.")
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { model.exportURL != nil },
+                set: { if !$0 { model.cleanupStructuredExport() } }
+            )
+        ) {
+            if let url = model.exportURL {
+                ShareSheet(items: [url], completion: model.cleanupStructuredExport)
+            }
         }
     }
 }

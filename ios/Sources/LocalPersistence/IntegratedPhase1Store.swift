@@ -189,6 +189,22 @@ actor IntegratedPhase1Store {
         return artifact
     }
 
+    func cleanupStructuredExports(
+        in directory: URL,
+        now: Date = Date(),
+        maximumEntries: Int = 64
+    ) throws {
+        try exportService().cleanupExpired(
+            in: directory,
+            now: now,
+            maximumEntries: maximumEntries
+        )
+    }
+
+    func removeStructuredExport(at url: URL) throws {
+        try exportService().remove(url)
+    }
+
     func deleteAllLocalData(userID: UUID) async throws {
         try await preferences.delete(userID: userID)
         try await databaseInstance().deleteAllLocalData()
@@ -322,6 +338,14 @@ actor IntegratedPhase1Store {
         try protection.applyProtection(to: url, kind: .localDatabase)
         database = opened
         return opened
+    }
+
+    private func exportService() -> LocalExportService {
+        LocalExportService(
+            clock: SystemPhase1BClock(),
+            identifier: SystemIdentifierGenerator(),
+            protection: SystemProtectedFileApplicator()
+        )
     }
 }
 

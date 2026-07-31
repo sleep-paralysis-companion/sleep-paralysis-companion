@@ -17,6 +17,14 @@ enum AppCompositionRoot {
         let disablesAuthentication = ProcessInfo.processInfo.environment[
             "SPC_DISABLE_AUTH_CONFIGURATION"
         ] == "1"
+        #if DEBUG
+        if let value = ProcessInfo.processInfo.environment["SPC_UI_TEST_AUTHENTICATED_USER_ID"],
+           let userID = UUID(uuidString: value)
+        {
+            authentication = UITestOAuthSessionService(userID: userID)
+            remote = nil
+        } else
+        #endif
         if !disablesAuthentication,
            let configuration = SupabasePublicConfiguration.load(from: .main)
         {

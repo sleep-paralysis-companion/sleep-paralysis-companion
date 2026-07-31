@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
@@ -41,8 +42,8 @@ final class AppModel {
 
     @ObservationIgnored private var session: AuthenticationSessionMaterial?
     @ObservationIgnored private var activationTask: Task<Void, Never>?
+    @ObservationIgnored private var recordingLimitTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRecordingClipID: UUID?
-    @ObservationIgnored private var pendingManualActivation = false
 
     init(
         environment: AppEnvironment,
@@ -66,6 +67,9 @@ final class AppModel {
         self.logger = logger
         self.restorationCodec = restorationCodec
         self.deepLinkResolver = deepLinkResolver
+        self.audioController.recordingEndedUnexpectedly = { [weak self] in
+            self?.cancelRecording(reason: "Recording stopped before it could be saved. No partial recording was kept.")
+        }
     }
 
     var restorationValue: String {
@@ -91,6 +95,10 @@ final class AppModel {
         launchDestination = .loading
         activationTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            try? await store.cleanupStructuredExports(
+                in: structuredExportDirectory,
+                maximumEntries: 64
+            )
             reminderAuthorization = await reminders.authorizationState()
             do {
                 guard let restored = try await authentication.restore() else {
@@ -223,9 +231,6 @@ final class AppModel {
                     : try await reminders.updateWithoutPrompt(schedule)
                 launchDestination = .home
                 resetNavigation()
-                if pendingManualActivation {
-                    beginManualGrounding()
-                }
             } catch {
                 feedbackMessage = "The schedule could not be saved. You can continue using Paralux without reminders."
             }
@@ -243,7 +248,14 @@ final class AppModel {
                     profileID: profileID,
                     clipID: clipID
                 )
-                try await store.saveClip(metadata, userID: userID)
+                try await PersonalAudioLifecycleCoordinator.persistImported(
+                    persistMetadata: {
+                        try await self.store.saveClip(metadata, userID: userID)
+                    },
+                    removeCommittedBytes: {
+                        try await self.audioFiles.delete(metadata)
+                    }
+                )
                 personalClips.append(metadata)
             } catch {
                 feedbackMessage = "That audio file could not be imported. No partial copy was kept."
@@ -265,16 +277,20 @@ final class AppModel {
                 allowed = false
             }
             guard allowed else {
+                audioController.deactivateRecordingSession()
                 feedbackMessage = "Microphone access is off. You can import audio or continue without recording."
                 return
             }
+            let clipID = UUID()
             do {
-                let clipID = UUID()
                 let url = try await audioFiles.recordingURL(profileID: profileID, clipID: clipID)
                 try audioController.startRecording(to: url)
                 pendingRecordingClipID = clipID
                 isRecording = true
+                beginRecordingLimit()
             } catch {
+                audioController.deactivateRecordingSession()
+                await audioFiles.discardRecording(profileID: profileID, clipID: clipID)
                 feedbackMessage = "Recording could not start. Check microphone access and try again."
             }
         }
@@ -283,6 +299,8 @@ final class AppModel {
     func stopAndSaveRecording() {
         guard let profileID, let userID, let clipID = pendingRecordingClipID else { return }
         let duration = audioController.stopRecording()
+        recordingLimitTask?.cancel()
+        recordingLimitTask = nil
         isRecording = false
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -304,9 +322,38 @@ final class AppModel {
     }
 
     func cancelRecording() {
+        cancelRecording(reason: nil)
+    }
+
+    func handleScenePhase(_ phase: ScenePhase) {
+        guard RecordingLifecycleBoundary.requiresCancellation(
+            isRecording: isRecording,
+            sceneIsActive: phase == .active
+        ) else { return }
+        cancelRecording(reason: "Recording stopped when Paralux left the foreground. No partial recording was kept.")
+    }
+
+    private func cancelRecording(reason: String?) {
+        recordingLimitTask?.cancel()
+        recordingLimitTask = nil
         audioController.cancelRecording()
+        if let profileID, let clipID = pendingRecordingClipID {
+            Task { await audioFiles.discardRecording(profileID: profileID, clipID: clipID) }
+        }
         pendingRecordingClipID = nil
         isRecording = false
+        if let reason {
+            feedbackMessage = reason
+        }
+    }
+
+    private func beginRecordingLimit() {
+        recordingLimitTask?.cancel()
+        recordingLimitTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(RecoveryAudioController.maximumRecordingDuration))
+            guard !Task.isCancelled else { return }
+            self?.cancelRecording(reason: "The 3-minute recording limit was reached. No partial recording was kept.")
+        }
     }
 
     func selectPersonalClip(_ clip: PersonalAudioClipMetadata) {
@@ -328,8 +375,21 @@ final class AppModel {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                try await audioFiles.delete(clip)
-                try await store.deleteClip(id: clip.id, profileID: profileID, userID: userID)
+                try await PersonalAudioLifecycleCoordinator.delete(
+                    stageBytes: { try await self.audioFiles.stageDeletion(clip) },
+                    deleteMetadata: {
+                        try await self.store.deleteClip(
+                            id: clip.id,
+                            profileID: profileID,
+                            userID: userID
+                        )
+                    },
+                    restoreMetadata: {
+                        try await self.store.saveClip(clip, userID: userID)
+                    },
+                    commitBytes: { try await self.audioFiles.commitDeletion($0) },
+                    rollbackBytes: { try await self.audioFiles.rollbackDeletion($0) }
+                )
                 personalClips.removeAll { $0.id == clip.id }
                 if recoveryAudioDefault == .personalClip(clip.id) {
                     recoveryAudioDefault = nil
@@ -382,11 +442,7 @@ final class AppModel {
     }
 
     func beginManualGrounding() {
-        guard launchDestination == .home else {
-            pendingManualActivation = true
-            return
-        }
-        pendingManualActivation = false
+        guard launchDestination == .home else { return }
         open(.grounding)
         guard case let .personalClip(id) = recoveryAudioDefault,
               let clip = personalClips.first(where: { $0.id == id })
@@ -398,9 +454,11 @@ final class AppModel {
         play(clip)
     }
 
-    func requestManualGrounding() {
-        pendingManualActivation = true
+    @discardableResult
+    func requestManualGrounding() -> Bool {
+        guard launchDestination == .home else { return false }
         beginManualGrounding()
+        return true
     }
 
     func submitCheckIn(_ form: MorningCheckInForm, editing: SubmittedCheckIn? = nil) {
@@ -500,19 +558,24 @@ final class AppModel {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                let directory = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("ParaluxStructuredExports", isDirectory: true)
+                cleanupStructuredExport()
                 let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
                 exportURL = try await store.export(
                     profileID: profileID,
                     userID: userID,
                     appVersion: version,
-                    directory: directory
+                    directory: structuredExportDirectory
                 ).archiveURL
             } catch {
                 feedbackMessage = "The structured export could not be created."
             }
         }
+    }
+
+    func cleanupStructuredExport() {
+        guard let exportURL else { return }
+        self.exportURL = nil
+        Task { try? await store.removeStructuredExport(at: exportURL) }
     }
 
     func signOut() {
@@ -524,6 +587,7 @@ final class AppModel {
                 feedbackMessage = "The remote session may still be active. Try signing out again."
                 return
             }
+            await cleanupAllStructuredExports()
             clearSessionState()
             launchDestination = .authentication
         }
@@ -536,6 +600,7 @@ final class AppModel {
             do {
                 try await reminders.removeAllAppCreatedAlarms()
                 try await audioFiles.deleteAll(profileID: profileID)
+                await cleanupAllStructuredExports()
                 try await store.deleteAllLocalData(userID: userID)
                 try? await authentication.signOut()
                 clearSessionState()
@@ -554,6 +619,7 @@ final class AppModel {
                 try await authentication.deleteRemoteAccount()
                 try await reminders.removeAllAppCreatedAlarms()
                 try await audioFiles.deleteAll(profileID: profileID)
+                await cleanupAllStructuredExports()
                 try await store.deleteAllLocalData(userID: userID)
                 clearSessionState()
                 launchDestination = .splash
@@ -616,9 +682,6 @@ final class AppModel {
         } else {
             launchDestination = .home
             restore(restoredState, profileID: snapshot.profile.id)
-            if pendingManualActivation {
-                beginManualGrounding()
-            }
         }
     }
 
@@ -656,6 +719,7 @@ final class AppModel {
     }
 
     private func clearSessionState() {
+        cancelRecording(reason: nil)
         session = nil
         userID = nil
         profileID = nil
@@ -670,5 +734,15 @@ final class AppModel {
         playbackState = .idle
         accountAccessState = .signedOut
         resetNavigation()
+    }
+
+    private var structuredExportDirectory: URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("ParaluxStructuredExports", isDirectory: true)
+    }
+
+    private func cleanupAllStructuredExports() async {
+        cleanupStructuredExport()
+        try? FileManager.default.removeItem(at: structuredExportDirectory)
     }
 }

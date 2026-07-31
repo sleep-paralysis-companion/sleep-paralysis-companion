@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor
 struct AppRootView: View {
     @Bindable var model: AppModel
+    private let activationStore = ManualEpisodeActivationStore.live()
 
     @Environment(\.scenePhase) private var scenePhase
     @SceneStorage("spc.navigation.v2") private var restoredNavigation = ""
@@ -21,17 +22,19 @@ struct AppRootView: View {
         .onOpenURL(perform: model.openDeepLink)
         .task {
             model.activate(restoredState: restoredNavigation)
-            consumeManualEpisodeActivation()
+            attemptManualEpisodeHandoff()
         }
         .onChange(of: model.restorationValue) { _, value in
             restoredNavigation = value
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active,
-               UserDefaults.standard.object(forKey: ManualEpisodeActivation.userDefaultsKey) != nil
-            {
-                consumeManualEpisodeActivation()
+            model.handleScenePhase(phase)
+            if phase == .active {
+                attemptManualEpisodeHandoff()
             }
+        }
+        .onChange(of: model.launchDestination) { _, _ in
+            attemptManualEpisodeHandoff()
         }
         .safeAreaInset(edge: .top) {
             if let feedback = model.feedbackMessage,
@@ -51,12 +54,11 @@ struct AppRootView: View {
         }
     }
 
-    private func consumeManualEpisodeActivation() {
-        guard UserDefaults.standard.object(forKey: ManualEpisodeActivation.userDefaultsKey) != nil else {
-            return
-        }
-        UserDefaults.standard.removeObject(forKey: ManualEpisodeActivation.userDefaultsKey)
-        model.requestManualGrounding()
+    private func attemptManualEpisodeHandoff() {
+        guard let activation = try? activationStore.firstPending(),
+              model.requestManualGrounding()
+        else { return }
+        try? activationStore.consume(id: activation.id)
     }
 
     @ViewBuilder
