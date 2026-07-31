@@ -61,6 +61,7 @@ final class WidgetActivationStoreTests: XCTestCase {
 }
 
 final class RecordingAndAudioBoundaryTests: XCTestCase {
+    @MainActor
     func testRecordingCancelsAtBothInactiveAndBackgroundBoundaries() {
         XCTAssertTrue(
             RecordingLifecycleBoundary.requiresCancellation(
