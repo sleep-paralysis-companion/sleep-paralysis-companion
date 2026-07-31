@@ -1,54 +1,39 @@
 import SwiftUI
 
 struct SettingsView: View {
-    let open: (AppRoute) -> Void
+    @Bindable var model: AppModel
 
     var body: some View {
         List {
-            Section("settings.account.section") {
-                settingsButton(
-                    title: "settings.sync.title",
-                    icon: "arrow.triangle.2.circlepath",
-                    route: .syncAccount
-                )
+            Section("Your setup") {
+                row("Comfort audio", icon: "waveform", route: .audioLibrary)
+                row("Sleep schedule", icon: "moon.stars", route: .sleepSchedule)
+                row("Questionnaire answers", icon: "list.bullet.clipboard", route: .editQuestionnaire)
             }
-            Section("settings.system.section") {
-                settingsButton(
-                    title: "settings.permissions.title",
-                    icon: "bell.badge",
-                    route: .permissionEducation
-                )
+            Section("Preferences") {
+                row("Accessibility", icon: "accessibility", route: .accessibility)
             }
-            Section("settings.information.section") {
-                settingsButton(
-                    title: "settings.privacy.title",
-                    icon: "hand.raised",
-                    route: .dataPrivacy
-                )
-                settingsButton(
-                    title: "settings.help.title",
-                    icon: "questionmark.circle",
-                    route: .helpLegal
-                )
+            Section("Privacy and support") {
+                row("Data and privacy", icon: "hand.raised", route: .dataPrivacy)
+                row("Help and legal", icon: "questionmark.circle", route: .helpLegal)
+                row("Account", icon: "person.crop.circle", route: .account)
             }
         }
-        .navigationTitle(Text("tab.settings"))
+        .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .accessibilityIdentifier("settings.list")
     }
 
-    private func settingsButton(
-        title: LocalizedStringKey,
-        icon: String,
-        route: AppRoute
-    ) -> some View {
+    private func row(_ title: String, icon: String, route: AppRoute) -> some View {
         Button {
-            open(route)
+            model.open(route)
         } label: {
-            Label(title, systemImage: icon)
-                .frame(minHeight: AppSpacing.minimumControl)
+            HStack {
+                Label(title, systemImage: icon)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.tertiary)
+            }
         }
-        .foregroundStyle(AppColorRole.textPrimary)
-        .accessibilityIdentifier("settings.\(route.rawValue).button")
+        .foregroundStyle(.primary)
     }
 }

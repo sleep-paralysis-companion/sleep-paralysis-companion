@@ -1,53 +1,42 @@
 import SwiftUI
 
-struct SyncAccountView: View {
-    let accountState: AccountAccessState
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+struct AccountView: View {
+    @Bindable var model: AppModel
+    @State private var confirmSignOut = false
+    @State private var confirmAccountDeletion = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppAccessibility.verticalSpacing(for: dynamicTypeSize)) {
-                Text("sync.title")
-                    .font(AppTypographyRole.screenTitle)
-                    .accessibilityAddTraits(.isHeader)
-                Text("sync.value")
-                    .font(AppTypographyRole.body)
-                AppCard {
-                    VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                        Text("sync.future.title")
-                            .font(AppTypographyRole.cardTitle)
-                        Text("sync.future.providers")
-                            .font(AppTypographyRole.body)
-                        Text("sync.future.unavailable")
-                            .font(AppTypographyRole.body)
-                            .foregroundStyle(AppColorRole.textSecondary)
-                    }
-                }
-                if accountState == .wrongAccount || accountState == .authenticationRequired {
-                    AppFeedbackBanner(message: accountMessage)
-                }
-                Text("sync.local.safe")
-                    .font(AppTypographyRole.supporting)
-                    .foregroundStyle(AppColorRole.textSecondary)
+        List {
+            Section("Signed-in account") {
+                Label("Authenticated with Apple or Google", systemImage: "person.crop.circle.badge.checkmark")
+                Text("Session tokens are stored in Keychain. Sensitive local records remain account-bound.")
             }
-            .padding(AppAccessibility.contentPadding(for: dynamicTypeSize))
-            .frame(maxWidth: 680, alignment: .leading)
+            Section {
+                Button("Sign out", systemImage: "rectangle.portrait.and.arrow.right") {
+                    confirmSignOut = true
+                }
+                Button("Delete Supabase account", systemImage: "person.crop.circle.badge.minus", role: .destructive) {
+                    confirmAccountDeletion = true
+                }
+            } footer: {
+                Text("Deleting the Supabase account is distinct from deleting local app data. Neither action cancels an Apple subscription.")
+            }
         }
-        .background(AppColorRole.background)
-        .navigationTitle(Text("sync.title"))
+        .navigationTitle("Account")
         .navigationBarTitleDisplayMode(.inline)
-        .accessibilityIdentifier("sync.account")
-    }
-
-    private var accountMessage: String {
-        switch accountState {
-        case .wrongAccount:
-            String(localized: "sync.wrong.account")
-        case .authenticationRequired:
-            String(localized: "sync.authentication.required")
-        case .guest, .signedInMatching:
-            ""
+        .confirmationDialog("Sign out?", isPresented: $confirmSignOut) {
+            Button("Sign out", role: .destructive) { model.signOut() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Protected local data remains on this device and requires the same account to reopen.")
+        }
+        .confirmationDialog("Delete the Supabase account?", isPresented: $confirmAccountDeletion) {
+            Button("Reauthenticate and delete account", role: .destructive) {
+                model.deleteRemoteAccount()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("A fresh provider sign-in is required. Local data is removed only after the server confirms account deletion.")
         }
     }
 }

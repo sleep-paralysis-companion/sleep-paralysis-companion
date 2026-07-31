@@ -5,22 +5,44 @@ enum AppCompositionRoot {
     static func makeModel() -> AppModel {
         let environment = AppEnvironment.compiled
         let logger = ApplePrivacySafeLogger(subsystem: "com.satyamshree.spc")
-        let values = BundlePublicConfigurationLoader().load(from: .main)
         let namespace = ProcessInfo.processInfo.environment["SPC_LOCAL_STORE_NAMESPACE"] ?? "primary"
+        let keychain = KeychainSessionStore(
+            keychain: SystemKeychainClient(),
+            service: "com.satyamshree.spc.authentication",
+            account: "supabase-session"
+        )
 
-        if case .unavailable = AppConfiguration.resolve(
-            environment: environment,
-            values: values
-        ) {
+        let authentication: any OAuthSessionServicing
+        let remote: (any RemoteMutationGateway)?
+        let disablesAuthentication = ProcessInfo.processInfo.environment[
+            "SPC_DISABLE_AUTH_CONFIGURATION"
+        ] == "1"
+        if !disablesAuthentication,
+           let configuration = SupabasePublicConfiguration.load(from: .main)
+        {
+            let client = configuration.makeClient()
+            authentication = SupabaseOAuthSessionService(
+                client: client,
+                sessionStore: keychain
+            )
+            remote = SupabaseRemoteMutationGateway(
+                client: client,
+                identifier: SystemIdentifierGenerator()
+            )
+        } else {
+            authentication = UnavailableOAuthSessionService()
+            remote = nil
             logger.record(.configurationUnavailable, category: .configuration)
         }
 
         return AppModel(
             environment: environment,
             accessPolicy: AccessPolicy(),
-            profileStore: LocalOnboardingProfileStore(
-                location: LocalStoreLocation(namespace: namespace)
+            store: IntegratedPhase1Store(
+                location: LocalStoreLocation(namespace: namespace),
+                remote: remote
             ),
+            authentication: authentication,
             logger: logger
         )
     }

@@ -4,6 +4,7 @@ nonisolated enum ProtectedFileKind: Sendable {
     case localDatabase
     case sensitiveTemporaryExport
     case downloadedAudioCache
+    case personalAudio
 }
 
 nonisolated struct DataProtectionPolicy: Sendable {
@@ -13,7 +14,7 @@ nonisolated struct DataProtectionPolicy: Sendable {
             .completeUntilFirstUserAuthentication
         case .sensitiveTemporaryExport:
             .complete
-        case .downloadedAudioCache:
+        case .downloadedAudioCache, .personalAudio:
             .completeUntilFirstUserAuthentication
         }
     }

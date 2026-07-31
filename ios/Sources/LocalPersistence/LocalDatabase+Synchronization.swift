@@ -6,6 +6,80 @@ extension LocalDatabase {
         try write { try SynchronizationOperationRecord(operation).insert($0, onConflict: .ignore) }
     }
 
+    func enqueueLatestUpsert(_ operation: SynchronizationOperation) throws {
+        guard operation.operation == .upsert,
+              operation.entityType != .tombstone,
+              operation.baseRevision >= 0,
+              operation.localRevision > operation.baseRevision
+        else {
+            throw LocalDatabaseError.constraintViolation
+        }
+        try write { database in
+            try database.execute(
+                sql: """
+                UPDATE sync_operations
+                SET state = 'deleted', updatedAt = ?
+                WHERE profileID = ?
+                  AND entityType = ?
+                  AND entityID = ?
+                  AND operation = 'upsert'
+                  AND state IN ('pending', 'failedRecoverable')
+                """,
+                arguments: [
+                    operation.updatedAt.timeIntervalSince1970,
+                    operation.profileID.uuidString,
+                    operation.entityType.rawValue,
+                    operation.entityID.uuidString,
+                ]
+            )
+            try SynchronizationOperationRecord(operation).insert(database)
+        }
+    }
+
+    func enqueueInitialUpsertIfNeeded(_ operation: SynchronizationOperation) throws {
+        guard operation.operation == .upsert,
+              operation.baseRevision == 0,
+              operation.localRevision == 1
+        else {
+            throw LocalDatabaseError.constraintViolation
+        }
+        try write { database in
+            let acknowledged = try Int64.fetchOne(
+                database,
+                sql: """
+                SELECT acknowledgedRemoteRevision
+                FROM entity_revisions
+                WHERE profileID = ? AND entityType = ? AND entityID = ?
+                """,
+                arguments: [
+                    operation.profileID.uuidString,
+                    operation.entityType.rawValue,
+                    operation.entityID.uuidString,
+                ]
+            )
+            let activeCount = try Int.fetchOne(
+                database,
+                sql: """
+                SELECT count(*)
+                FROM sync_operations
+                WHERE profileID = ?
+                  AND entityType = ?
+                  AND entityID = ?
+                  AND state IN ('pending', 'syncing', 'failedRecoverable', 'authRequired')
+                """,
+                arguments: [
+                    operation.profileID.uuidString,
+                    operation.entityType.rawValue,
+                    operation.entityID.uuidString,
+                ]
+            ) ?? 0
+            guard (acknowledged ?? 0) < operation.localRevision, activeCount == 0 else {
+                return
+            }
+            try SynchronizationOperationRecord(operation).insert(database)
+        }
+    }
+
     func claimNextOperation(profileID: UUID, now: Date) throws -> SynchronizationOperation? {
         try pool.write { database in
             guard var record = try SynchronizationOperationRecord.fetchOne(

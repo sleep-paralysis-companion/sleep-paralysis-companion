@@ -4,6 +4,76 @@ import GRDB
 import XCTest
 
 final class LocalDatabaseTests: XCTestCase {
+    func testInitialRemoteUpsertIsIdempotentUntilAcknowledged() async throws {
+        let database = try await seededDatabase()
+        let operation = SynchronizationOperation(
+            id: UUID(),
+            profileID: Phase1BFixture.profileID,
+            entityType: .profile,
+            entityID: Phase1BFixture.profileID,
+            operation: .upsert,
+            idempotencyKey: UUID(),
+            baseRevision: 0,
+            localRevision: 1,
+            state: .pending,
+            attemptCount: 0,
+            nextAttemptAt: nil,
+            lastErrorCategory: nil,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
+        )
+
+        try await database.enqueueInitialUpsertIfNeeded(operation)
+        var duplicate = operation
+        duplicate = SynchronizationOperation(
+            id: UUID(),
+            profileID: duplicate.profileID,
+            entityType: duplicate.entityType,
+            entityID: duplicate.entityID,
+            operation: duplicate.operation,
+            idempotencyKey: UUID(),
+            baseRevision: duplicate.baseRevision,
+            localRevision: duplicate.localRevision,
+            state: duplicate.state,
+            attemptCount: duplicate.attemptCount,
+            nextAttemptAt: duplicate.nextAttemptAt,
+            lastErrorCategory: duplicate.lastErrorCategory,
+            createdAt: duplicate.createdAt,
+            updatedAt: duplicate.updatedAt
+        )
+        try await database.enqueueInitialUpsertIfNeeded(duplicate)
+
+        let operations = try await database.operations(profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(operations.filter { $0.entityType == .profile }.count, 1)
+    }
+
+    func testLatestUpsertSupersedesOlderPendingRevision() async throws {
+        let database = try await seededDatabase()
+        let first = Phase1BFixture.operation()
+        try await database.enqueueLatestUpsert(first)
+        let second = SynchronizationOperation(
+            id: UUID(),
+            profileID: first.profileID,
+            entityType: first.entityType,
+            entityID: first.entityID,
+            operation: .upsert,
+            idempotencyKey: UUID(),
+            baseRevision: 1,
+            localRevision: 2,
+            state: .pending,
+            attemptCount: 0,
+            nextAttemptAt: nil,
+            lastErrorCategory: nil,
+            createdAt: Phase1BFixture.now.addingTimeInterval(1),
+            updatedAt: Phase1BFixture.now.addingTimeInterval(1)
+        )
+        try await database.enqueueLatestUpsert(second)
+
+        let operations = try await database.operations(profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(operations.first(where: { $0.id == first.id })?.state, .deleted)
+        XCTAssertEqual(operations.first(where: { $0.id == second.id })?.state, .pending)
+    }
+
     func testCleanDatabaseCreationAndCoreCRUD() async throws {
         let database = try LocalDatabase(path: temporaryDatabasePath())
         try await database.createProfile(Phase1BFixture.profile(), settings: Phase1BFixture.settings())

@@ -7,45 +7,54 @@ nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
 }
 
 nonisolated enum AppRoute: String, CaseIterable, Codable, Hashable, Sendable {
-    case alarm
     case grounding
-    case preparation
-    case permissionEducation
-    case syncAccount
+    case audioLibrary
+    case sleepSchedule
+    case morningCheckIn
+    case checkInDetail
+    case editQuestionnaire
+    case accessibility
     case dataPrivacy
     case helpLegal
+    case account
 }
 
 nonisolated enum AppSheet: String, Codable, Hashable, Identifiable, Sendable {
-    case accessUnavailable
+    case audioImport
+    case structuredExport
 
-    var id: String {
-        rawValue
-    }
-}
-
-nonisolated enum ProductNoticePresentation: Equatable, Sendable {
-    case initial
-    case updated
+    var id: String { rawValue }
 }
 
 nonisolated enum LaunchDestination: Equatable, Sendable {
     case loading
-    case welcome
-    case productNotice(ProductNoticePresentation)
+    case splash
+    case introduction(Int)
+    case authentication
+    case question(QuestionnaireQuestion)
+    case recommendedSetup
+    case personalAudio
+    case sleepSchedule
     case home
     case recoverableError
 }
 
 nonisolated enum AccountAccessState: Equatable, Sendable {
-    case guest
+    case signedOut
     case signedInMatching
     case wrongAccount
     case authenticationRequired
+    case expired
+}
+
+// Retained only so superseded source/evidence fixtures remain buildable.
+nonisolated enum ProductNoticePresentation: Equatable, Sendable {
+    case initial
+    case updated
 }
 
 nonisolated struct RouteRestorationEnvelope: Codable, Equatable, Sendable {
-    static let currentVersion = 1
+    static let currentVersion = 2
 
     let version: Int
     let profileID: UUID
@@ -53,12 +62,7 @@ nonisolated struct RouteRestorationEnvelope: Codable, Equatable, Sendable {
     let path: [AppRoute]
     let sheet: AppSheet?
 
-    init(
-        profileID: UUID,
-        selectedTab: AppTab,
-        path: [AppRoute],
-        sheet: AppSheet?
-    ) {
+    init(profileID: UUID, selectedTab: AppTab, path: [AppRoute], sheet: AppSheet?) {
         version = Self.currentVersion
         self.profileID = profileID
         self.selectedTab = selectedTab
@@ -86,20 +90,16 @@ nonisolated struct RouteRestorationCodec: Sendable {
 
 nonisolated struct DeepLinkResolver: Sendable {
     func route(for url: URL) -> AppRoute? {
-        guard url.scheme?.lowercased() == "spc" else {
-            return nil
-        }
-        switch url.host?.lowercased() {
-        case "alarm":
-            return .alarm
-        case "privacy":
-            return .dataPrivacy
-        case "help":
-            return .helpLegal
-        case "sync":
-            return .syncAccount
-        default:
-            return nil
+        guard url.scheme?.lowercased() == "spc" else { return nil }
+        return switch url.host?.lowercased() {
+        case "grounding", "episode": .grounding
+        case "audio": .audioLibrary
+        case "schedule": .sleepSchedule
+        case "checkin": .morningCheckIn
+        case "privacy": .dataPrivacy
+        case "help": .helpLegal
+        case "account": .account
+        default: nil
         }
     }
 }

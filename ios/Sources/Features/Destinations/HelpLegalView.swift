@@ -1,42 +1,25 @@
 import SwiftUI
 
 struct HelpLegalView: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppAccessibility.verticalSpacing(for: dynamicTypeSize)) {
-                Text("help.title")
-                    .font(AppTypographyRole.screenTitle)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("help.title")
-                AppCard {
-                    VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                        Text("help.boundary.title")
-                            .font(AppTypographyRole.cardTitle)
-                        Text("notice.claim.001")
-                            .font(AppTypographyRole.body)
-                        Text("notice.claim.002")
-                            .font(AppTypographyRole.body)
-                    }
-                }
-                AppCard {
-                    VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                        Text("help.local.title")
-                            .font(AppTypographyRole.cardTitle)
-                        Text("help.local.body")
-                            .font(AppTypographyRole.body)
-                        Text("help.publication.pending")
-                            .font(AppTypographyRole.supporting)
-                            .foregroundStyle(AppColorRole.textSecondary)
-                    }
-                }
+        List {
+            Section("Product boundary") {
+                Text("Paralux is a nonmedical wellness companion. It does not diagnose, detect, monitor, predict, prevent, or treat sleep paralysis and is not an emergency service.")
+                Text("Every episode action and check-in is started by you. The app never automatically infers an episode.")
             }
-            .padding(AppAccessibility.contentPadding(for: dynamicTypeSize))
-            .frame(maxWidth: 680, alignment: .leading)
+            Section("Using Paralux") {
+                Label("Choose “I just had an episode” for manual visual grounding.", systemImage: "moon.stars")
+                Label("Personal audio remains on this device.", systemImage: "waveform")
+                Label("Notification reminders are ordinary reminders, not guaranteed alarms.", systemImage: "bell")
+            }
+            Section("Legal and support") {
+                Text("Final public privacy, terms, and support URLs are not configured in this checkout. Release must remain blocked until approved live pages are supplied.")
+            }
+            Section("If you need urgent help") {
+                Text("Use the emergency and support resources available in your location. Paralux does not contact emergency services.")
+            }
         }
-        .background(AppColorRole.background)
-        .navigationTitle(Text("help.title"))
+        .navigationTitle("Help and legal")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

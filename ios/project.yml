@@ -105,7 +105,25 @@ targets:
         product: GRDB
       - package: Supabase
         product: Supabase
+      - target: SPCWidgetExtension
     preBuildScripts: []
+
+  SPCWidgetExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Sources/AppIntents/ManualEpisodeIntent.swift
+    settings:
+      base:
+        APPLICATION_EXTENSION_API_ONLY: YES
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Paralux
+        INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        PRODUCT_BUNDLE_IDENTIFIER: "$(SPC_BUNDLE_IDENTIFIER).widget"
+        SKIP_INSTALL: YES
 
   SPCUnitTests:
     type: bundle.unit-test

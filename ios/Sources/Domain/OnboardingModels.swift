@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated enum ProductNotice {
-    static let currentVersion = "phase-1c-2026-07"
+    static let currentVersion = "phase-1-integrated-2026-07"
 }
 
 nonisolated struct OnboardingProfile: Equatable, Sendable {

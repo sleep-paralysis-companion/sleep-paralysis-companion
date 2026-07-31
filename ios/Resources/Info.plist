@@ -26,6 +26,25 @@
 	<string>$(SPC_PRODUCTION_API_HOSTS)</string>
 	<key>SPCPublicAPIBaseURL</key>
 	<string>$(SPC_PUBLIC_API_BASE_URL)</string>
+	<key>SPCSupabaseURL</key>
+	<string>$(SPC_SUPABASE_URL)</string>
+	<key>SPCSupabasePublishableKey</key>
+	<string>$(SPC_SUPABASE_PUBLISHABLE_KEY)</string>
+	<key>SPCSupabaseOAuthRedirectURL</key>
+	<string>$(SPC_OAUTH_REDIRECT_URL)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>spc</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Paralux uses the microphone only when you tap Record to create a private comfort-audio clip stored on this device.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -36,8 +55,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 </dict>
 </plist>

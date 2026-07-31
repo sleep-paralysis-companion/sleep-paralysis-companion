@@ -4,3 +4,7 @@
 SPC_PUBLIC_API_BASE_URL =
 SPC_ALLOWED_API_HOSTS =
 SPC_PRODUCTION_API_HOSTS =
+// Public client configuration only. Never place a service-role or secret key here.
+SPC_SUPABASE_PUBLISHABLE_KEY = sb_publishable_replace_with_project_key
+// Must exactly match an approved Supabase Auth redirect allow-list entry.
+SPC_OAUTH_REDIRECT_URL =

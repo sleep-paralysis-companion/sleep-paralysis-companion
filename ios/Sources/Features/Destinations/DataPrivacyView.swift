@@ -1,42 +1,41 @@
 import SwiftUI
 
 struct DataPrivacyView: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Bindable var model: AppModel
+    @State private var confirmLocalDeletion = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: AppAccessibility.verticalSpacing(for: dynamicTypeSize)) {
-                Text("privacy.title")
-                    .font(AppTypographyRole.screenTitle)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("privacy.title")
-                AppCard {
-                    VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                        Text("privacy.local.title")
-                            .font(AppTypographyRole.cardTitle)
-                        Text("privacy.local.body")
-                            .font(AppTypographyRole.body)
-                    }
-                }
-                AppCard {
-                    VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                        Text("privacy.controls.title")
-                            .font(AppTypographyRole.cardTitle)
-                        Text("privacy.controls.body")
-                            .font(AppTypographyRole.body)
-                        Text("privacy.controls.unavailable")
-                            .font(AppTypographyRole.supporting)
-                            .foregroundStyle(AppColorRole.textSecondary)
-                    }
-                }
-                Text("privacy.permissions")
-                    .font(AppTypographyRole.body)
+        List {
+            Section("Local protection") {
+                Label("Questionnaire, history, schedule, and clip metadata use protected account-bound local storage.", systemImage: "lock.shield")
+                Label("Personal audio bytes remain in protected app-owned storage on this device.", systemImage: "iphone")
             }
-            .padding(AppAccessibility.contentPadding(for: dynamicTypeSize))
-            .frame(maxWidth: 680, alignment: .leading)
+            Section("Structured export") {
+                Text("The ZIP includes settings, schedule, check-ins, and a redacted persona.json. It never includes personal audio.")
+                Button("Create structured export", systemImage: "square.and.arrow.up") {
+                    model.createStructuredExport()
+                }
+                if let url = model.exportURL {
+                    ShareLink(item: url) {
+                        Label("Share prepared ZIP", systemImage: "archivebox")
+                    }
+                }
+            }
+            Section("Delete app data") {
+                Button("Delete all local app data", systemImage: "trash", role: .destructive) {
+                    confirmLocalDeletion = true
+                }
+            } footer: {
+                Text("This removes this device’s Paralux data and local personal audio. It is distinct from deleting the Supabase account and does not cancel an Apple subscription.")
+            }
         }
-        .background(AppColorRole.background)
-        .navigationTitle(Text("privacy.title"))
+        .navigationTitle("Data and privacy")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("Delete all local Paralux data?", isPresented: $confirmLocalDeletion) {
+            Button("Delete local data", role: .destructive) { model.deleteAllLocalData() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes protected local records, schedules, reminders, exports, and all personal audio from this device.")
+        }
     }
 }

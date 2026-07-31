@@ -7,25 +7,22 @@ struct AppTabShellView: View {
         TabView(
             selection: Binding(
                 get: { model.selectedTab },
-                set: { model.send(.selectTab($0)) }
+                set: { model.selectTab($0) }
             )
         ) {
-            HomeView(
-                accessPolicy: model.accessPolicy,
-                open: { model.send(.open($0)) }
-            )
+            HomeView(model: model)
             .tabItem {
                 Label("tab.home", systemImage: "house")
             }
             .tag(AppTab.home)
 
-            HistoryView(openPrivacy: { model.send(.open(.dataPrivacy)) })
+            HistoryView(model: model)
                 .tabItem {
                     Label("tab.history", systemImage: "clock")
                 }
                 .tag(AppTab.history)
 
-            SettingsView(open: { model.send(.open($0)) })
+            SettingsView(model: model)
                 .tabItem {
                     Label("tab.settings", systemImage: "gearshape")
                 }

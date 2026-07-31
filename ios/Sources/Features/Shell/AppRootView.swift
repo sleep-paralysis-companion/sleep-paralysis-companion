@@ -5,80 +5,113 @@ struct AppRootView: View {
     @Bindable var model: AppModel
 
     @Environment(\.scenePhase) private var scenePhase
-    @SceneStorage("spc.navigation.v1") private var restoredNavigation = ""
+    @SceneStorage("spc.navigation.v2") private var restoredNavigation = ""
 
     var body: some View {
         NavigationStack(
             path: Binding(
                 get: { model.path },
-                set: { model.send(.setPath($0)) }
+                set: { model.setPath($0) }
             )
         ) {
             launchContent
                 .navigationDestination(for: AppRoute.self, destination: destination)
         }
         .tint(AppColorRole.accent)
-        .sheet(
-            item: Binding(
-                get: { model.presentedSheet },
-                set: { _ in model.send(.dismissSheet) }
-            )
-        ) { _ in
-            AccessUnavailableView()
-        }
-        .onOpenURL { url in
-            model.send(.openDeepLink(url))
-        }
+        .onOpenURL(perform: model.openDeepLink)
         .task {
             model.activate(restoredState: restoredNavigation)
+            consumeManualEpisodeActivation()
         }
         .onChange(of: model.restorationValue) { _, value in
             restoredNavigation = value
         }
         .onChange(of: scenePhase) { _, phase in
-            switch phase {
-            case .active:
-                if model.launchDestination == .loading {
-                    model.activate(restoredState: restoredNavigation)
-                }
-            case .background:
-                model.deactivate()
-            case .inactive:
-                break
-            @unknown default:
-                model.deactivate()
+            if phase == .active,
+               UserDefaults.standard.object(forKey: ManualEpisodeActivation.userDefaultsKey) != nil
+            {
+                consumeManualEpisodeActivation()
             }
         }
+        .safeAreaInset(edge: .top) {
+            if let feedback = model.feedbackMessage,
+               model.launchDestination != .authentication
+            {
+                HStack {
+                    AppFeedbackBanner(message: feedback)
+                    Button {
+                        model.clearFeedback()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                    .accessibilityLabel("Dismiss message")
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+
+    private func consumeManualEpisodeActivation() {
+        guard UserDefaults.standard.object(forKey: ManualEpisodeActivation.userDefaultsKey) != nil else {
+            return
+        }
+        UserDefaults.standard.removeObject(forKey: ManualEpisodeActivation.userDefaultsKey)
+        model.requestManualGrounding()
     }
 
     @ViewBuilder
     private var launchContent: some View {
         switch model.launchDestination {
         case .loading:
-            LoadingView()
-        case .welcome:
-            WelcomeView {
-                model.send(.continueFromWelcome)
+            ZStack {
+                NightBackground()
+                ProgressView("Preparing your private setup")
+                    .tint(.white)
+                    .foregroundStyle(.white)
             }
-        case let .productNotice(presentation):
-            ProductNoticeView(
-                presentation: presentation,
-                isProcessing: model.isProcessingOnboarding,
-                feedbackMessage: model.feedbackMessage,
-                continueAction: { model.send(.continueFromProductNotice) },
-                openAlarm: { model.send(.open(.alarm)) },
-                openPrivacy: { model.send(.open(.dataPrivacy)) },
-                openHelp: { model.send(.open(.helpLegal)) }
+        case .splash:
+            SplashView(continueAction: model.continueFromSplash)
+        case let .introduction(page):
+            FeatureIntroductionView(page: page) {
+                model.advanceIntroduction(from: page)
+            }
+        case .authentication:
+            AuthenticationView(
+                state: model.authenticationState,
+                feedback: model.feedbackMessage,
+                isConfigured: model.isAuthenticationConfigured,
+                signIn: model.signIn
             )
+        case let .question(question):
+            QuestionnaireView(
+                question: question,
+                draft: model.questionnaireDraft,
+                selectFrequency: { model.answer(frequency: $0) },
+                selectFeeling: { model.answer(feeling: $0) },
+                selectContext: { model.answer(context: $0) }
+            )
+        case .recommendedSetup:
+            if let persona = model.persona {
+                RecommendedSetupView(
+                    persona: persona,
+                    continueAction: model.continueFromRecommendedSetup
+                )
+            } else {
+                ContentUnavailableView("Setup unavailable", systemImage: "exclamationmark.triangle")
+            }
+        case .personalAudio:
+            PersonalAudioSetupView(model: model, isOnboarding: true)
+        case .sleepSchedule:
+            SleepScheduleView(model: model, isOnboarding: true)
         case .home:
             AppTabShellView(model: model)
         case .recoverableError:
             AppStateView(
-                title: "state.database.title",
-                message: "state.database.message",
+                title: "Local data needs attention",
+                message: "Your protected local data could not be opened. Retry without replacing it.",
                 systemImage: "externaldrive.badge.exclamationmark",
-                actionTitle: "action.retry",
-                action: { model.send(.retryLaunch) }
+                actionTitle: "Try again",
+                action: { model.activate(restoredState: restoredNavigation) }
             )
         }
     }
@@ -86,35 +119,26 @@ struct AppRootView: View {
     @ViewBuilder
     private func destination(_ route: AppRoute) -> some View {
         switch route {
-        case .alarm:
-            AlarmStatusView()
         case .grounding:
-            UnavailableFeatureView(
-                title: "grounding.title",
-                message: "grounding.unavailable"
-            )
-        case .preparation:
-            UnavailableFeatureView(
-                title: "preparation.title",
-                message: "preparation.unavailable"
-            )
-        case .permissionEducation:
-            PermissionEducationView()
-        case .syncAccount:
-            SyncAccountView(accountState: model.accountAccessState)
+            GroundingView(model: model)
+        case .audioLibrary:
+            PersonalAudioSetupView(model: model)
+        case .sleepSchedule:
+            SleepScheduleView(model: model)
+        case .morningCheckIn:
+            MorningCheckInView(model: model)
+        case .checkInDetail:
+            CheckInDetailView(model: model)
+        case .editQuestionnaire:
+            EditQuestionnaireView(model: model)
+        case .accessibility:
+            AccessibilitySettingsView()
         case .dataPrivacy:
-            DataPrivacyView()
+            DataPrivacyView(model: model)
         case .helpLegal:
             HelpLegalView()
+        case .account:
+            AccountView(model: model)
         }
-    }
-}
-
-private struct LoadingView: View {
-    var body: some View {
-        ProgressView("state.loading")
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppColorRole.background)
-            .accessibilityIdentifier("launch.loading")
     }
 }
