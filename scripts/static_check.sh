@@ -5,8 +5,8 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_ROOT="$REPOSITORY_ROOT/ios/Sources"
 RESOURCE_ROOT="$REPOSITORY_ROOT/ios/Resources"
 
-FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|AlarmKit|AVFoundation|HealthKit|AdSupport)|UserDefaults|URLSession|try!|as!'
-FORBIDDEN_RESOURCE='NSMicrophoneUsageDescription|NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription|UIBackgroundModes'
+FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|AlarmKit|HealthKit|AdSupport)|URLSession|try!|as!'
+FORBIDDEN_RESOURCE='NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription|UIBackgroundModes'
 
 if grep -R -n -E "$FORBIDDEN_SOURCE" "$SOURCE_ROOT"; then
   echo "Forbidden Phase 1B source pattern found." >&2
@@ -14,13 +14,13 @@ if grep -R -n -E "$FORBIDDEN_SOURCE" "$SOURCE_ROOT"; then
 fi
 
 if grep -R -l -E 'import[[:space:]]+Supabase' "$SOURCE_ROOT" \
-  | grep -v -E '/(Authentication|RemoteData)/|/DataRights/SupabaseAccountDeletionGateway\.swift$'; then
+  | grep -v -E '/(Authentication|Configuration|RemoteData)/|/DataRights/SupabaseAccountDeletionGateway\.swift$'; then
   echo "Supabase import escaped the authentication or remote-data boundary." >&2
   exit 1
 fi
 
 if grep -R -l -E '\bFileManager\b' "$SOURCE_ROOT" \
-  | grep -v -E '/DataRights/|/PlatformInterfaces/(DataProtection|LocalStoreLocation)\.swift$'; then
+  | grep -v -E '/App/AppModel\.swift$|/DataRights/|/PersonalAudio/|/PlatformInterfaces/(DataProtection|LocalStoreLocation)\.swift$'; then
   echo "File access escaped the data-rights boundary." >&2
   exit 1
 fi
@@ -66,8 +66,14 @@ grep -Fx "IPHONEOS_DEPLOYMENT_TARGET = 26.0" \
 grep -Fq 'exactVersion: 7.11.1' "$REPOSITORY_ROOT/ios/project.yml"
 grep -Fq 'exactVersion: 2.53.0' "$REPOSITORY_ROOT/ios/project.yml"
 
-if grep -R -n -E 'https?://|nfzvlvukbeapcnlmyecf' \
-  "$REPOSITORY_ROOT/ios/Configurations/"*.xcconfig; then
-  echo "Committed runtime configuration contains a host or live project reference." >&2
+if ! grep -Fq 'SPC_SUPABASE_URL = https:/$()/nfzvlvukbeapcnlmyecf.supabase.co' \
+  "$REPOSITORY_ROOT/ios/Configurations/Base.xcconfig"; then
+  echo "The authorized public Supabase project URL is missing." >&2
+  exit 1
+fi
+
+if grep -R -n -E 'SPC_SUPABASE_PUBLISHABLE_KEY[[:space:]]*=[[:space:]]*(sb_publishable_[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{20,})' \
+  "$REPOSITORY_ROOT/ios/Configurations/Base.xcconfig"; then
+  echo "A concrete public client key must remain developer-local." >&2
   exit 1
 fi

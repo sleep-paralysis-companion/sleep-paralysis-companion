@@ -24,7 +24,7 @@ while IFS= read -r commit; do
   fi
 done < <(git rev-list --all)
 
-if grep -R -I -n -E 'nfzvlvukbeapcnlmyecf|service[_-]?role[[:space:]]*[:=][[:space:]]*[^[:space:]]+' ios; then
-  echo "Live Supabase reference or service-role assignment found in iOS runtime files." >&2
+if grep -R -I -n -E 'service[_-]?role[[:space:]]*[:=][[:space:]]*[^[:space:]]+' ios; then
+  echo "A service-role assignment was found in iOS runtime files." >&2
   exit 1
 fi
