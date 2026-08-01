@@ -237,7 +237,7 @@ nonisolated extension QuestionnaireDraftRecord {
     }
 }
 
-private func optionalEnum<Value>(
+private nonisolated func optionalEnum<Value>(
     _ rawValue: String?,
     _ transform: (String) -> Value?
 ) -> Value?? {

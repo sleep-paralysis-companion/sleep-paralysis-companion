@@ -394,6 +394,15 @@ final class SynchronizationEngineTests: XCTestCase {
             ),
             .requiresChoice([.useDevice, .useAccount])
         )
+        XCTAssertEqual(
+            resolver.resolve(
+                entityType: .persona,
+                sameStableID: true,
+                sameContent: false,
+                deleteBaseIncludesEdit: false
+            ),
+            .requiresChoice([.useDevice, .useAccount])
+        )
     }
 
     private func makeEngine(

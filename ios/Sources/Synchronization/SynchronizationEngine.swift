@@ -174,7 +174,7 @@ nonisolated struct EntityConflictResolver: Sendable {
         switch entityType {
         case .profile:
             return .requiresChoice([.useAccount])
-        case .settings, .alarm:
+        case .settings, .alarm, .persona:
             return .requiresChoice([.useDevice, .useAccount])
         case .checkIn:
             if !sameStableID {
