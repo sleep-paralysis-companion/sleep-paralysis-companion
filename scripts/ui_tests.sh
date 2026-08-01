@@ -14,4 +14,6 @@ xcodebuild \
   -resultBundlePath "$REPOSITORY_ROOT/ios/TestResults/UI.xcresult" \
   CODE_SIGNING_ALLOWED=NO \
   GCC_TREAT_WARNINGS_AS_ERRORS=YES \
-  test -only-testing:SPCUITests
+  test \
+  -only-testing:SPCUITests \
+  -skip-testing:SPCUITests/ApplicationLaunchUITests/testVisualShowcaseJourney

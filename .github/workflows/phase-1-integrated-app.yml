@@ -1,0 +1,150 @@
+name: Phase 1 Integrated App
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/phase-1-integrated-app
+  pull_request:
+    paths:
+      - ".github/workflows/phase-1-integrated-app.yml"
+      - ".swiftformat"
+      - ".swiftlint.yml"
+      - "ios/**"
+      - "scripts/**"
+      - "supabase/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-1-integrated-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: Build, test, and capture the iPhone journey
+    runs-on: macos-26
+    timeout-minutes: 65
+
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Record the hosted Apple toolchain
+        run: |
+          sw_vers
+          uname -m
+          env | grep '^Image' | sort || true
+          git rev-parse HEAD
+
+      - name: Restore pinned build tools and Swift packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            .build-tools
+            ios/.generated/SourcePackages
+          key: phase-1-integrated-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/versions.env', 'ios/project.yml', 'ios/Package.resolved') }}
+
+      - name: Verify the integrated product contract
+        run: bash scripts/phase_1c_contract_check.sh
+
+      - name: Build and run all iOS tests
+        run: bash scripts/verify_ci.sh
+
+      - name: Capture the visual product journey
+        run: bash scripts/visual_journey.sh
+
+      - name: Write the visual-testing summary
+        if: always()
+        run: |
+          {
+            echo "## Paralux integrated iPhone candidate"
+            echo
+            echo "- Commit: \`$(git rev-parse HEAD)\`"
+            echo "- Full build, unit tests, and UI tests run before visual capture."
+            if [[ -s ios/TestResults/VisualJourney/paralux-visual-journey.mp4 ]]; then
+              echo "- Visual journey: captured as a downloadable MP4 artifact."
+              echo "- Named checkpoints: exported from VisualJourney.xcresult."
+            else
+              echo "- Visual journey: not produced; inspect the iOS logs and xcresult artifacts."
+            fi
+            echo
+            echo "Simulator evidence does not prove production OAuth, signing, TestFlight, or physical-device behavior."
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Retain build and test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-1-integrated-ios-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            scripts/versions.env
+            ios/TestResults/*.xcresult
+            ios/SleepParalysisCompanion.xcodeproj/project.pbxproj
+            ios/SleepParalysisCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+            ios/SleepParalysisCompanion.xcodeproj/xcshareddata/xcschemes/*.xcscheme
+
+      - name: Retain the visual walkthrough
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-1-integrated-visual-journey-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: ios/TestResults/VisualJourney
+
+  isolated-backend:
+    name: Verify the isolated Supabase contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up the pinned Deno runtime
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.8.1
+
+      - name: Record the isolated backend toolchain
+        run: |
+          docker version
+          node --version
+          deno --version
+          git rev-parse HEAD
+
+      - name: Restore Supabase and Deno caches
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/deno
+          key: phase-1-integrated-backend-${{ runner.os }}-${{ hashFiles('scripts/versions.env', 'supabase/config.toml', 'supabase/functions/**/deno.json') }}
+
+      - name: Run isolated database and Edge Function verification
+        run: bash scripts/verify_backend_ci.sh
+
+      - name: Retain isolated backend evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-1-integrated-backend-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            scripts/versions.env
+            supabase/TestResults
+            supabase/config.toml
+            supabase/migrations
+            supabase/tests
+            supabase/functions/delete-account

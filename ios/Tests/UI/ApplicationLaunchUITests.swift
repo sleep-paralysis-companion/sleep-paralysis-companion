@@ -104,6 +104,94 @@ final class ApplicationLaunchUITests: XCTestCase {
     }
 
     @MainActor
+    func testVisualShowcaseJourney() {
+        var app = freshApplication()
+        app.launch()
+
+        let splashAction = app.buttons["splash.continue"]
+        XCTAssertTrue(splashAction.waitForExistence(timeout: 8))
+        capture("01-splash", app: app)
+        splashAction.tap()
+
+        XCTAssertTrue(app.staticTexts["Wake up gently"].waitForExistence(timeout: 5))
+        capture("02-introduction-schedule", app: app)
+        app.buttons["Continue"].tap()
+
+        XCTAssertTrue(app.staticTexts["Support when you need it most"].waitForExistence(timeout: 5))
+        capture("03-introduction-grounding", app: app)
+        app.buttons["Continue"].tap()
+
+        XCTAssertTrue(app.staticTexts["A familiar voice guiding you to calmness"].waitForExistence(timeout: 5))
+        capture("04-introduction-audio", app: app)
+        app.buttons["Continue to sign in"].tap()
+
+        XCTAssertTrue(app.staticTexts["Welcome to Paralux"].waitForExistence(timeout: 5))
+        capture("05-authentication-configuration-boundary", app: app)
+        app.terminate()
+
+        app = authenticatedApplication()
+        app.launch()
+
+        XCTAssertTrue(app.otherElements["questionnaire.episodeFrequency"].waitForExistence(timeout: 8))
+        capture("06-questionnaire-frequency", app: app)
+        app.buttons["Weekly"].tap()
+
+        XCTAssertTrue(app.otherElements["questionnaire.postEpisodeFeeling"].waitForExistence(timeout: 8))
+        capture("07-questionnaire-feeling", app: app)
+        app.buttons["I lie awake scared for a while"].tap()
+
+        XCTAssertTrue(app.otherElements["questionnaire.calmingPersonContext"].waitForExistence(timeout: 8))
+        capture("08-questionnaire-comfort-context", app: app)
+        let aloneChoice = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "go through this alone")
+        ).firstMatch
+        XCTAssertTrue(aloneChoice.exists)
+        aloneChoice.tap()
+
+        let recommendedSetupAction = app.buttons["Continue to comfort audio"]
+        XCTAssertTrue(recommendedSetupAction.waitForExistence(timeout: 8))
+        capture("09-recommended-setup", app: app)
+        recommendedSetupAction.tap()
+
+        XCTAssertTrue(app.staticTexts["Add a comfort voice"].waitForExistence(timeout: 8))
+        capture("10-comfort-audio", app: app)
+        let continueToSchedule = app.buttons["Continue to sleep schedule"]
+        makeHittable(continueToSchedule, in: app)
+        continueToSchedule.tap()
+
+        XCTAssertTrue(app.staticTexts["Sleep schedule"].waitForExistence(timeout: 8))
+        capture("11-sleep-schedule", app: app)
+        app.switches["Enable sleep reminders"].tap()
+        let saveSchedule = app.buttons["Save schedule and open Home"]
+        makeHittable(saveSchedule, in: app)
+        saveSchedule.tap()
+
+        XCTAssertTrue(app.otherElements["app.tab.shell"].waitForExistence(timeout: 8))
+        capture("12-home", app: app)
+        app.buttons["home.manualEpisode"].tap()
+
+        XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
+        capture("13-grounding", app: app)
+        app.buttons["Optional check-in"].tap()
+
+        XCTAssertTrue(app.navigationBars["Morning check-in"].waitForExistence(timeout: 8))
+        capture("14-morning-check-in", app: app)
+        app.buttons["No"].tap()
+        app.buttons["Save check-in"].tap()
+
+        XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
+        app.navigationBars["Grounding"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.otherElements["app.tab.shell"].waitForExistence(timeout: 8))
+        app.tabBars.buttons["History"].tap()
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
+        capture("15-history", app: app)
+
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        capture("16-settings", app: app)
+    }
+
+    @MainActor
     func testDynamicTypeVoiceOverOrderRTLContrastAndReduceMotionRemainOperable() {
         let configurations = [
             [
@@ -163,5 +251,13 @@ final class ApplicationLaunchUITests: XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(element.isHittable)
+    }
+
+    @MainActor
+    private func capture(_ name: String, app: XCUIApplication) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 }
