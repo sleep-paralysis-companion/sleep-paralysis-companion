@@ -28,10 +28,12 @@ struct DataPrivacyView: View {
                     Label("Protected ZIP ready to share", systemImage: "archivebox")
                 }
             }
-            Section("Delete app data") {
+            Section {
                 Button("Delete all local app data", systemImage: "trash", role: .destructive) {
                     confirmLocalDeletion = true
                 }
+            } header: {
+                Text("Delete app data")
             } footer: {
                 Text(
                     "This removes this device’s Paralux data and local personal audio. " +

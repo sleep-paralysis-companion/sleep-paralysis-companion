@@ -58,7 +58,7 @@ struct AppRootView: View {
         guard let activation = try? activationStore.firstPending(),
               model.requestManualGrounding()
         else { return }
-        try? activationStore.consume(id: activation.id)
+        _ = try? activationStore.consume(id: activation.id)
     }
 
     @ViewBuilder
