@@ -3,6 +3,12 @@ import Foundation
 import XCTest
 
 final class PersonaAudioFoundationTests: XCTestCase {
+    private struct IncompleteQuestionnaireShape {
+        let episodeFrequency: EpisodeFrequency?
+        let postEpisodeFeeling: PostEpisodeFeeling?
+        let calmingPersonContext: CalmingPersonContext?
+    }
+
     func testRoutingMatrixCoversEveryCompleteCombinationWithExactCounts() {
         var counts = [DerivedPersona: Int]()
         for frequency in EpisodeFrequency.allCases {
@@ -56,27 +62,38 @@ final class PersonaAudioFoundationTests: XCTestCase {
     }
 
     func testEveryIncompleteQuestionnaireShapeProducesNoPersonaOrOperation() async throws {
-        let shapes: [(EpisodeFrequency?, PostEpisodeFeeling?, CalmingPersonContext?)] = [
-            (nil, nil, nil), (.weekly, nil, nil), (nil, .awakeScared, nil),
-            (nil, nil, .alone), (.weekly, .awakeScared, nil),
-            (.weekly, nil, .alone), (nil, .awakeScared, .alone),
+        let shapes: [IncompleteQuestionnaireShape] = [
+            .init(episodeFrequency: nil, postEpisodeFeeling: nil, calmingPersonContext: nil),
+            .init(episodeFrequency: .weekly, postEpisodeFeeling: nil, calmingPersonContext: nil),
+            .init(episodeFrequency: nil, postEpisodeFeeling: .awakeScared, calmingPersonContext: nil),
+            .init(episodeFrequency: nil, postEpisodeFeeling: nil, calmingPersonContext: .alone),
+            .init(episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: nil),
+            .init(episodeFrequency: .weekly, postEpisodeFeeling: nil, calmingPersonContext: .alone),
+            .init(episodeFrequency: nil, postEpisodeFeeling: .awakeScared, calmingPersonContext: .alone),
         ]
         for (index, shape) in shapes.enumerated() {
             let database = try await linkedDatabase()
             let draft = QuestionnaireDraft(
-                id: UUID(), profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
-                episodeFrequency: shape.0, postEpisodeFeeling: shape.1, calmingPersonContext: shape.2,
-                createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now.addingTimeInterval(TimeInterval(index))
+                id: UUID(),
+                profileID: Phase1BFixture.profileID,
+                accountUserID: Phase1BFixture.userID,
+                episodeFrequency: shape.episodeFrequency,
+                postEpisodeFeeling: shape.postEpisodeFeeling,
+                calmingPersonContext: shape.calmingPersonContext,
+                createdAt: Phase1BFixture.now,
+                updatedAt: Phase1BFixture.now.addingTimeInterval(TimeInterval(index))
             )
             try await database.saveQuestionnaireDraft(draft)
             await XCTAssertThrowsErrorAsync {
                 _ = try await database.completeQuestionnaireDraft(
-                    profileID: draft.profileID, authenticatedUserID: draft.accountUserID,
+                    profileID: draft.profileID,
+                    authenticatedUserID: draft.accountUserID,
                     calculatedAt: Phase1BFixture.now
                 )
             }
             let aggregate = try await database.personaAnswerAggregate(
-                profileID: draft.profileID, authenticatedUserID: draft.accountUserID
+                profileID: draft.profileID,
+                authenticatedUserID: draft.accountUserID
             )
             let operations = try await database.operations(profileID: draft.profileID)
             XCTAssertNil(aggregate, "Incomplete shape \(index) produced an aggregate")
@@ -272,9 +289,14 @@ final class PersonaAudioFoundationTests: XCTestCase {
         let database = try await linkedDatabase()
         let draftID = Phase1BFixture.uuid("66666666-6666-4666-8666-666666666666")
         let draft = QuestionnaireDraft(
-            id: draftID, profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
-            episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: .besideMe,
-            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+            id: draftID,
+            profileID: Phase1BFixture.profileID,
+            accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .weekly,
+            postEpisodeFeeling: .awakeScared,
+            calmingPersonContext: .besideMe,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
         )
         try await database.saveQuestionnaireDraft(draft)
         let resumed = try await database.questionnaireDraft(
@@ -283,13 +305,17 @@ final class PersonaAudioFoundationTests: XCTestCase {
         )
         XCTAssertEqual(resumed?.id, draftID)
         let aggregate = try await database.completeQuestionnaireDraft(
-            profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now,
-            operationID: Phase1BFixture.operationID, idempotencyKey: Phase1BFixture.key
+            profileID: draft.profileID,
+            authenticatedUserID: draft.accountUserID,
+            calculatedAt: Phase1BFixture.now,
+            operationID: Phase1BFixture.operationID,
+            idempotencyKey: Phase1BFixture.key
         )
         let queued = try await database.operations(profileID: draft.profileID)
         let operation = try XCTUnwrap(queued.first)
         let payload = try await LocalDatabaseOutboundPayloadProvider(database: database).payload(
-            for: operation, authenticatedUserID: Phase1BFixture.userID
+            for: operation,
+            authenticatedUserID: Phase1BFixture.userID
         )
         guard case let .persona(remote) = payload else { return XCTFail("Expected persona payload") }
         XCTAssertEqual(remote.id, aggregate.id)
@@ -301,9 +327,14 @@ final class PersonaAudioFoundationTests: XCTestCase {
     func testSettingsChangeAndDeletionQueueExactlyOneSuccessorOrTombstone() async throws {
         let database = try await linkedDatabase()
         let draft = QuestionnaireDraft(
-            id: Phase1BFixture.entityID, profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
-            episodeFrequency: .rarely, postEpisodeFeeling: .shakeItOff, calmingPersonContext: .alone,
-            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+            id: Phase1BFixture.entityID,
+            profileID: Phase1BFixture.profileID,
+            accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .rarely,
+            postEpisodeFeeling: .shakeItOff,
+            calmingPersonContext: .alone,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
         )
         try await database.saveQuestionnaireDraft(draft)
         _ = try await database.completeQuestionnaireDraft(
@@ -312,11 +343,18 @@ final class PersonaAudioFoundationTests: XCTestCase {
             calculatedAt: Phase1BFixture.now
         )
         let changed = PersonaAnswerAggregate(
-            id: Phase1BFixture.profileID, profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
-            episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: .alone,
-            derivedPersona: .frequentIntenseNoCalmingPerson, routingRuleVersion: PersonaRouting.initialRuleVersion,
-            calculatedAt: Phase1BFixture.now.addingTimeInterval(1), createdAt: Phase1BFixture.now,
-            updatedAt: Phase1BFixture.now.addingTimeInterval(1), revision: 99
+            id: Phase1BFixture.profileID,
+            profileID: Phase1BFixture.profileID,
+            accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .weekly,
+            postEpisodeFeeling: .awakeScared,
+            calmingPersonContext: .alone,
+            derivedPersona: .frequentIntenseNoCalmingPerson,
+            routingRuleVersion: PersonaRouting.initialRuleVersion,
+            calculatedAt: Phase1BFixture.now.addingTimeInterval(1),
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now.addingTimeInterval(1),
+            revision: 99
         )
         try await database.replacePersonaAnswerAggregate(changed)
         let revised = try await database.personaAnswerAggregate(
@@ -325,11 +363,14 @@ final class PersonaAudioFoundationTests: XCTestCase {
         )
         XCTAssertEqual(revised?.revision, 2)
         try await database.deletePersonaAnswerAggregate(
-            profileID: draft.profileID, authenticatedUserID: draft.accountUserID,
-            deletedAt: Phase1BFixture.now.addingTimeInterval(2),
-            tombstoneID: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777"),
-            operationID: Phase1BFixture.uuid("88888888-8888-4888-8888-888888888888"),
-            idempotencyKey: Phase1BFixture.uuid("99999999-9999-4999-8999-999999999999")
+            DeletePersonaRequest(
+                profileID: draft.profileID,
+                authenticatedUserID: draft.accountUserID,
+                deletedAt: Phase1BFixture.now.addingTimeInterval(2),
+                tombstoneID: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777"),
+                operationID: Phase1BFixture.uuid("88888888-8888-4888-8888-888888888888"),
+                idempotencyKey: Phase1BFixture.uuid("99999999-9999-4999-8999-999999999999")
+            )
         )
         let operations = try await database.operations(profileID: draft.profileID)
         XCTAssertEqual(operations.filter { $0.entityType == .tombstone && $0.operation == .delete }.count, 1)
@@ -347,17 +388,22 @@ final class PersonaAudioFoundationTests: XCTestCase {
             try await database.savePersonalAudioClipMetadata(metadata, authenticatedUserID: Phase1BFixture.userID)
         }
         let acceptedImports = try await database.personalAudioClipMetadata(
-            profileID: Phase1BFixture.profileID, authenticatedUserID: Phase1BFixture.userID
+            profileID: Phase1BFixture.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
         XCTAssertEqual(Set(acceptedImports.map(\.storageFormat)), Set(PersonalAudioStorageFormat.allCases))
 
         let invalidByteCount = clip(
-            id: UUID(), source: .recorded, format: .m4a,
+            id: UUID(),
+            source: .recorded,
+            format: .m4a,
             byteCount: PersonalAudioPolicy.maximumByteCount + 1,
             duration: PersonalAudioPolicy.maximumDurationMilliseconds
         )
         let invalidDuration = clip(
-            id: UUID(), source: .recorded, format: .m4a,
+            id: UUID(),
+            source: .recorded,
+            format: .m4a,
             byteCount: PersonalAudioPolicy.maximumByteCount,
             duration: PersonalAudioPolicy.maximumDurationMilliseconds + 1
         )
@@ -398,7 +444,8 @@ final class PersonaAudioFoundationTests: XCTestCase {
             )
         }
         let stillStored = try await database.personalAudioClipMetadata(
-            profileID: Phase1BFixture.profileID, authenticatedUserID: Phase1BFixture.userID
+            profileID: Phase1BFixture.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
         XCTAssertEqual(stillStored.count, PersonalAudioPolicy.maximumClipCount)
     }
@@ -410,30 +457,44 @@ final class PersonaAudioFoundationTests: XCTestCase {
         try await database.savePersonalAudioClipMetadata(selected, authenticatedUserID: Phase1BFixture.userID)
         try await database.savePersonalAudioClipMetadata(unselected, authenticatedUserID: Phase1BFixture.userID)
         try await database.setLocalRecoveryAudioDefault(
-            .personalClip(selected.id), profileID: selected.profileID,
-            authenticatedUserID: Phase1BFixture.userID, updatedAt: Phase1BFixture.now
+            .personalClip(selected.id),
+            profileID: selected.profileID,
+            authenticatedUserID: Phase1BFixture.userID,
+            updatedAt: Phase1BFixture.now
         )
         try await database.deletePersonalAudioClipMetadata(
-            id: unselected.id, profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+            id: unselected.id,
+            profileID: selected.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
         let retainedDefault = try await database.localRecoveryAudioDefault(
-            profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+            profileID: selected.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
         XCTAssertEqual(retainedDefault, .personalClip(selected.id))
         let otherProfileID = Phase1BFixture.uuid("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
         let moved = PersonalAudioClipMetadata(
-            id: selected.id, profileID: otherProfileID, source: .recorded, storageFormat: .m4a,
-            byteCount: 1, durationMilliseconds: 1, createdOrImportedAt: Phase1BFixture.now,
-            availability: .ready, protectionVersion: 1
+            id: selected.id,
+            profileID: otherProfileID,
+            source: .recorded,
+            storageFormat: .m4a,
+            byteCount: 1,
+            durationMilliseconds: 1,
+            createdOrImportedAt: Phase1BFixture.now,
+            availability: .ready,
+            protectionVersion: 1
         )
         await XCTAssertThrowsErrorAsync {
             try await database.savePersonalAudioClipMetadata(moved, authenticatedUserID: Phase1BFixture.userID)
         }
         try await database.deletePersonalAudioClipMetadata(
-            id: selected.id, profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+            id: selected.id,
+            profileID: selected.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
         let clearedDefault = try await database.localRecoveryAudioDefault(
-            profileID: selected.profileID, authenticatedUserID: Phase1BFixture.userID
+            profileID: selected.profileID,
+            authenticatedUserID: Phase1BFixture.userID
         )
         XCTAssertNil(clearedDefault)
     }
@@ -443,26 +504,49 @@ final class PersonaAudioFoundationTests: XCTestCase {
         let draft = completeDraft()
         try await database.saveQuestionnaireDraft(draft)
         try await database.savePersonalAudioClipMetadata(
-            clip(id: UUID(), source: .recorded, format: .m4a), authenticatedUserID: Phase1BFixture.userID
+            clip(id: UUID(), source: .recorded, format: .m4a),
+            authenticatedUserID: Phase1BFixture.userID
         )
         let provider = LocalDatabaseOutboundPayloadProvider(database: database)
         let upsert = SynchronizationOperation(
-            id: UUID(), profileID: draft.profileID, entityType: .persona, entityID: draft.profileID,
-            operation: .upsert, idempotencyKey: UUID(), baseRevision: 0, localRevision: 1,
-            state: .pending, attemptCount: 0, nextAttemptAt: nil, lastErrorCategory: nil,
-            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+            id: UUID(),
+            profileID: draft.profileID,
+            entityType: .persona,
+            entityID: draft.profileID,
+            operation: .upsert,
+            idempotencyKey: UUID(),
+            baseRevision: 0,
+            localRevision: 1,
+            state: .pending,
+            attemptCount: 0,
+            nextAttemptAt: nil,
+            lastErrorCategory: nil,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
         )
         await XCTAssertThrowsErrorAsync {
             _ = try await provider.payload(for: upsert, authenticatedUserID: Phase1BFixture.userID)
         }
         _ = try await database.completeQuestionnaireDraft(
-            profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now
+            profileID: draft.profileID,
+            authenticatedUserID: draft.accountUserID,
+            calculatedAt: Phase1BFixture.now
         )
         let conversion = SynchronizationOperation(
-            id: UUID(), profileID: draft.profileID, entityType: .persona, entityID: draft.profileID,
-            operation: .convert, idempotencyKey: UUID(), baseRevision: 1, localRevision: 2,
-            state: .pending, attemptCount: 0, nextAttemptAt: nil, lastErrorCategory: nil,
-            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+            id: UUID(),
+            profileID: draft.profileID,
+            entityType: .persona,
+            entityID: draft.profileID,
+            operation: .convert,
+            idempotencyKey: UUID(),
+            baseRevision: 1,
+            localRevision: 2,
+            state: .pending,
+            attemptCount: 0,
+            nextAttemptAt: nil,
+            lastErrorCategory: nil,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
         )
         do {
             _ = try await provider.payload(for: conversion, authenticatedUserID: Phase1BFixture.userID)
@@ -477,19 +561,28 @@ final class PersonaAudioFoundationTests: XCTestCase {
         let complete = completeDraft()
         try await database.saveQuestionnaireDraft(complete)
         _ = try await database.completeQuestionnaireDraft(
-            profileID: complete.profileID, authenticatedUserID: complete.accountUserID, calculatedAt: Phase1BFixture.now
+            profileID: complete.profileID,
+            authenticatedUserID: complete.accountUserID,
+            calculatedAt: Phase1BFixture.now
         )
         let incomplete = QuestionnaireDraft(
-            id: UUID(), profileID: complete.profileID, accountUserID: complete.accountUserID,
-            episodeFrequency: .weekly, postEpisodeFeeling: nil, calmingPersonContext: nil,
-            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+            id: UUID(),
+            profileID: complete.profileID,
+            accountUserID: complete.accountUserID,
+            episodeFrequency: .weekly,
+            postEpisodeFeeling: nil,
+            calmingPersonContext: nil,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
         )
         try await database.saveQuestionnaireDraft(incomplete)
         let clipMetadata = clip(id: UUID(), source: .recorded, format: .m4a)
         try await database.savePersonalAudioClipMetadata(clipMetadata, authenticatedUserID: Phase1BFixture.userID)
         try await database.setLocalRecoveryAudioDefault(
-            .personalClip(clipMetadata.id), profileID: complete.profileID,
-            authenticatedUserID: complete.accountUserID, updatedAt: Phase1BFixture.now
+            .personalClip(clipMetadata.id),
+            profileID: complete.profileID,
+            authenticatedUserID: complete.accountUserID,
+            updatedAt: Phase1BFixture.now
         )
         try await database.removeProfileFromDevice(
             profileID: complete.profileID,
@@ -534,9 +627,14 @@ final class PersonaAudioFoundationTests: XCTestCase {
 
     private func completeDraft() -> QuestionnaireDraft {
         QuestionnaireDraft(
-            id: UUID(), profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
-            episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: .alone,
-            createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
+            id: UUID(),
+            profileID: Phase1BFixture.profileID,
+            accountUserID: Phase1BFixture.userID,
+            episodeFrequency: .weekly,
+            postEpisodeFeeling: .awakeScared,
+            calmingPersonContext: .alone,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
         )
     }
 
@@ -548,9 +646,15 @@ final class PersonaAudioFoundationTests: XCTestCase {
         duration: Int64? = 1
     ) -> PersonalAudioClipMetadata {
         PersonalAudioClipMetadata(
-            id: id, profileID: Phase1BFixture.profileID, source: source, storageFormat: format,
-            byteCount: byteCount, durationMilliseconds: duration, createdOrImportedAt: Phase1BFixture.now,
-            availability: .ready, protectionVersion: 1
+            id: id,
+            profileID: Phase1BFixture.profileID,
+            source: source,
+            storageFormat: format,
+            byteCount: byteCount,
+            durationMilliseconds: duration,
+            createdOrImportedAt: Phase1BFixture.now,
+            availability: .ready,
+            protectionVersion: 1
         )
     }
 }

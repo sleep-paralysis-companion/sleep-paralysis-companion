@@ -139,8 +139,10 @@ extension LocalDatabase {
             _ = try QuestionnaireDraftRecord.deleteOne(database, key: draft.id)
             try supersedePendingPersonaUpserts(database, profileID: profileID)
             try personaUpsertOperation(
-                database, profileID: profileID, aggregate: aggregate,
-                operationID: operationID, idempotencyKey: idempotencyKey, at: calculatedAt
+                database,
+                aggregate: aggregate,
+                operationID: operationID,
+                idempotencyKey: idempotencyKey
             )
             completed = aggregate
         }
@@ -189,17 +191,22 @@ extension LocalDatabase {
                 return
             }
             let revised = PersonaAnswerAggregate(
-                id: aggregate.profileID, profileID: aggregate.profileID, accountUserID: aggregate.accountUserID,
-                episodeFrequency: aggregate.episodeFrequency, postEpisodeFeeling: aggregate.postEpisodeFeeling,
+                id: aggregate.profileID,
+                profileID: aggregate.profileID,
+                accountUserID: aggregate.accountUserID,
+                episodeFrequency: aggregate.episodeFrequency,
+                postEpisodeFeeling: aggregate.postEpisodeFeeling,
                 calmingPersonContext: aggregate.calmingPersonContext,
                 derivedPersona: PersonaRouting.derive(
                     episodeFrequency: aggregate.episodeFrequency,
                     postEpisodeFeeling: aggregate.postEpisodeFeeling,
                     calmingPersonContext: aggregate.calmingPersonContext
                 ),
-                routingRuleVersion: PersonaRouting.initialRuleVersion, calculatedAt: aggregate.calculatedAt,
+                routingRuleVersion: PersonaRouting.initialRuleVersion,
+                calculatedAt: aggregate.calculatedAt,
                 createdAt: existing.map { Date(timeIntervalSince1970: $0.createdAt) } ?? aggregate.createdAt,
-                updatedAt: aggregate.updatedAt, revision: (existing?.revision ?? 0) + 1
+                updatedAt: aggregate.updatedAt,
+                revision: (existing?.revision ?? 0) + 1
             )
             try PersonaAnswerAggregateRecord(revised).save(database)
             try supersedePendingPersonaUpserts(database, profileID: aggregate.profileID)
@@ -208,57 +215,50 @@ extension LocalDatabase {
                 profileID: aggregate.profileID,
                 aggregate: revised,
                 operationID: UUID(),
-                idempotencyKey: UUID(),
-                at: aggregate.updatedAt
+                idempotencyKey: UUID()
             )
         }
     }
 
-    func deletePersonaAnswerAggregate(
-        profileID: UUID,
-        authenticatedUserID: UUID,
-        deletedAt: Date,
-        tombstoneID: UUID,
-        operationID: UUID,
-        idempotencyKey: UUID
-    ) throws {
-        try assertAuthenticatedOwner(profileID: profileID, userID: authenticatedUserID)
+    func deletePersonaAnswerAggregate(_ request: DeletePersonaRequest) throws {
+        try assertAuthenticatedOwner(profileID: request.profileID, userID: request.authenticatedUserID)
         try write { database in
             guard let aggregate = try PersonaAnswerAggregateRecord.fetchOne(
-                database, sql: "SELECT * FROM persona_answer_aggregates WHERE profileID = ? AND accountUserID = ?",
-                arguments: [profileID.uuidString, authenticatedUserID.uuidString]
+                database,
+                sql: "SELECT * FROM persona_answer_aggregates WHERE profileID = ? AND accountUserID = ?",
+                arguments: [request.profileID.uuidString, request.authenticatedUserID.uuidString]
             )
             else {
                 return
             }
-            _ = try PersonaAnswerAggregateRecord.deleteOne(database, key: profileID.uuidString)
-            try supersedePendingPersonaUpserts(database, profileID: profileID)
+            _ = try PersonaAnswerAggregateRecord.deleteOne(database, key: request.profileID.uuidString)
+            try supersedePendingPersonaUpserts(database, profileID: request.profileID)
             let deletedRevision = aggregate.revision + 1
             try DeletionTombstoneRecord(
-                id: tombstoneID.uuidString,
-                profileID: profileID.uuidString,
+                id: request.tombstoneID.uuidString,
+                profileID: request.profileID.uuidString,
                 entityType: SyncEntityType.persona.rawValue,
                 entityID: aggregate.id,
                 deletedRevision: deletedRevision,
-                deletedAt: deletedAt.timeIntervalSince1970,
+                deletedAt: request.deletedAt.timeIntervalSince1970,
                 acknowledgedAt: nil,
-                purgeAfter: deletedAt.addingTimeInterval(30 * 86400).timeIntervalSince1970
+                purgeAfter: request.deletedAt.addingTimeInterval(30 * 86400).timeIntervalSince1970
             ).save(database)
             try SynchronizationOperationRecord(
-                id: operationID.uuidString,
-                profileID: profileID.uuidString,
+                id: request.operationID.uuidString,
+                profileID: request.profileID.uuidString,
                 entityType: SyncEntityType.tombstone.rawValue,
-                entityID: tombstoneID.uuidString,
+                entityID: request.tombstoneID.uuidString,
                 operation: SyncOperationKind.delete.rawValue,
-                idempotencyKey: idempotencyKey.uuidString,
+                idempotencyKey: request.idempotencyKey.uuidString,
                 baseRevision: aggregate.revision,
                 localRevision: deletedRevision,
                 state: SynchronizationState.pending.rawValue,
                 attemptCount: 0,
                 nextAttemptAt: nil,
                 lastErrorCategory: nil,
-                createdAt: deletedAt.timeIntervalSince1970,
-                updatedAt: deletedAt.timeIntervalSince1970
+                createdAt: request.deletedAt.timeIntervalSince1970,
+                updatedAt: request.deletedAt.timeIntervalSince1970
             ).insert(database)
         }
     }
@@ -386,22 +386,39 @@ extension LocalDatabase {
 
     private func supersedePendingPersonaUpserts(_ database: Database, profileID: UUID) throws {
         try database.execute(
-            sql: "UPDATE sync_operations SET state = 'deleted' WHERE profileID = ? AND entityType = 'persona' AND operation = 'upsert' AND state IN ('pending', 'failedRecoverable')",
+            sql: """
+            UPDATE sync_operations
+            SET state = 'deleted'
+            WHERE profileID = ?
+              AND entityType = 'persona'
+              AND operation = 'upsert'
+              AND state IN ('pending', 'failedRecoverable')
+            """,
             arguments: [profileID.uuidString]
         )
     }
 
     private func personaUpsertOperation(
-        _ database: Database, profileID: UUID, aggregate: PersonaAnswerAggregate,
-        operationID: UUID, idempotencyKey: UUID, at: Date
+        _ database: Database,
+        aggregate: PersonaAnswerAggregate,
+        operationID: UUID,
+        idempotencyKey: UUID
     ) throws {
         try SynchronizationOperationRecord(
-            id: operationID.uuidString, profileID: profileID.uuidString,
-            entityType: SyncEntityType.persona.rawValue, entityID: aggregate.id.uuidString,
-            operation: SyncOperationKind.upsert.rawValue, idempotencyKey: idempotencyKey.uuidString,
-            baseRevision: aggregate.revision - 1, localRevision: aggregate.revision,
-            state: SynchronizationState.pending.rawValue, attemptCount: 0, nextAttemptAt: nil,
-            lastErrorCategory: nil, createdAt: at.timeIntervalSince1970, updatedAt: at.timeIntervalSince1970
+            id: operationID.uuidString,
+            profileID: aggregate.profileID.uuidString,
+            entityType: SyncEntityType.persona.rawValue,
+            entityID: aggregate.id.uuidString,
+            operation: SyncOperationKind.upsert.rawValue,
+            idempotencyKey: idempotencyKey.uuidString,
+            baseRevision: aggregate.revision - 1,
+            localRevision: aggregate.revision,
+            state: SynchronizationState.pending.rawValue,
+            attemptCount: 0,
+            nextAttemptAt: nil,
+            lastErrorCategory: nil,
+            createdAt: aggregate.updatedAt.timeIntervalSince1970,
+            updatedAt: aggregate.updatedAt.timeIntervalSince1970
         ).insert(database)
     }
 

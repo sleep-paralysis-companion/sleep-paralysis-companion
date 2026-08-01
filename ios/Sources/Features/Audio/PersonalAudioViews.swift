@@ -92,7 +92,8 @@ struct PersonalAudioSetupView: View {
                     .buttonStyle(AppPrimaryButtonStyle())
                 }
                 Text(
-                    "Personal audio is never included in structured export, analytics, diagnostics, notifications, widgets, or Supabase."
+                    "Personal audio is never included in structured export, analytics, diagnostics, notifications, " +
+                        "widgets, or Supabase."
                 )
                 .font(.footnote)
                 .foregroundStyle(.white.opacity(0.58))
@@ -131,7 +132,8 @@ struct PersonalAudioSetupView: View {
             Button("Cancel", role: .cancel) { clipToDelete = nil }
         } message: {
             Text(
-                "This removes the clip bytes, metadata, and any device-local default reference. It does not change server data."
+                "This removes the clip bytes, metadata, and any device-local default reference. " +
+                    "It does not change server data."
             )
         }
         .sheet(

@@ -6,6 +6,14 @@ nonisolated enum LocalSchema {
 
     static func migrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
+        registerCoreLocalData(on: &migrator)
+        registerSyncSecurityFoundation(on: &migrator)
+        registerPersonaAndLocalAudio(on: &migrator)
+        registerPersonaAudioRepair(on: &migrator)
+        return migrator
+    }
+
+    private static func registerCoreLocalData(on migrator: inout DatabaseMigrator) {
         migrator.registerMigration("v1_core_local_data") { database in
             try database.execute(
                 sql: """
@@ -103,7 +111,9 @@ nonisolated enum LocalSchema {
                 """
             )
         }
+    }
 
+    private static func registerSyncSecurityFoundation(on migrator: inout DatabaseMigrator) {
         migrator.registerMigration("v2_sync_security_foundation") { database in
             try database.execute(
                 sql: """
@@ -268,6 +278,9 @@ nonisolated enum LocalSchema {
                 """
             )
         }
+    }
+
+    private static func registerPersonaAndLocalAudio(on migrator: inout DatabaseMigrator) {
         migrator.registerMigration("v3_persona_and_local_personal_audio") { database in
             try database.execute(
                 sql: """
@@ -391,6 +404,9 @@ nonisolated enum LocalSchema {
                 """
             )
         }
+    }
+
+    private static func registerPersonaAudioRepair(on migrator: inout DatabaseMigrator) {
         // v3 shipped the intended two-identity shape (an opaque draft id plus a
         // profile-scoped current-draft constraint), but its first consumer used
         // the profile id as if it were the primary key.  Keep the released v3
@@ -426,7 +442,6 @@ nonisolated enum LocalSchema {
             UPDATE spc_schema_metadata SET schema_version = 4 WHERE singleton = 1;
             """)
         }
-        return migrator
     }
 }
 

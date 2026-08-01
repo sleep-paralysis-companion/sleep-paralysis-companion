@@ -47,7 +47,8 @@ struct EditQuestionnaireView: View {
                 }
             } footer: {
                 Text(
-                    "All three answers and the internally derived setup update in one local transaction. No profile identifier, diagnosis, score, or risk result is shown."
+                    "All three answers and the internally derived setup update in one local transaction. " +
+                        "No profile identifier, diagnosis, score, or risk result is shown."
                 )
             }
         }
@@ -73,7 +74,8 @@ struct AccessibilitySettingsView: View {
             }
             Section {
                 Text(
-                    "Paralux follows iOS Dynamic Type, VoiceOver labels, Reduce Motion, contrast, and safe-area behavior. Change these settings in the iOS Settings app."
+                    "Paralux follows iOS Dynamic Type, VoiceOver labels, Reduce Motion, contrast, " +
+                        "and safe-area behavior. Change these settings in the iOS Settings app."
                 )
             }
         }

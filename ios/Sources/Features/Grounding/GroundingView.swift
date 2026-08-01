@@ -63,7 +63,8 @@ struct GroundingView: View {
                 }
                 .buttonStyle(AppSecondaryButtonStyle())
                 Text(
-                    "No episode record is created by opening this screen. A history entry exists only after you explicitly submit a check-in."
+                    "No episode record is created by opening this screen. " +
+                        "A history entry exists only after you explicitly submit a check-in."
                 )
                 .font(.footnote)
                 .foregroundStyle(.white.opacity(0.58))

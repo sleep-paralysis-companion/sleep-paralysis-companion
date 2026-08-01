@@ -204,7 +204,8 @@ final class AppModel {
                     launchDestination = .recommendedSetup
                 }
             } catch {
-                feedbackMessage = "Your answer could not be saved. Try again; no persona was created from partial answers."
+                feedbackMessage =
+                    "Your answer could not be saved. Try again; no persona was created from partial answers."
             }
         }
     }
@@ -562,7 +563,8 @@ final class AppModel {
             guard let self else { return }
             do {
                 cleanupStructuredExport()
-                let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+                let versionValue = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
+                let version = versionValue as? String ?? "unknown"
                 exportURL = try await store.export(
                     profileID: profileID,
                     userID: userID,

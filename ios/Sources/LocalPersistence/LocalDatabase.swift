@@ -10,6 +10,15 @@ nonisolated struct DeleteCheckInRequest: Sendable {
     let idempotencyKey: UUID
 }
 
+nonisolated struct DeletePersonaRequest: Sendable {
+    let profileID: UUID
+    let authenticatedUserID: UUID
+    let deletedAt: Date
+    let tombstoneID: UUID
+    let operationID: UUID
+    let idempotencyKey: UUID
+}
+
 actor LocalDatabase {
     let pool: DatabasePool
     private let writeFault: any LocalWriteFaultInjecting

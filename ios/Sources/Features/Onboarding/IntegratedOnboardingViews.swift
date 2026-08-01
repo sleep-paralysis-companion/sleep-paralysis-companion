@@ -30,28 +30,35 @@ struct FeatureIntroductionView: View {
     let page: Int
     let continueAction: () -> Void
 
-    private var content: (title: String, detail: String, icon: String, card: String) {
+    private struct Content {
+        let title: String
+        let detail: String
+        let icon: String
+        let card: String
+    }
+
+    private var content: Content {
         switch FeatureIntroductionPage(rawValue: page) ?? .gentleWake {
         case .gentleWake:
-            (
-                "Wake up gently",
-                "Set an ordinary sleep reminder and return to your schedule whenever you choose.",
-                "alarm.fill",
-                "Sleep schedule"
+            Content(
+                title: "Wake up gently",
+                detail: "Set an ordinary sleep reminder and return to your schedule whenever you choose.",
+                icon: "alarm.fill",
+                card: "Sleep schedule"
             )
         case .postEpisodeSupport:
-            (
-                "Support when you need it most",
-                "Open calming visual grounding and your selected recovery audio after an episode.",
-                "message.fill",
-                "Post-episode support"
+            Content(
+                title: "Support when you need it most",
+                detail: "Open calming visual grounding and your selected recovery audio after an episode.",
+                icon: "message.fill",
+                card: "Post-episode support"
             )
         case .familiarVoice:
-            (
-                "A familiar voice guiding you to calmness",
-                "Record or import a private comfort clip that remains on this device.",
-                "mic.fill",
-                "Comfort audio"
+            Content(
+                title: "A familiar voice guiding you to calmness",
+                detail: "Record or import a private comfort clip that remains on this device.",
+                icon: "mic.fill",
+                card: "Comfort audio"
             )
         }
     }
@@ -120,7 +127,8 @@ struct AuthenticationView: View {
                         Label("Provider configuration required", systemImage: "wrench.and.screwdriver")
                             .font(.headline)
                         Text(
-                            "Add the project publishable key and configure Apple and Google provider credentials before sign-in can run."
+                            "Add the project publishable key and configure Apple and Google provider credentials " +
+                                "before sign-in can run."
                         )
                         .foregroundStyle(.white.opacity(0.72))
                         .padding(.top, 6)
@@ -224,7 +232,8 @@ struct QuestionnaireView: View {
                     }
                 }
                 Text(
-                    "Your answer is saved privately before moving on. A setup is derived only after all three answers are valid."
+                    "Your answer is saved privately before moving on. " +
+                        "A setup is derived only after all three answers are valid."
                 )
                 .font(.footnote)
                 .foregroundStyle(.white.opacity(0.6))
@@ -292,7 +301,8 @@ struct RecommendedSetupView: View {
                     .font(AppTypographyRole.hero)
                     .accessibilityAddTraits(.isHeader)
                 Text(
-                    "Based on your answers, this neutral setup keeps the next steps simple. You can change your answers later in Settings."
+                    "Based on your answers, this neutral setup keeps the next steps simple. " +
+                        "You can change your answers later in Settings."
                 )
                 .foregroundStyle(.white.opacity(0.72))
                 NightCard {

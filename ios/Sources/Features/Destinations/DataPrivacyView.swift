@@ -18,7 +18,8 @@ struct DataPrivacyView: View {
             }
             Section("Structured export") {
                 Text(
-                    "The ZIP includes settings, schedule, check-ins, and a redacted persona.json. It never includes personal audio."
+                    "The ZIP includes settings, schedule, check-ins, and a redacted persona.json. " +
+                        "It never includes personal audio."
                 )
                 Button("Create structured export", systemImage: "square.and.arrow.up") {
                     model.createStructuredExport()
@@ -33,7 +34,8 @@ struct DataPrivacyView: View {
                 }
             } footer: {
                 Text(
-                    "This removes this device’s Paralux data and local personal audio. It is distinct from deleting the Supabase account and does not cancel an Apple subscription."
+                    "This removes this device’s Paralux data and local personal audio. " +
+                        "It is distinct from deleting the Supabase account and does not cancel an Apple subscription."
                 )
             }
         }
@@ -44,7 +46,8 @@ struct DataPrivacyView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(
-                "This removes protected local records, schedules, reminders, exports, and all personal audio from this device."
+                "This removes protected local records, schedules, reminders, exports, " +
+                    "and all personal audio from this device."
             )
         }
         .sheet(
