@@ -81,7 +81,7 @@ final class LocalDatabaseTests: XCTestCase {
         let version = try await database.schemaVersion()
         let profile = try await database.profile(id: Phase1BFixture.profileID)
         let settings = try await database.settings(profileID: Phase1BFixture.profileID)
-        XCTAssertEqual(version, 3)
+        XCTAssertEqual(version, LocalSchema.currentVersion)
         XCTAssertEqual(profile, Phase1BFixture.profile())
         XCTAssertEqual(settings, Phase1BFixture.settings())
     }
