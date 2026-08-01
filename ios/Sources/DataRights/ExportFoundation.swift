@@ -8,7 +8,7 @@ nonisolated struct LocalExportSnapshot: Sendable {
     let alarm: AlarmPreference?
     let checkIns: [SubmittedCheckIn]
     /// Deliberately redacted export projection, never a persistence row.
-    let persona: PersonaExport? = nil
+    let persona: PersonaExport?
     let scope: ExportScope
 }
 

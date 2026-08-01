@@ -212,7 +212,6 @@ extension LocalDatabase {
             try supersedePendingPersonaUpserts(database, profileID: aggregate.profileID)
             try personaUpsertOperation(
                 database,
-                profileID: aggregate.profileID,
                 aggregate: revised,
                 operationID: UUID(),
                 idempotencyKey: UUID()

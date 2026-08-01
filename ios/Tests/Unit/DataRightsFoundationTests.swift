@@ -83,6 +83,7 @@ final class DataRightsFoundationTests: XCTestCase {
             settings: Phase1BFixture.settings(),
             alarm: nil,
             checkIns: [Phase1BFixture.checkIn()],
+            persona: nil,
             scope: .localOnly
         )
 
@@ -129,6 +130,7 @@ final class DataRightsFoundationTests: XCTestCase {
                 settings: Phase1BFixture.settings(),
                 alarm: nil,
                 checkIns: [deleted],
+                persona: nil,
                 scope: .lastSyncedLocalSnapshot
             ),
             profileID: Phase1BFixture.profileID,
@@ -212,6 +214,7 @@ final class DataRightsFoundationTests: XCTestCase {
                     settings: Phase1BFixture.settings(),
                     alarm: nil,
                     checkIns: [],
+                    persona: nil,
                     scope: .localOnly
                 ),
                 profileID: Phase1BFixture.profileID,
