@@ -89,7 +89,11 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["How do you feel after the episode?"].waitForExistence(timeout: 8))
         app.buttons["I lie awake scared for a while"].tap()
         XCTAssertTrue(app.staticTexts["Do you have someone whose voice calms you down?"].waitForExistence(timeout: 8))
-        app.buttons["No â€“ I go through this alone"].tap()
+        let aloneChoice = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "go through this alone")
+        ).firstMatch
+        XCTAssertTrue(aloneChoice.waitForExistence(timeout: 8))
+        aloneChoice.tap()
 
         XCTAssertTrue(app.buttons["Continue to comfort audio"].waitForExistence(timeout: 8))
         app.buttons["Continue to comfort audio"].tap()
