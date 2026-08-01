@@ -13,21 +13,21 @@ nonisolated enum PersonalAudioDurationValidator {
         let seconds = duration.seconds
         guard seconds.isFinite,
               seconds >= 0,
-              seconds * 1_000 <= Double(PersonalAudioPolicy.maximumDurationMilliseconds)
+              seconds * 1000 <= Double(PersonalAudioPolicy.maximumDurationMilliseconds)
         else {
             throw PersonaAudioValidationError.invalidAudioMetadata
         }
-        return Int64((seconds * 1_000).rounded(.towardZero))
+        return Int64((seconds * 1000).rounded(.towardZero))
     }
 
     static func milliseconds(from seconds: TimeInterval) throws -> Int64 {
         guard seconds.isFinite,
               seconds >= 0,
-              seconds * 1_000 <= Double(PersonalAudioPolicy.maximumDurationMilliseconds)
+              seconds * 1000 <= Double(PersonalAudioPolicy.maximumDurationMilliseconds)
         else {
             throw PersonaAudioValidationError.invalidAudioMetadata
         }
-        return Int64((seconds * 1_000).rounded(.towardZero))
+        return Int64((seconds * 1000).rounded(.towardZero))
     }
 }
 
@@ -98,7 +98,9 @@ actor PersonalAudioFileStore {
     ) async throws -> PersonalAudioClipMetadata {
         let scoped = sourceURL.startAccessingSecurityScopedResource()
         defer {
-            if scoped { sourceURL.stopAccessingSecurityScopedResource() }
+            if scoped {
+                sourceURL.stopAccessingSecurityScopedResource()
+            }
         }
         let format = try Self.format(for: sourceURL)
         let directory = try directoryURL(profileID: profileID)
@@ -369,7 +371,7 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
                 url: url,
                 settings: [
                     AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                    AVSampleRateKey: 44_100,
+                    AVSampleRateKey: 44100,
                     AVNumberOfChannelsKey: 1,
                     AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
                 ]

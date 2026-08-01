@@ -15,7 +15,7 @@ nonisolated struct SupabasePublicConfiguration: Sendable {
               key.hasPrefix("sb_publishable_") || key.hasPrefix("eyJ"),
               key.count > 20,
               let rawRedirect = bundle.object(
-                forInfoDictionaryKey: "SPCSupabaseOAuthRedirectURL"
+                  forInfoDictionaryKey: "SPCSupabaseOAuthRedirectURL"
               ) as? String,
               let redirect = URL(string: rawRedirect),
               redirect.scheme?.lowercased() == "spc",

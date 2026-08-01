@@ -380,7 +380,7 @@ final class LocalDatabaseTests: XCTestCase {
         try LocalSchema.migrator().migrate(queue, upTo: "v2_sync_security_foundation")
 
         let migrated = try LocalDatabase(path: path)
-        XCTAssertEqual(try await migrated.schemaVersion(), 4)
+        await XCTAssertEqual(try migrated.schemaVersion(), 4)
     }
 
     func testMigrationFromCommittedV3ToV4PreservesNoFabricatedPersonaData() async throws {
@@ -394,8 +394,8 @@ final class LocalDatabaseTests: XCTestCase {
         profile.accountUserID = Phase1BFixture.userID
         profile.accountLinkState = .linked
         try await migrated.createProfile(profile, settings: Phase1BFixture.settings())
-        XCTAssertEqual(try await migrated.schemaVersion(), 4)
-        XCTAssertNil(try await migrated.personaAnswerAggregate(
+        await XCTAssertEqual(try migrated.schemaVersion(), 4)
+        await XCTAssertNil(try migrated.personaAnswerAggregate(
             profileID: Phase1BFixture.profileID,
             authenticatedUserID: Phase1BFixture.userID
         ))

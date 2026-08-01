@@ -43,7 +43,7 @@ nonisolated struct ManualEpisodeActivationStore: Sendable {
     }
 
     func firstPending() throws -> Activation? {
-        pending(in: try appGroupDefaults()).first
+        try pending(in: appGroupDefaults()).first
     }
 
     @discardableResult
@@ -81,7 +81,7 @@ nonisolated struct ManualEpisodeActivationStore: Sendable {
             if values.isEmpty {
                 defaults.removeObject(forKey: Self.pendingKey)
             } else {
-                defaults.set(try JSONEncoder().encode(values), forKey: Self.pendingKey)
+                try defaults.set(JSONEncoder().encode(values), forKey: Self.pendingKey)
             }
         } catch {
             throw ManualEpisodeActivationError.persistenceFailed

@@ -36,7 +36,7 @@ nonisolated enum PersonaRouting {
     ) -> DerivedPersona {
         let isFrequentAndIntense =
             [.weekly, .almostNightly].contains(episodeFrequency)
-            && [.awakeScared, .tooFrightenedToCloseEyes].contains(postEpisodeFeeling)
+                && [.awakeScared, .tooFrightenedToCloseEyes].contains(postEpisodeFeeling)
         guard isFrequentAndIntense else {
             return .generalDefault
         }
@@ -68,9 +68,15 @@ nonisolated struct QuestionnaireDraft: Equatable, Codable, Sendable {
     var updatedAt: Date
 
     var firstUnansweredQuestion: QuestionnaireQuestion? {
-        if episodeFrequency == nil { return .episodeFrequency }
-        if postEpisodeFeeling == nil { return .postEpisodeFeeling }
-        if calmingPersonContext == nil { return .calmingPersonContext }
+        if episodeFrequency == nil {
+            return .episodeFrequency
+        }
+        if postEpisodeFeeling == nil {
+            return .postEpisodeFeeling
+        }
+        if calmingPersonContext == nil {
+            return .calmingPersonContext
+        }
         return nil
     }
 }

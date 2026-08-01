@@ -46,7 +46,9 @@ struct EditQuestionnaireView: View {
                     )
                 }
             } footer: {
-                Text("All three answers and the internally derived setup update in one local transaction. No profile identifier, diagnosis, score, or risk result is shown.")
+                Text(
+                    "All three answers and the internally derived setup update in one local transaction. No profile identifier, diagnosis, score, or risk result is shown."
+                )
             }
         }
         .navigationTitle("Questionnaire answers")
@@ -62,12 +64,17 @@ struct AccessibilitySettingsView: View {
     var body: some View {
         List {
             Section("Current system settings") {
-                LabeledContent("Text size", value: dynamicTypeSize.isAccessibilitySize ? "Accessibility size" : "Standard size")
+                LabeledContent(
+                    "Text size",
+                    value: dynamicTypeSize.isAccessibilitySize ? "Accessibility size" : "Standard size"
+                )
                 LabeledContent("Reduce Motion", value: reduceMotion ? "On" : "Off")
                 LabeledContent("Reduce Transparency", value: reduceTransparency ? "On" : "Off")
             }
             Section {
-                Text("Paralux follows iOS Dynamic Type, VoiceOver labels, Reduce Motion, contrast, and safe-area behavior. Change these settings in the iOS Settings app.")
+                Text(
+                    "Paralux follows iOS Dynamic Type, VoiceOver labels, Reduce Motion, contrast, and safe-area behavior. Change these settings in the iOS Settings app."
+                )
             }
         }
         .navigationTitle("Accessibility")

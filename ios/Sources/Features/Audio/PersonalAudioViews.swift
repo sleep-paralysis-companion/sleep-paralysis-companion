@@ -91,9 +91,11 @@ struct PersonalAudioSetupView: View {
                     }
                     .buttonStyle(AppPrimaryButtonStyle())
                 }
-                Text("Personal audio is never included in structured export, analytics, diagnostics, notifications, widgets, or Supabase.")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.58))
+                Text(
+                    "Personal audio is never included in structured export, analytics, diagnostics, notifications, widgets, or Supabase."
+                )
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.58))
             }
             .padding(.top, isOnboarding ? 32 : 0)
         }
@@ -112,22 +114,34 @@ struct PersonalAudioSetupView: View {
             "Delete this local clip?",
             isPresented: Binding(
                 get: { clipToDelete != nil },
-                set: { if !$0 { clipToDelete = nil } }
+                set: {
+                    if !$0 {
+                        clipToDelete = nil
+                    }
+                }
             ),
             titleVisibility: .visible
         ) {
             Button("Delete clip", role: .destructive) {
-                if let clipToDelete { model.deleteClip(clipToDelete) }
+                if let clipToDelete {
+                    model.deleteClip(clipToDelete)
+                }
                 clipToDelete = nil
             }
             Button("Cancel", role: .cancel) { clipToDelete = nil }
         } message: {
-            Text("This removes the clip bytes, metadata, and any device-local default reference. It does not change server data.")
+            Text(
+                "This removes the clip bytes, metadata, and any device-local default reference. It does not change server data."
+            )
         }
         .sheet(
             isPresented: Binding(
                 get: { model.audioExportURL != nil },
-                set: { if !$0 { model.cleanupAudioExport() } }
+                set: {
+                    if !$0 {
+                        model.cleanupAudioExport()
+                    }
+                }
             )
         ) {
             if let url = model.audioExportURL {
@@ -180,7 +194,7 @@ struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
     let completion: () -> Void
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
+    func makeUIViewController(context _: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
         controller.completionWithItemsHandler = { _, _, _, _ in completion() }
         return controller

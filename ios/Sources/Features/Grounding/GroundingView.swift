@@ -11,9 +11,11 @@ struct GroundingView: View {
                     .font(AppTypographyRole.hero)
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
-                Text("Take the next moment at your own pace. This is a manual wellness tool, not an emergency response.")
-                    .foregroundStyle(.white.opacity(0.72))
-                    .multilineTextAlignment(.center)
+                Text(
+                    "Take the next moment at your own pace. This is a manual wellness tool, not an emergency response."
+                )
+                .foregroundStyle(.white.opacity(0.72))
+                .multilineTextAlignment(.center)
 
                 ZStack {
                     Circle()
@@ -60,9 +62,11 @@ struct GroundingView: View {
                     model.open(.morningCheckIn)
                 }
                 .buttonStyle(AppSecondaryButtonStyle())
-                Text("No episode record is created by opening this screen. A history entry exists only after you explicitly submit a check-in.")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.58))
+                Text(
+                    "No episode record is created by opening this screen. A history entry exists only after you explicitly submit a check-in."
+                )
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.58))
             }
             .padding(.top, 24)
         }

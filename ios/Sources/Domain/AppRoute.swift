@@ -23,7 +23,9 @@ nonisolated enum AppSheet: String, Codable, Hashable, Identifiable, Sendable {
     case audioImport
     case structuredExport
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 nonisolated enum LaunchDestination: Equatable, Sendable {
@@ -47,7 +49,7 @@ nonisolated enum AccountAccessState: Equatable, Sendable {
     case expired
 }
 
-// Retained only so superseded source/evidence fixtures remain buildable.
+/// Retained only so superseded source/evidence fixtures remain buildable.
 nonisolated enum ProductNoticePresentation: Equatable, Sendable {
     case initial
     case updated

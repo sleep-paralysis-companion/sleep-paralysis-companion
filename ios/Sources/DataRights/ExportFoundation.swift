@@ -166,7 +166,7 @@ nonisolated struct LocalExportService: Sendable {
             ("checkins.csv", checkInsCSV),
         ]
         if let persona = snapshot.persona {
-            provisional.append(("persona.json", try encoder.encode(persona)))
+            try provisional.append(("persona.json", encoder.encode(persona)))
         }
         let manifest = ExportManifest(
             exportVersion: metadata.manifestVersion,

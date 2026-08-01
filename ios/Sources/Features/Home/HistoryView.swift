@@ -43,7 +43,9 @@ struct HistoryView: View {
                             }
                         }
                     } footer: {
-                        Text("History is descriptive and never presents a diagnosis, clinical score, prediction, or risk interpretation.")
+                        Text(
+                            "History is descriptive and never presents a diagnosis, clinical score, prediction, or risk interpretation."
+                        )
                     }
                 }
             }

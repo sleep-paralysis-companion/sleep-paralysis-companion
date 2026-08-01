@@ -9,7 +9,7 @@ final class WidgetActivationStoreTests: XCTestCase {
         defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
         let first = ManualEpisodeActivationStore(suiteName: suite)
         let activation = try first.enqueue(
-            id: UUID(uuidString: "10000000-0000-4000-8000-000000000001")!,
+            id: XCTUnwrap(UUID(uuidString: "10000000-0000-4000-8000-000000000001")),
             requestedAt: Date(timeIntervalSince1970: 1)
         )
 
@@ -23,7 +23,7 @@ final class WidgetActivationStoreTests: XCTestCase {
         let suite = uniqueSuite()
         defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
         let store = ManualEpisodeActivationStore(suiteName: suite)
-        let id = UUID(uuidString: "10000000-0000-4000-8000-000000000002")!
+        let id = try XCTUnwrap(UUID(uuidString: "10000000-0000-4000-8000-000000000002"))
 
         try store.enqueue(id: id)
         try store.enqueue(id: id)
@@ -87,13 +87,13 @@ final class RecordingAndAudioBoundaryTests: XCTestCase {
     func testDurationValidationAcceptsPolicyBoundaryBeforeIntegerConversion() throws {
         XCTAssertEqual(
             try PersonalAudioDurationValidator.milliseconds(
-                from: CMTime(seconds: 180, preferredTimescale: 1_000)
+                from: CMTime(seconds: 180, preferredTimescale: 1000)
             ),
             180_000
         )
         XCTAssertEqual(
             try PersonalAudioDurationValidator.milliseconds(
-                from: CMTime(seconds: 0, preferredTimescale: 1_000)
+                from: CMTime(seconds: 0, preferredTimescale: 1000)
             ),
             0
         )
@@ -103,8 +103,8 @@ final class RecordingAndAudioBoundaryTests: XCTestCase {
         let invalidValues = [
             CMTime.invalid,
             CMTime.indefinite,
-            CMTime(seconds: -0.001, preferredTimescale: 1_000),
-            CMTime(seconds: 180.001, preferredTimescale: 1_000),
+            CMTime(seconds: -0.001, preferredTimescale: 1000),
+            CMTime(seconds: 180.001, preferredTimescale: 1000),
         ]
         for value in invalidValues {
             XCTAssertThrowsError(try PersonalAudioDurationValidator.milliseconds(from: value))
@@ -283,11 +283,25 @@ private actor RecordingReminderScheduler: ReminderNotificationScheduling {
         self.pending = pending
     }
 
-    func authorizationState() async -> ReminderAuthorizationState { .authorized }
-    func requestAuthorization() async throws -> Bool { true }
-    func pendingIdentifiers() async -> [String] { pending }
-    func remove(identifiers: [String]) async { removed.append(contentsOf: identifiers) }
-    func add(_ plan: SleepReminderPlan) async throws { added.append(plan) }
+    func authorizationState() async -> ReminderAuthorizationState {
+        .authorized
+    }
+
+    func requestAuthorization() async throws -> Bool {
+        true
+    }
+
+    func pendingIdentifiers() async -> [String] {
+        pending
+    }
+
+    func remove(identifiers: [String]) async {
+        removed.append(contentsOf: identifiers)
+    }
+
+    func add(_ plan: SleepReminderPlan) async throws {
+        added.append(plan)
+    }
 }
 
 final class ExportLifecycleRepairTests: XCTestCase {

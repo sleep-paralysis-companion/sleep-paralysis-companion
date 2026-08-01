@@ -108,14 +108,13 @@ actor SleepReminderService: AppCreatedAlarmRemoving {
     func requestPermissionAndSchedule(_ schedule: SleepSchedule) async throws -> ReminderAuthorizationState {
         guard schedule.isValid else { throw Phase1ActionError.invalidSchedule }
         let state = await authorizationState()
-        let authorized: Bool
-        switch state {
+        let authorized: Bool = switch state {
         case .notDetermined:
-            authorized = try await scheduler.requestAuthorization()
+            try await scheduler.requestAuthorization()
         case .authorized, .provisional:
-            authorized = true
+            true
         case .denied, .unavailable:
-            authorized = false
+            false
         }
         guard authorized else { return .denied }
         try await replaceRequests(schedule)

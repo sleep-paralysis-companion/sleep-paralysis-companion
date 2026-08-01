@@ -13,23 +13,25 @@ extension LocalDatabase {
         guard let profile = try profile(id: profileID), let settings = try settings(profileID: profileID) else {
             throw LocalDatabaseError.constraintViolation
         }
-        return LocalExportSnapshot(
+        return try LocalExportSnapshot(
             appVersion: appVersion,
             profileCreatedAt: profile.createdAt,
             policyVersions: policyVersions,
             settings: settings,
-            alarm: try pool.read { database in
+            alarm: pool.read { database in
                 try AlarmPreferenceRecord.fetchOne(
                     database,
                     sql: "SELECT * FROM alarm_preferences WHERE profileID = ? ORDER BY updatedAt DESC LIMIT 1",
                     arguments: [profileID.uuidString]
                 )?.domainValue()
             },
-            checkIns: try checkIns(profileID: profileID),
-            persona: try personaAnswerAggregate(profileID: profileID, authenticatedUserID: authenticatedUserID).map(PersonaExport.init),
+            checkIns: checkIns(profileID: profileID),
+            persona: personaAnswerAggregate(profileID: profileID, authenticatedUserID: authenticatedUserID)
+                .map(PersonaExport.init),
             scope: scope
         )
     }
+
     func questionnaireDraft(
         profileID: UUID,
         authenticatedUserID: UUID
@@ -109,7 +111,8 @@ extension LocalDatabase {
             )
             if let existing, existing.episodeFrequency == episodeFrequency.rawValue,
                existing.postEpisodeFeeling == postEpisodeFeeling.rawValue,
-               existing.calmingPersonContext == calmingPersonContext.rawValue {
+               existing.calmingPersonContext == calmingPersonContext.rawValue
+            {
                 _ = try QuestionnaireDraftRecord.deleteOne(database, key: draft.id)
                 completed = try existing.domainValue()
                 return
@@ -181,21 +184,33 @@ extension LocalDatabase {
             if let existing,
                existing.episodeFrequency == aggregate.episodeFrequency.rawValue,
                existing.postEpisodeFeeling == aggregate.postEpisodeFeeling.rawValue,
-               existing.calmingPersonContext == aggregate.calmingPersonContext.rawValue {
+               existing.calmingPersonContext == aggregate.calmingPersonContext.rawValue
+            {
                 return
             }
             let revised = PersonaAnswerAggregate(
                 id: aggregate.profileID, profileID: aggregate.profileID, accountUserID: aggregate.accountUserID,
                 episodeFrequency: aggregate.episodeFrequency, postEpisodeFeeling: aggregate.postEpisodeFeeling,
                 calmingPersonContext: aggregate.calmingPersonContext,
-                derivedPersona: PersonaRouting.derive(episodeFrequency: aggregate.episodeFrequency, postEpisodeFeeling: aggregate.postEpisodeFeeling, calmingPersonContext: aggregate.calmingPersonContext),
+                derivedPersona: PersonaRouting.derive(
+                    episodeFrequency: aggregate.episodeFrequency,
+                    postEpisodeFeeling: aggregate.postEpisodeFeeling,
+                    calmingPersonContext: aggregate.calmingPersonContext
+                ),
                 routingRuleVersion: PersonaRouting.initialRuleVersion, calculatedAt: aggregate.calculatedAt,
                 createdAt: existing.map { Date(timeIntervalSince1970: $0.createdAt) } ?? aggregate.createdAt,
                 updatedAt: aggregate.updatedAt, revision: (existing?.revision ?? 0) + 1
             )
             try PersonaAnswerAggregateRecord(revised).save(database)
             try supersedePendingPersonaUpserts(database, profileID: aggregate.profileID)
-            try personaUpsertOperation(database, profileID: aggregate.profileID, aggregate: revised, operationID: UUID(), idempotencyKey: UUID(), at: aggregate.updatedAt)
+            try personaUpsertOperation(
+                database,
+                profileID: aggregate.profileID,
+                aggregate: revised,
+                operationID: UUID(),
+                idempotencyKey: UUID(),
+                at: aggregate.updatedAt
+            )
         }
     }
 

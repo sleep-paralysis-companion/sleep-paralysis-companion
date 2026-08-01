@@ -41,7 +41,9 @@ struct HomeView: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppShape.cardRadius))
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("Opens the manual grounding screen. It does not automatically create a history entry.")
+                .accessibilityHint(
+                    "Opens the manual grounding screen. It does not automatically create a history entry."
+                )
                 .accessibilityIdentifier("home.manualEpisode")
 
                 NightCard {

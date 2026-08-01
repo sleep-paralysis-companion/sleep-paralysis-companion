@@ -11,10 +11,10 @@ struct AppTabShellView: View {
             )
         ) {
             HomeView(model: model)
-            .tabItem {
-                Label("tab.home", systemImage: "house")
-            }
-            .tag(AppTab.home)
+                .tabItem {
+                    Label("tab.home", systemImage: "house")
+                }
+                .tag(AppTab.home)
 
             HistoryView(model: model)
                 .tabItem {

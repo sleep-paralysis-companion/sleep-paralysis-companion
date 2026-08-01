@@ -13,11 +13,15 @@ nonisolated protocol OAuthSessionServicing: Sendable {
 actor UnavailableOAuthSessionService: OAuthSessionServicing {
     nonisolated let isConfigured = false
 
-    func restore() async throws -> AuthenticationSessionMaterial? { nil }
+    func restore() async throws -> AuthenticationSessionMaterial? {
+        nil
+    }
+
     func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
         _ = provider
         throw Phase1ActionError.configurationRequired
     }
+
     func signOut() async throws {}
     func deleteRemoteAccount() async throws {
         throw Phase1ActionError.configurationRequired
@@ -25,39 +29,39 @@ actor UnavailableOAuthSessionService: OAuthSessionServicing {
 }
 
 #if DEBUG
-actor UITestOAuthSessionService: OAuthSessionServicing {
-    nonisolated let isConfigured = true
-    private let userID: UUID
+    actor UITestOAuthSessionService: OAuthSessionServicing {
+        nonisolated let isConfigured = true
+        private let userID: UUID
 
-    init(userID: UUID) {
-        self.userID = userID
+        init(userID: UUID) {
+            self.userID = userID
+        }
+
+        func restore() async throws -> AuthenticationSessionMaterial? {
+            session()
+        }
+
+        func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
+            _ = provider
+            return session()
+        }
+
+        func signOut() async throws {}
+
+        func deleteRemoteAccount() async throws {
+            throw Phase1ActionError.configurationRequired
+        }
+
+        private func session() -> AuthenticationSessionMaterial {
+            AuthenticationSessionMaterial(
+                userID: userID,
+                provider: .apple,
+                accessToken: "ui-test-only",
+                refreshToken: "ui-test-only",
+                expiresAt: Date.distantFuture
+            )
+        }
     }
-
-    func restore() async throws -> AuthenticationSessionMaterial? {
-        session()
-    }
-
-    func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
-        _ = provider
-        return session()
-    }
-
-    func signOut() async throws {}
-
-    func deleteRemoteAccount() async throws {
-        throw Phase1ActionError.configurationRequired
-    }
-
-    private func session() -> AuthenticationSessionMaterial {
-        AuthenticationSessionMaterial(
-            userID: userID,
-            provider: .apple,
-            accessToken: "ui-test-only",
-            refreshToken: "ui-test-only",
-            expiresAt: Date.distantFuture
-        )
-    }
-}
 #endif
 
 actor SupabaseOAuthSessionService: OAuthSessionServicing {

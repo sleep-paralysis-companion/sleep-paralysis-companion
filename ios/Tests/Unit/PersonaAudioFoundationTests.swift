@@ -49,7 +49,7 @@ final class PersonaAudioFoundationTests: XCTestCase {
                 calculatedAt: Phase1BFixture.now
             )
         }
-        XCTAssertNil(try await database.personaAnswerAggregate(
+        await XCTAssertNil(try database.personaAnswerAggregate(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID
         ))
@@ -105,7 +105,7 @@ final class PersonaAudioFoundationTests: XCTestCase {
             idempotencyKey: Phase1BFixture.key
         )
         XCTAssertEqual(completed.derivedPersona, .frequentIntenseNoCalmingPerson)
-        XCTAssertNil(try await database.questionnaireDraft(
+        await XCTAssertNil(try database.questionnaireDraft(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID
         ))
@@ -230,7 +230,7 @@ final class PersonaAudioFoundationTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             authenticatedUserID: Phase1BFixture.userID
         )
-        XCTAssertNil(try await database.localRecoveryAudioDefault(
+        await XCTAssertNil(try database.localRecoveryAudioDefault(
             profileID: Phase1BFixture.profileID,
             authenticatedUserID: Phase1BFixture.userID
         ))
@@ -258,7 +258,10 @@ final class PersonaAudioFoundationTests: XCTestCase {
         XCTAssertThrowsError(try JSONDecoder().decode(PostEpisodeFeeling.self, from: Data("\"future_feeling\"".utf8)))
         XCTAssertThrowsError(try JSONDecoder().decode(CalmingPersonContext.self, from: Data("\"future_context\"".utf8)))
         XCTAssertThrowsError(try JSONDecoder().decode(DerivedPersona.self, from: Data("\"future_persona\"".utf8)))
-        XCTAssertThrowsError(try JSONDecoder().decode(PersonalAudioStorageFormat.self, from: Data("\"future_format\"".utf8)))
+        XCTAssertThrowsError(try JSONDecoder().decode(
+            PersonalAudioStorageFormat.self,
+            from: Data("\"future_format\"".utf8)
+        ))
         XCTAssertEqual(EpisodeFrequency.almostNightly.rawValue, "almost_nightly")
         XCTAssertEqual(PostEpisodeFeeling.tooFrightenedToCloseEyes.rawValue, "too_frightened_to_close_eyes")
         XCTAssertEqual(CalmingPersonContext.notAlwaysPresent.rawValue, "not_always_present")
@@ -274,7 +277,10 @@ final class PersonaAudioFoundationTests: XCTestCase {
             createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
         )
         try await database.saveQuestionnaireDraft(draft)
-        let resumed = try await database.questionnaireDraft(profileID: draft.profileID, authenticatedUserID: draft.accountUserID)
+        let resumed = try await database.questionnaireDraft(
+            profileID: draft.profileID,
+            authenticatedUserID: draft.accountUserID
+        )
         XCTAssertEqual(resumed?.id, draftID)
         let aggregate = try await database.completeQuestionnaireDraft(
             profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now,
@@ -300,7 +306,11 @@ final class PersonaAudioFoundationTests: XCTestCase {
             createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now
         )
         try await database.saveQuestionnaireDraft(draft)
-        _ = try await database.completeQuestionnaireDraft(profileID: draft.profileID, authenticatedUserID: draft.accountUserID, calculatedAt: Phase1BFixture.now)
+        _ = try await database.completeQuestionnaireDraft(
+            profileID: draft.profileID,
+            authenticatedUserID: draft.accountUserID,
+            calculatedAt: Phase1BFixture.now
+        )
         let changed = PersonaAnswerAggregate(
             id: Phase1BFixture.profileID, profileID: Phase1BFixture.profileID, accountUserID: Phase1BFixture.userID,
             episodeFrequency: .weekly, postEpisodeFeeling: .awakeScared, calmingPersonContext: .alone,
@@ -309,7 +319,10 @@ final class PersonaAudioFoundationTests: XCTestCase {
             updatedAt: Phase1BFixture.now.addingTimeInterval(1), revision: 99
         )
         try await database.replacePersonaAnswerAggregate(changed)
-        let revised = try await database.personaAnswerAggregate(profileID: draft.profileID, authenticatedUserID: draft.accountUserID)
+        let revised = try await database.personaAnswerAggregate(
+            profileID: draft.profileID,
+            authenticatedUserID: draft.accountUserID
+        )
         XCTAssertEqual(revised?.revision, 2)
         try await database.deletePersonaAnswerAggregate(
             profileID: draft.profileID, authenticatedUserID: draft.accountUserID,
@@ -320,7 +333,10 @@ final class PersonaAudioFoundationTests: XCTestCase {
         )
         let operations = try await database.operations(profileID: draft.profileID)
         XCTAssertEqual(operations.filter { $0.entityType == .tombstone && $0.operation == .delete }.count, 1)
-        let deleted = try await database.personaAnswerAggregate(profileID: draft.profileID, authenticatedUserID: draft.accountUserID)
+        let deleted = try await database.personaAnswerAggregate(
+            profileID: draft.profileID,
+            authenticatedUserID: draft.accountUserID
+        )
         XCTAssertNil(deleted)
     }
 
@@ -361,9 +377,13 @@ final class PersonaAudioFoundationTests: XCTestCase {
         let database = try await linkedDatabase()
         for _ in 0 ..< PersonalAudioPolicy.maximumClipCount {
             try await database.savePersonalAudioClipMetadata(
-                clip(id: UUID(), source: .recorded, format: .m4a,
-                     byteCount: PersonalAudioPolicy.maximumByteCount,
-                     duration: PersonalAudioPolicy.maximumDurationMilliseconds),
+                clip(
+                    id: UUID(),
+                    source: .recorded,
+                    format: .m4a,
+                    byteCount: PersonalAudioPolicy.maximumByteCount,
+                    duration: PersonalAudioPolicy.maximumDurationMilliseconds
+                ),
                 authenticatedUserID: Phase1BFixture.userID
             )
         }
@@ -471,12 +491,27 @@ final class PersonaAudioFoundationTests: XCTestCase {
             .personalClip(clipMetadata.id), profileID: complete.profileID,
             authenticatedUserID: complete.accountUserID, updatedAt: Phase1BFixture.now
         )
-        try await database.removeProfileFromDevice(profileID: complete.profileID, expectedUserID: complete.accountUserID)
+        try await database.removeProfileFromDevice(
+            profileID: complete.profileID,
+            expectedUserID: complete.accountUserID
+        )
         try await configureLinkedProfile(in: database)
-        let draft = try await database.questionnaireDraft(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
-        let persona = try await database.personaAnswerAggregate(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
-        let clips = try await database.personalAudioClipMetadata(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
-        let fallback = try await database.localRecoveryAudioDefault(profileID: complete.profileID, authenticatedUserID: complete.accountUserID)
+        let draft = try await database.questionnaireDraft(
+            profileID: complete.profileID,
+            authenticatedUserID: complete.accountUserID
+        )
+        let persona = try await database.personaAnswerAggregate(
+            profileID: complete.profileID,
+            authenticatedUserID: complete.accountUserID
+        )
+        let clips = try await database.personalAudioClipMetadata(
+            profileID: complete.profileID,
+            authenticatedUserID: complete.accountUserID
+        )
+        let fallback = try await database.localRecoveryAudioDefault(
+            profileID: complete.profileID,
+            authenticatedUserID: complete.accountUserID
+        )
         XCTAssertNil(draft)
         XCTAssertNil(persona)
         XCTAssertTrue(clips.isEmpty)

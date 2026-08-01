@@ -18,12 +18,31 @@ enum AppCompositionRoot {
             "SPC_DISABLE_AUTH_CONFIGURATION"
         ] == "1"
         #if DEBUG
-        if let value = ProcessInfo.processInfo.environment["SPC_UI_TEST_AUTHENTICATED_USER_ID"],
-           let userID = UUID(uuidString: value)
-        {
-            authentication = UITestOAuthSessionService(userID: userID)
-            remote = nil
-        } else {
+            if let value = ProcessInfo.processInfo.environment["SPC_UI_TEST_AUTHENTICATED_USER_ID"],
+               let userID = UUID(uuidString: value)
+            {
+                authentication = UITestOAuthSessionService(userID: userID)
+                remote = nil
+            } else {
+                if !disablesAuthentication,
+                   let configuration = SupabasePublicConfiguration.load(from: .main)
+                {
+                    let client = configuration.makeClient()
+                    authentication = SupabaseOAuthSessionService(
+                        client: client,
+                        sessionStore: keychain
+                    )
+                    remote = SupabaseRemoteMutationGateway(
+                        client: client,
+                        identifier: SystemIdentifierGenerator()
+                    )
+                } else {
+                    authentication = UnavailableOAuthSessionService()
+                    remote = nil
+                    logger.record(.configurationUnavailable, category: .configuration)
+                }
+            }
+        #else
             if !disablesAuthentication,
                let configuration = SupabasePublicConfiguration.load(from: .main)
             {
@@ -41,25 +60,6 @@ enum AppCompositionRoot {
                 remote = nil
                 logger.record(.configurationUnavailable, category: .configuration)
             }
-        }
-        #else
-        if !disablesAuthentication,
-           let configuration = SupabasePublicConfiguration.load(from: .main)
-        {
-            let client = configuration.makeClient()
-            authentication = SupabaseOAuthSessionService(
-                client: client,
-                sessionStore: keychain
-            )
-            remote = SupabaseRemoteMutationGateway(
-                client: client,
-                identifier: SystemIdentifierGenerator()
-            )
-        } else {
-            authentication = UnavailableOAuthSessionService()
-            remote = nil
-            logger.record(.configurationUnavailable, category: .configuration)
-        }
         #endif
 
         return AppModel(

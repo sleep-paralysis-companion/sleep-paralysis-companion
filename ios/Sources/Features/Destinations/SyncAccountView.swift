@@ -19,7 +19,9 @@ struct AccountView: View {
                     confirmAccountDeletion = true
                 }
             } footer: {
-                Text("Deleting the Supabase account is distinct from deleting local app data. Neither action cancels an Apple subscription.")
+                Text(
+                    "Deleting the Supabase account is distinct from deleting local app data. Neither action cancels an Apple subscription."
+                )
             }
         }
         .navigationTitle("Account")
@@ -36,7 +38,9 @@ struct AccountView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("A fresh provider sign-in is required. Local data is removed only after the server confirms account deletion.")
+            Text(
+                "A fresh provider sign-in is required. Local data is removed only after the server confirms account deletion."
+            )
         }
     }
 }

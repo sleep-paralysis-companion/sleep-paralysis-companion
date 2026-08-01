@@ -54,7 +54,9 @@ struct MorningCheckInView: View {
                 }
                 .disabled(!form.canSubmit || form.note.count > 500)
             } footer: {
-                Text("This information is descriptive. Paralux does not calculate a clinical score, diagnosis, or risk.")
+                Text(
+                    "This information is descriptive. Paralux does not calculate a clinical score, diagnosis, or risk."
+                )
             }
         }
         .navigationTitle(editing == nil ? "Morning check-in" : "Edit check-in")

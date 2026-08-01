@@ -33,11 +33,26 @@ struct FeatureIntroductionView: View {
     private var content: (title: String, detail: String, icon: String, card: String) {
         switch FeatureIntroductionPage(rawValue: page) ?? .gentleWake {
         case .gentleWake:
-            ("Wake up gently", "Set an ordinary sleep reminder and return to your schedule whenever you choose.", "alarm.fill", "Sleep schedule")
+            (
+                "Wake up gently",
+                "Set an ordinary sleep reminder and return to your schedule whenever you choose.",
+                "alarm.fill",
+                "Sleep schedule"
+            )
         case .postEpisodeSupport:
-            ("Support when you need it most", "Open calming visual grounding and your selected recovery audio after an episode.", "message.fill", "Post-episode support")
+            (
+                "Support when you need it most",
+                "Open calming visual grounding and your selected recovery audio after an episode.",
+                "message.fill",
+                "Post-episode support"
+            )
         case .familiarVoice:
-            ("A familiar voice guiding you to calmness", "Record or import a private comfort clip that remains on this device.", "mic.fill", "Comfort audio")
+            (
+                "A familiar voice guiding you to calmness",
+                "Record or import a private comfort clip that remains on this device.",
+                "mic.fill",
+                "Comfort audio"
+            )
         }
     }
 
@@ -104,9 +119,11 @@ struct AuthenticationView: View {
                     NightCard {
                         Label("Provider configuration required", systemImage: "wrench.and.screwdriver")
                             .font(.headline)
-                        Text("Add the project publishable key and configure Apple and Google provider credentials before sign-in can run.")
-                            .foregroundStyle(.white.opacity(0.72))
-                            .padding(.top, 6)
+                        Text(
+                            "Add the project publishable key and configure Apple and Google provider credentials before sign-in can run."
+                        )
+                        .foregroundStyle(.white.opacity(0.72))
+                        .padding(.top, 6)
                     }
                 }
 
@@ -141,7 +158,9 @@ struct AuthenticationView: View {
     }
 
     private var isProcessing: Bool {
-        if case .processing = state { return true }
+        if case .processing = state {
+            return true
+        }
         return false
     }
 }
@@ -169,23 +188,46 @@ struct QuestionnaireView: View {
                 VStack(spacing: AppSpacing.standard) {
                     switch question {
                     case .episodeFrequency:
-                        option("Rarely – a few times a year", selected: draft?.episodeFrequency == .rarely) { selectFrequency(.rarely) }
-                        option("Monthly – a few times a month", selected: draft?.episodeFrequency == .monthly) { selectFrequency(.monthly) }
+                        option("Rarely – a few times a year", selected: draft?.episodeFrequency == .rarely) {
+                            selectFrequency(.rarely)
+                        }
+                        option("Monthly – a few times a month", selected: draft?.episodeFrequency == .monthly) {
+                            selectFrequency(.monthly)
+                        }
                         option("Weekly", selected: draft?.episodeFrequency == .weekly) { selectFrequency(.weekly) }
-                        option("Almost Nightly", selected: draft?.episodeFrequency == .almostNightly) { selectFrequency(.almostNightly) }
+                        option("Almost Nightly", selected: draft?.episodeFrequency == .almostNightly) {
+                            selectFrequency(.almostNightly)
+                        }
                     case .postEpisodeFeeling:
-                        option("I shake it off and go back to sleep", selected: draft?.postEpisodeFeeling == .shakeItOff) { selectFeeling(.shakeItOff) }
-                        option("I lie awake scared for a while", selected: draft?.postEpisodeFeeling == .awakeScared) { selectFeeling(.awakeScared) }
-                        option("I’m too frightened to close my eyes again", selected: draft?.postEpisodeFeeling == .tooFrightenedToCloseEyes) { selectFeeling(.tooFrightenedToCloseEyes) }
+                        option(
+                            "I shake it off and go back to sleep",
+                            selected: draft?.postEpisodeFeeling == .shakeItOff
+                        ) { selectFeeling(.shakeItOff) }
+                        option("I lie awake scared for a while", selected: draft?.postEpisodeFeeling == .awakeScared) {
+                            selectFeeling(.awakeScared)
+                        }
+                        option(
+                            "I’m too frightened to close my eyes again",
+                            selected: draft?.postEpisodeFeeling == .tooFrightenedToCloseEyes
+                        ) { selectFeeling(.tooFrightenedToCloseEyes) }
                     case .calmingPersonContext:
-                        option("Yes – They sleep beside me", selected: draft?.calmingPersonContext == .besideMe) { selectContext(.besideMe) }
-                        option("Yes – But they are not always with me", selected: draft?.calmingPersonContext == .notAlwaysPresent) { selectContext(.notAlwaysPresent) }
-                        option("No – I go through this alone", selected: draft?.calmingPersonContext == .alone) { selectContext(.alone) }
+                        option("Yes – They sleep beside me", selected: draft?.calmingPersonContext == .besideMe) {
+                            selectContext(.besideMe)
+                        }
+                        option(
+                            "Yes – But they are not always with me",
+                            selected: draft?.calmingPersonContext == .notAlwaysPresent
+                        ) { selectContext(.notAlwaysPresent) }
+                        option("No – I go through this alone", selected: draft?.calmingPersonContext == .alone) {
+                            selectContext(.alone)
+                        }
                     }
                 }
-                Text("Your answer is saved privately before moving on. A setup is derived only after all three answers are valid.")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.6))
+                Text(
+                    "Your answer is saved privately before moving on. A setup is derived only after all three answers are valid."
+                )
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.6))
             }
             .padding(.top, 48)
         }
@@ -249,8 +291,10 @@ struct RecommendedSetupView: View {
                 Text("Here’s what we’ve set up for you.")
                     .font(AppTypographyRole.hero)
                     .accessibilityAddTraits(.isHeader)
-                Text("Based on your answers, this neutral setup keeps the next steps simple. You can change your answers later in Settings.")
-                    .foregroundStyle(.white.opacity(0.72))
+                Text(
+                    "Based on your answers, this neutral setup keeps the next steps simple. You can change your answers later in Settings."
+                )
+                .foregroundStyle(.white.opacity(0.72))
                 NightCard {
                     Label("Comfort audio setup", systemImage: "waveform")
                         .font(.headline)
@@ -260,8 +304,10 @@ struct RecommendedSetupView: View {
                 NightCard {
                     Label("Sleep reminder", systemImage: "moon.stars.fill")
                         .font(.headline)
-                    Text("Choose a sleep and wake time. Reminder permission is requested only if you turn reminders on.")
-                        .foregroundStyle(.white.opacity(0.72))
+                    Text(
+                        "Choose a sleep and wake time. Reminder permission is requested only if you turn reminders on."
+                    )
+                    .foregroundStyle(.white.opacity(0.72))
                 }
                 Text("This is not a diagnosis, score, risk result, or clinical profile.")
                     .font(.footnote)

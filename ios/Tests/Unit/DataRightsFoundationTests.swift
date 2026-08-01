@@ -149,12 +149,14 @@ final class DataRightsFoundationTests: XCTestCase {
             calculatedAt: Phase1BFixture.now, createdAt: Phase1BFixture.now, updatedAt: Phase1BFixture.now, revision: 1
         )
         let service = LocalExportService(
-            clock: FixedClock(value: Phase1BFixture.now), identifier: FixedIdentifierGenerator(value: Phase1BFixture.key), protection: RecordingProtection()
+            clock: FixedClock(value: Phase1BFixture.now),
+            identifier: FixedIdentifierGenerator(value: Phase1BFixture.key), protection: RecordingProtection()
         )
         let artifact = try service.create(
             snapshot: LocalExportSnapshot(
                 appVersion: "0.1.0", profileCreatedAt: Phase1BFixture.now, policyVersions: [:],
-                settings: Phase1BFixture.settings(), alarm: nil, checkIns: [], persona: PersonaExport(aggregate), scope: .localOnly
+                settings: Phase1BFixture.settings(), alarm: nil, checkIns: [], persona: PersonaExport(aggregate),
+                scope: .localOnly
             ),
             profileID: Phase1BFixture.profileID,
             in: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

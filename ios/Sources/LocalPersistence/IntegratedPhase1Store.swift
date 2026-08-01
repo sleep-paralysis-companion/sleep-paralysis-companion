@@ -322,7 +322,7 @@ actor IntegratedPhase1Store {
             random: SystemUnitIntervalRandom()
         )
         for _ in 0 ..< 50 {
-            guard (try? await engine.synchronizeNext(
+            guard await (try? engine.synchronizeNext(
                 profileID: profileID,
                 authenticatedUserID: userID
             )) == true else {
@@ -332,7 +332,9 @@ actor IntegratedPhase1Store {
     }
 
     private func databaseInstance() throws -> LocalDatabase {
-        if let database { return database }
+        if let database {
+            return database
+        }
         let url = try location.databaseURL()
         let opened = try LocalDatabase(path: url.path)
         try protection.applyProtection(to: url, kind: .localDatabase)

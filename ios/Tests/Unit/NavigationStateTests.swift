@@ -17,14 +17,14 @@ final class NavigationStateTests: XCTestCase {
         ]
 
         for (value, expected) in routes {
-            XCTAssertEqual(resolver.route(for: try XCTUnwrap(URL(string: value))), expected)
+            XCTAssertEqual(try resolver.route(for: XCTUnwrap(URL(string: value))), expected)
         }
     }
 
     func testUnknownOrNonAppDeepLinksAreRejected() throws {
         let resolver = DeepLinkResolver()
-        XCTAssertNil(resolver.route(for: try XCTUnwrap(URL(string: "spc://unknown"))))
-        XCTAssertNil(resolver.route(for: try XCTUnwrap(URL(string: "https://example.invalid"))))
+        XCTAssertNil(try resolver.route(for: XCTUnwrap(URL(string: "spc://unknown"))))
+        XCTAssertNil(try resolver.route(for: XCTUnwrap(URL(string: "https://example.invalid"))))
     }
 
     func testRestorationRoundTripRequiresMatchingProfileAndCurrentVersion() throws {

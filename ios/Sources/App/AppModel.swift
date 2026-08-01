@@ -88,7 +88,9 @@ final class AppModel {
         checkIns.first { $0.id == selectedCheckInID }
     }
 
-    var isAuthenticationConfigured: Bool { authentication.isConfigured }
+    var isAuthenticationConfigured: Bool {
+        authentication.isConfigured
+    }
 
     func activate(restoredState: String = "") {
         activationTask?.cancel()
@@ -268,13 +270,12 @@ final class AppModel {
         Task { @MainActor [weak self] in
             guard let self else { return }
             let permission = audioController.microphonePermission()
-            let allowed: Bool
-            if permission == .granted {
-                allowed = true
+            let allowed: Bool = if permission == .granted {
+                true
             } else if permission == .undetermined {
-                allowed = await audioController.requestMicrophonePermission()
+                await audioController.requestMicrophonePermission()
             } else {
-                allowed = false
+                false
             }
             guard allowed else {
                 audioController.deactivateRecordingSession()
@@ -490,7 +491,9 @@ final class AppModel {
                 try await store.saveCheckIn(value, userID: userID)
                 checkIns.removeAll { $0.id == value.id }
                 checkIns.insert(value, at: 0)
-                if path.last == .morningCheckIn { path.removeLast() }
+                if path.last == .morningCheckIn {
+                    path.removeLast()
+                }
             } catch {
                 feedbackMessage = "The check-in could not be saved. Your draft remains on screen."
             }
@@ -648,13 +651,22 @@ final class AppModel {
         }
     }
 
-    func setPath(_ value: [AppRoute]) { path = value }
+    func setPath(_ value: [AppRoute]) {
+        path = value
+    }
+
     func selectTab(_ value: AppTab) {
         selectedTab = value
         path = []
     }
-    func dismissSheet() { presentedSheet = nil }
-    func clearFeedback() { feedbackMessage = nil }
+
+    func dismissSheet() {
+        presentedSheet = nil
+    }
+
+    func clearFeedback() {
+        feedbackMessage = nil
+    }
 
     private func resume(
         session: AuthenticationSessionMaterial,

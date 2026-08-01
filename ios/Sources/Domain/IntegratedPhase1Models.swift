@@ -5,7 +5,9 @@ nonisolated enum FeatureIntroductionPage: Int, CaseIterable, Identifiable, Senda
     case postEpisodeSupport
     case familiarVoice
 
-    var id: Int { rawValue }
+    var id: Int {
+        rawValue
+    }
 }
 
 nonisolated enum AuthenticationPresentationState: Equatable, Sendable {
@@ -81,7 +83,9 @@ nonisolated struct ProvidedRecoveryAudio: Identifiable, Equatable, Sendable {
         ),
     ]
 
-    var isBundled: Bool { bundledResourceName != nil }
+    var isBundled: Bool {
+        bundledResourceName != nil
+    }
 }
 
 nonisolated enum GroundingPlaybackState: Equatable, Sendable {
@@ -100,7 +104,9 @@ nonisolated struct MorningCheckInForm: Equatable, Sendable {
 
     var canSubmit: Bool {
         guard let occurrence else { return false }
-        if occurrence == .no { return true }
+        if occurrence == .no {
+            return true
+        }
         return presentState != nil
     }
 }
