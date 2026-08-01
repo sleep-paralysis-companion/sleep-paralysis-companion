@@ -55,10 +55,11 @@ final class PersonaAudioFoundationTests: XCTestCase {
                 calculatedAt: Phase1BFixture.now
             )
         }
-        await XCTAssertNil(try database.personaAnswerAggregate(
+        let aggregate = try await database.personaAnswerAggregate(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID
-        ))
+        )
+        XCTAssertNil(aggregate)
     }
 
     func testEveryIncompleteQuestionnaireShapeProducesNoPersonaOrOperation() async throws {
@@ -122,10 +123,11 @@ final class PersonaAudioFoundationTests: XCTestCase {
             idempotencyKey: Phase1BFixture.key
         )
         XCTAssertEqual(completed.derivedPersona, .frequentIntenseNoCalmingPerson)
-        await XCTAssertNil(try database.questionnaireDraft(
+        let savedDraft = try await database.questionnaireDraft(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID
-        ))
+        )
+        XCTAssertNil(savedDraft)
         let repeated = try await database.completeQuestionnaireDraft(
             profileID: draft.profileID,
             authenticatedUserID: draft.accountUserID,
@@ -247,10 +249,11 @@ final class PersonaAudioFoundationTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             authenticatedUserID: Phase1BFixture.userID
         )
-        await XCTAssertNil(try database.localRecoveryAudioDefault(
+        let recoveryDefault = try await database.localRecoveryAudioDefault(
             profileID: Phase1BFixture.profileID,
             authenticatedUserID: Phase1BFixture.userID
-        ))
+        )
+        XCTAssertNil(recoveryDefault)
         let invalid = PersonalAudioClipMetadata(
             id: Phase1BFixture.uuid("77777777-7777-4777-8777-777777777777"),
             profileID: Phase1BFixture.profileID,

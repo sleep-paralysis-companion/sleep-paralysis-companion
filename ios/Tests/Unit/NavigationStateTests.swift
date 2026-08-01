@@ -66,7 +66,7 @@ final class NavigationStateTests: XCTestCase {
         XCTAssertTrue(
             MorningCheckInForm(
                 occurrence: .yes,
-                presentState: .calm,
+                presentState: .fineNow,
                 perceivedIntensity: .moderate
             ).canSubmit
         )
