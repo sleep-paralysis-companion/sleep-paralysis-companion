@@ -193,11 +193,11 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.navigationBars["Grounding"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.tabBars.buttons["History"].tap()
-        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No episode reported"].waitForExistence(timeout: 8))
         capture("15-history", app: app)
 
         app.tabBars.buttons["Settings"].tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Questionnaire answers"].waitForExistence(timeout: 8))
         capture("16-settings", app: app)
     }
 
