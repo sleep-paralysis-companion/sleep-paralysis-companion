@@ -1,0 +1,47 @@
+name: SwiftFormat Patch
+
+on:
+  push:
+    branches:
+      - codex/phase-1-integrated-app
+
+permissions:
+  contents: read
+
+jobs:
+  format-patch:
+    name: Generate the pinned SwiftFormat patch
+    runs-on: macos-26
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the exact candidate
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Apply the pinned formatter without committing
+        run: |
+          source scripts/versions.env
+          [[ "$(swiftformat --version)" == "$SWIFTFORMAT_VERSION" ]]
+          swiftformat ios/Sources ios/Tests --config .swiftformat
+          git diff --check
+          git diff --binary -- ios/Sources ios/Tests > swiftformat.patch
+          test -s swiftformat.patch
+          {
+            echo "commit=$(git rev-parse HEAD)"
+            echo "swiftformat=$(swiftformat --version)"
+            echo "configuration=.swiftformat"
+          } > swiftformat-metadata.txt
+          git diff --stat -- ios/Sources ios/Tests
+
+      - name: Upload the reviewable patch
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftformat-patch-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            swiftformat.patch
+            swiftformat-metadata.txt

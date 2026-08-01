@@ -711,9 +711,9 @@ select throws_ok(
       revision = 3
   where id = '50000000-0000-4000-8000-000000000004'
   $test$,
-  '23514',
-  'deleted check-in cannot be resurrected',
-  'direct update cannot clear the deletion marker'
+  '42501',
+  null,
+  'direct update cannot bypass the RPC resurrection boundary'
 );
 
 select ok(
