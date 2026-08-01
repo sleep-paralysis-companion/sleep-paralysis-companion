@@ -63,14 +63,14 @@ final class ApplicationLaunchUITests: XCTestCase {
         let userID = UUID().uuidString
         var app = authenticatedApplication(namespace: namespace, userID: userID)
         app.launch()
-        XCTAssertTrue(element("questionnaire.episodeFrequency", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8))
         app.buttons["Weekly"].tap()
-        XCTAssertTrue(element("questionnaire.postEpisodeFeeling", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["How do you feel after the episode?"].waitForExistence(timeout: 8))
         app.terminate()
 
         app = authenticatedApplication(namespace: namespace, userID: userID)
         app.launch()
-        XCTAssertTrue(element("questionnaire.postEpisodeFeeling", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["How do you feel after the episode?"].waitForExistence(timeout: 8))
     }
 
     @MainActor
@@ -78,11 +78,11 @@ final class ApplicationLaunchUITests: XCTestCase {
         let app = authenticatedApplication()
         app.launch()
 
-        XCTAssertTrue(element("questionnaire.episodeFrequency", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8))
         app.buttons["Weekly"].tap()
-        XCTAssertTrue(element("questionnaire.postEpisodeFeeling", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["How do you feel after the episode?"].waitForExistence(timeout: 8))
         app.buttons["I lie awake scared for a while"].tap()
-        XCTAssertTrue(element("questionnaire.calmingPersonContext", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Do you have someone whose voice calms you down?"].waitForExistence(timeout: 8))
         app.buttons["No â€“ I go through this alone"].tap()
 
         XCTAssertTrue(app.buttons["Continue to comfort audio"].waitForExistence(timeout: 8))
@@ -95,7 +95,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sleep schedule"].waitForExistence(timeout: 8))
         app.switches["Enable sleep reminders"].tap()
         app.buttons["Save schedule and open Home"].tap()
-        XCTAssertTrue(element("app.tab.shell", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
 
         app.buttons["home.manualEpisode"].tap()
         XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
@@ -132,15 +132,15 @@ final class ApplicationLaunchUITests: XCTestCase {
         app = authenticatedApplication()
         app.launch()
 
-        XCTAssertTrue(element("questionnaire.episodeFrequency", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8))
         capture("06-questionnaire-frequency", app: app)
         app.buttons["Weekly"].tap()
 
-        XCTAssertTrue(element("questionnaire.postEpisodeFeeling", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["How do you feel after the episode?"].waitForExistence(timeout: 8))
         capture("07-questionnaire-feeling", app: app)
         app.buttons["I lie awake scared for a while"].tap()
 
-        XCTAssertTrue(element("questionnaire.calmingPersonContext", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Do you have someone whose voice calms you down?"].waitForExistence(timeout: 8))
         capture("08-questionnaire-comfort-context", app: app)
         let aloneChoice = app.buttons.matching(
             NSPredicate(format: "label CONTAINS %@", "go through this alone")
@@ -166,7 +166,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         makeHittable(saveSchedule, in: app)
         saveSchedule.tap()
 
-        XCTAssertTrue(element("app.tab.shell", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         capture("12-home", app: app)
         app.buttons["home.manualEpisode"].tap()
 
@@ -181,7 +181,7 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
         app.navigationBars["Grounding"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(element("app.tab.shell", in: app).waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.tabBars.buttons["History"].tap()
         XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
         capture("15-history", app: app)
@@ -251,11 +251,6 @@ final class ApplicationLaunchUITests: XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(element.isHittable)
-    }
-
-    @MainActor
-    private func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any)[identifier]
     }
 
     @MainActor
