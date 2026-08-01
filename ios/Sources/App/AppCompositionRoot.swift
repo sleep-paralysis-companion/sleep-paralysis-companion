@@ -23,8 +23,26 @@ enum AppCompositionRoot {
         {
             authentication = UITestOAuthSessionService(userID: userID)
             remote = nil
-        } else
-        #endif
+        } else {
+            if !disablesAuthentication,
+               let configuration = SupabasePublicConfiguration.load(from: .main)
+            {
+                let client = configuration.makeClient()
+                authentication = SupabaseOAuthSessionService(
+                    client: client,
+                    sessionStore: keychain
+                )
+                remote = SupabaseRemoteMutationGateway(
+                    client: client,
+                    identifier: SystemIdentifierGenerator()
+                )
+            } else {
+                authentication = UnavailableOAuthSessionService()
+                remote = nil
+                logger.record(.configurationUnavailable, category: .configuration)
+            }
+        }
+        #else
         if !disablesAuthentication,
            let configuration = SupabasePublicConfiguration.load(from: .main)
         {
@@ -42,6 +60,7 @@ enum AppCompositionRoot {
             remote = nil
             logger.record(.configurationUnavailable, category: .configuration)
         }
+        #endif
 
         return AppModel(
             environment: environment,
