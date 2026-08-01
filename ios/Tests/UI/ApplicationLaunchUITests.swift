@@ -63,7 +63,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         let userID = UUID().uuidString
         var app = authenticatedApplication(namespace: namespace, userID: userID)
         app.launch()
-        XCTAssertTrue(app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
         app.buttons["Weekly"].tap()
         XCTAssertTrue(app.staticTexts["How do you feel after the episode?"].waitForExistence(timeout: 8))
         app.terminate()
@@ -78,7 +81,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         let app = authenticatedApplication()
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8),
+            app.debugDescription
+        )
         app.buttons["Weekly"].tap()
         XCTAssertTrue(app.staticTexts["How do you feel after the episode?"].waitForExistence(timeout: 8))
         app.buttons["I lie awake scared for a while"].tap()
