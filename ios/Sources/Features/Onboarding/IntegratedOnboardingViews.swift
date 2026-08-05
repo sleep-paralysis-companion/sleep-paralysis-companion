@@ -156,6 +156,7 @@ struct SplashView: View {
                 Text("Understand your\nnights. Own your\nsleep.")
                     .font(.title.weight(.bold))
                     .multilineTextAlignment(.center)
+                    .accessibilityLabel("Understand your nights. Own your sleep.")
                     .accessibilityAddTraits(.isHeader)
                     .padding(.top, 28)
                 Text("A few quick questions help us build your personal sleep paralysis setup.")

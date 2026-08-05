@@ -13,16 +13,17 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["splash.continue"].waitForExistence(timeout: 8))
         app.buttons["splash.continue"].tap()
 
-        for _ in 0 ..< 3 {
-            let continueButton = app.buttons["Continue"]
-            let signInButton = app.buttons["Continue to sign in"]
-            if signInButton.waitForExistence(timeout: 1) {
-                signInButton.tap()
-                break
-            }
-            XCTAssertTrue(continueButton.waitForExistence(timeout: 5))
-            continueButton.tap()
-        }
+        let buildProfileButton = app.buttons["Build my sleep profile"]
+        XCTAssertTrue(buildProfileButton.waitForExistence(timeout: 5))
+        buildProfileButton.tap()
+
+        let continueButton = app.buttons["Continue"]
+        XCTAssertTrue(continueButton.waitForExistence(timeout: 5))
+        continueButton.tap()
+
+        let signInButton = app.buttons["Continue to sign in"]
+        XCTAssertTrue(signInButton.waitForExistence(timeout: 5))
+        signInButton.tap()
 
         XCTAssertTrue(app.buttons["authentication.apple"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["authentication.google"].exists)
@@ -52,9 +53,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         makeHittable(splashAction, in: app)
         splashAction.tap()
 
-        let continueAction = app.buttons["Continue"]
-        XCTAssertTrue(continueAction.waitForExistence(timeout: 5))
-        makeHittable(continueAction, in: app)
+        let buildProfileAction = app.buttons["Build my sleep profile"]
+        XCTAssertTrue(buildProfileAction.waitForExistence(timeout: 5))
+        makeHittable(buildProfileAction, in: app)
     }
 
     @MainActor
@@ -153,9 +154,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         capture("01-splash", app: app)
         splashAction.tap()
 
-        XCTAssertTrue(app.staticTexts["Wake up gently"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Wake up gently!"].waitForExistence(timeout: 5))
         capture("02-introduction-schedule", app: app)
-        app.buttons["Continue"].tap()
+        app.buttons["Build my sleep profile"].tap()
 
         XCTAssertTrue(app.staticTexts["Support when you need it most"].waitForExistence(timeout: 5))
         capture("03-introduction-grounding", app: app)
@@ -255,7 +256,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         for arguments in configurations {
             let app = freshApplication(arguments: arguments)
             app.launch()
-            let heading = app.staticTexts["Understand your nights.\nOwn your sleep."]
+            let heading = app.staticTexts["Understand your nights. Own your sleep."]
             let action = app.buttons["splash.continue"]
             XCTAssertTrue(action.waitForExistence(timeout: 8))
             XCTAssertTrue(heading.exists)
