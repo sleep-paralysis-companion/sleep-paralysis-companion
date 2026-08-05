@@ -77,6 +77,36 @@ final class ApplicationLaunchUITests: XCTestCase {
     }
 
     @MainActor
+    func testQuestionnaireStructureAndRecommendedSetupActionRemainReachable() {
+        let app = authenticatedApplication()
+        app.launch()
+
+        let q1Rows = [
+            app.buttons["Almost Nightly"],
+            app.buttons["Weekly"],
+            app.buttons["Monthly – a few times a month"],
+            app.buttons["Rarely – a few times a year"],
+        ]
+        for row in q1Rows {
+            XCTAssertTrue(row.waitForExistence(timeout: 8))
+        }
+        for (upper, lower) in zip(q1Rows, q1Rows.dropFirst()) {
+            XCTAssertLessThan(upper.frame.maxY, lower.frame.minY)
+        }
+
+        q1Rows[1].tap()
+        app.buttons["I lie awake scared for a while"].tap()
+        app.buttons["No – I go through this alone"].tap()
+
+        let resultHeading = app.staticTexts["Your sleep profile is ready"]
+        let resultAction = app.buttons["Continue to comfort audio"]
+        XCTAssertTrue(resultHeading.waitForExistence(timeout: 8))
+        XCTAssertTrue(resultAction.exists)
+        XCTAssertLessThan(resultHeading.frame.minY, resultAction.frame.minY)
+        makeHittable(resultAction, in: app)
+    }
+
+    @MainActor
     func testAuthenticatedQ1ThroughQ3AudioScheduleHomeGroundingAndCheckInJourney() {
         let app = authenticatedApplication()
         app.launch()
