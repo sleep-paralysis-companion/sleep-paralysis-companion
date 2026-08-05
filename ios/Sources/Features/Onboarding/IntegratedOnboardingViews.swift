@@ -254,8 +254,8 @@ struct FeatureIntroductionView: View {
                         ? "Set an ordinary reminder to support a consistent sleep routine."
                         : content.detail
                 )
-                    .font(.callout)
-                    .foregroundStyle(OnboardingStyle.secondaryText)
+                .font(.callout)
+                .foregroundStyle(OnboardingStyle.secondaryText)
             }
             Spacer(minLength: 0)
         }
@@ -300,7 +300,7 @@ struct AuthenticationView: View {
                             "Add the project publishable key and Apple and Google provider credentials " +
                                 "before sign-in can run."
                         )
-                            .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(.white.opacity(0.72))
                     }
                 }
                 Button { signIn(.apple) } label: { Label("Sign in with Apple", systemImage: "apple.logo") }
@@ -311,7 +311,9 @@ struct AuthenticationView: View {
                     .buttonStyle(AppSecondaryButtonStyle())
                     .disabled(!isConfigured || isProcessing)
                     .accessibilityIdentifier("authentication.google")
-                if isProcessing { ProgressView("Opening provider") }
+                if isProcessing {
+                    ProgressView("Opening provider")
+                }
             }
             .frame(minHeight: 720)
         }
@@ -324,7 +326,9 @@ struct AuthenticationView: View {
     }
 
     private var isProcessing: Bool {
-        if case .processing = state { return true }
+        if case .processing = state {
+            return true
+        }
         return false
     }
 }
@@ -423,7 +427,11 @@ struct QuestionnaireView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(red: 0.18, green: 0.11, blue: 0.45))
                     .frame(width: 44, height: 44)
-                    .overlay { if selected { Image(systemName: "checkmark").fontWeight(.bold) } }
+                    .overlay {
+                        if selected {
+                            Image(systemName: "checkmark").fontWeight(.bold)
+                        }
+                    }
                     .accessibilityHidden(true)
                 Text(title)
                     .font(.body.weight(.semibold))
@@ -461,7 +469,9 @@ private struct QuestionnaireTopProgress: View {
                     .strokeBorder(Color(red: 0.59, green: 0.49, blue: 1), lineWidth: 1)
                     .background(Circle().fill(index == current ? Color(red: 0.67, green: 0.58, blue: 1) : .clear))
                     .frame(width: 28, height: 28)
-                if index < 2 { Spacer() }
+                if index < 2 {
+                    Spacer()
+                }
             }
         }
         .accessibilityElement(children: .ignore)
