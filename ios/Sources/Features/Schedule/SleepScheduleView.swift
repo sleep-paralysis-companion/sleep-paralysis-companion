@@ -13,7 +13,10 @@ struct SleepScheduleView: View {
                 Text("Sleep schedule")
                     .font(AppTypographyRole.screenTitle)
                     .accessibilityAddTraits(.isHeader)
-                Text("Create an ordinary sleep reminder. Sleep Paralysis Companion does not claim to wake you like a system alarm.")
+                Text(
+                    "Create an ordinary sleep reminder. Sleep Paralysis Companion does not claim to wake you " +
+                        "like a system alarm."
+                )
                     .foregroundStyle(.white.opacity(0.72))
 
                 NightCard {

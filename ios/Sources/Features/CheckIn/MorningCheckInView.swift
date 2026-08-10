@@ -55,7 +55,8 @@ struct MorningCheckInView: View {
                 .disabled(!form.canSubmit || form.note.count > 500)
             } footer: {
                 Text(
-                    "This information is descriptive. Sleep Paralysis Companion does not calculate a clinical score, diagnosis, or risk."
+                    "This information is descriptive. Sleep Paralysis Companion does not calculate a clinical " +
+                        "score, diagnosis, or risk."
                 )
             }
         }

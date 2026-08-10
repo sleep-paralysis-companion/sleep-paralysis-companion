@@ -5,7 +5,8 @@ struct HelpLegalView: View {
         List {
             Section("Product boundary") {
                 Text(
-                    "Sleep Paralysis Companion is a nonmedical wellness companion. It does not diagnose, detect, monitor, predict, " +
+                    "Sleep Paralysis Companion is a nonmedical wellness companion. " +
+                        "It does not diagnose, detect, monitor, predict, " +
                         "prevent, or treat sleep paralysis and is not an emergency service."
                 )
                 Text(

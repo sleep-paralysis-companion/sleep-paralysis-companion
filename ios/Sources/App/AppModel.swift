@@ -235,7 +235,9 @@ final class AppModel {
                 launchDestination = .home
                 resetNavigation()
             } catch {
-                feedbackMessage = "The schedule could not be saved. You can continue using Sleep Paralysis Companion without reminders."
+                feedbackMessage =
+                    "The schedule could not be saved. You can continue using Sleep Paralysis Companion " +
+                    "without reminders."
             }
         }
     }
@@ -332,7 +334,10 @@ final class AppModel {
             isRecording: isRecording,
             sceneIsActive: phase == .active
         ) else { return }
-        cancelRecording(reason: "Recording stopped when Sleep Paralysis Companion left the foreground. No partial recording was kept.")
+        cancelRecording(
+            reason: "Recording stopped when Sleep Paralysis Companion left the foreground. " +
+                "No partial recording was kept."
+        )
     }
 
     private func cancelRecording(reason: String?) {
