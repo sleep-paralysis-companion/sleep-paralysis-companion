@@ -1,4 +1,4 @@
-# Paralux Phase 1 integrated-app evidence
+# Sleep Paralysis Companion Phase 1 integrated-app evidence
 
 Evidence captured on 2026-07-31 (Asia/Calcutta). Starting commit:
 `5de712b1b901f230400e52a70e33a6f556953ecd`. Branch:
@@ -145,7 +145,7 @@ Principal focused-repair files:
 - No account-deletion Edge Function is deployed in the authorized project, so
   remote account deletion cannot complete until that reviewed server boundary
   is deployed separately.
-- Approved production Paralux-provided audio assets and rights/provenance
+- Approved production Sleep Paralysis Companion-provided audio assets and rights/provenance
   records are absent. The app exposes the catalog boundary but keeps those
   choices unavailable instead of fabricating audio.
 - Figma `get_design_context` was attempted read-only for node `299:358`; the

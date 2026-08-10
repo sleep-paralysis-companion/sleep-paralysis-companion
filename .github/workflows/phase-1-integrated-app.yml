@@ -62,11 +62,11 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Paralux integrated iPhone candidate"
+            echo "## Sleep Paralysis Companion integrated iPhone candidate"
             echo
             echo "- Commit: \`$(git rev-parse HEAD)\`"
             echo "- Full build, unit tests, and UI tests run before visual capture."
-            if [[ -s ios/TestResults/VisualJourney/paralux-visual-journey.mp4 ]]; then
+            if [[ -s ios/TestResults/VisualJourney/sleep-paralysis-companion-visual-journey.mp4 ]]; then
               echo "- Visual journey: captured as a downloadable MP4 artifact."
               echo "- Named checkpoints: exported from VisualJourney.xcresult."
             else

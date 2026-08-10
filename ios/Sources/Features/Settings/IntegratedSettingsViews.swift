@@ -74,7 +74,7 @@ struct AccessibilitySettingsView: View {
             }
             Section {
                 Text(
-                    "Paralux follows iOS Dynamic Type, VoiceOver labels, Reduce Motion, contrast, " +
+                    "Sleep Paralysis Companion follows iOS Dynamic Type, VoiceOver labels, Reduce Motion, contrast, " +
                         "and safe-area behavior. Change these settings in the iOS Settings app."
                 )
             }

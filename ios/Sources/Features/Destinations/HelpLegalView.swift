@@ -5,7 +5,7 @@ struct HelpLegalView: View {
         List {
             Section("Product boundary") {
                 Text(
-                    "Paralux is a nonmedical wellness companion. It does not diagnose, detect, monitor, predict, " +
+                    "Sleep Paralysis Companion is a nonmedical wellness companion. It does not diagnose, detect, monitor, predict, " +
                         "prevent, or treat sleep paralysis and is not an emergency service."
                 )
                 Text(
@@ -13,7 +13,7 @@ struct HelpLegalView: View {
                         "The app never automatically infers an episode."
                 )
             }
-            Section("Using Paralux") {
+            Section("Using Sleep Paralysis Companion") {
                 Label(
                     "Choose “I just had an episode” for manual visual grounding.",
                     systemImage: "moon.stars"
@@ -30,7 +30,7 @@ struct HelpLegalView: View {
             Section("If you need urgent help") {
                 Text(
                     "Use the emergency and support resources available in your location. " +
-                        "Paralux does not contact emergency services."
+                        "Sleep Paralysis Companion does not contact emergency services."
                 )
             }
         }

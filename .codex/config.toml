@@ -2,9 +2,6 @@
 # Codex loads this file only while working inside this trusted repository.
 
 [mcp_servers.supabase]
-enabled = false
-
-[mcp_servers.supabase_spc]
 url = "https://mcp.supabase.com/mcp?project_ref=nfzvlvukbeapcnlmyecf&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
 auth = "oauth"
 enabled = true

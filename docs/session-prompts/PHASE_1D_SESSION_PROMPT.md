@@ -2,7 +2,7 @@
 
 > **Amended 29 July 2026.** Any prior exclusion of personal recording/import or microphone permission is superseded by [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). Hidden/ambient/overnight recording and server-side personal audio remain prohibited; physical-device feasibility remains required.
 
-You are working in the SP / Paralux repository. This session is exclusively for **Phase 1D: Sleep schedule and pre-sleep audio**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
+You are working in the Sleep Paralysis Companion repository. This session is exclusively for **Phase 1D: Sleep schedule and pre-sleep audio**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate
 

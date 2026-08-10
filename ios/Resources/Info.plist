@@ -46,7 +46,7 @@
 		</dict>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Paralux uses the microphone only when you tap Record to create a private comfort-audio clip stored on this device.</string>
+	<string>Sleep Paralysis Companion uses the microphone only when you tap Record to create a private comfort-audio clip stored on this device.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

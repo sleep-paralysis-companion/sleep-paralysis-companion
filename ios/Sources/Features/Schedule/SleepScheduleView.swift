@@ -13,7 +13,7 @@ struct SleepScheduleView: View {
                 Text("Sleep schedule")
                     .font(AppTypographyRole.screenTitle)
                     .accessibilityAddTraits(.isHeader)
-                Text("Create an ordinary sleep reminder. Paralux does not claim to wake you like a system alarm.")
+                Text("Create an ordinary sleep reminder. Sleep Paralysis Companion does not claim to wake you like a system alarm.")
                     .foregroundStyle(.white.opacity(0.72))
 
                 NightCard {
@@ -148,7 +148,7 @@ struct SleepScheduleView: View {
     private var permissionDetail: String {
         switch model.reminderAuthorization {
         case .notDetermined: "The system prompt appears only if reminders are enabled."
-        case .authorized, .provisional: "Paralux can schedule the ordinary reminders you selected."
+        case .authorized, .provisional: "Sleep Paralysis Companion can schedule the ordinary reminders you selected."
         case .denied: "Open iOS Settings if you want reminders. App access is not blocked."
         case .unavailable: "Use the in-app schedule without notifications."
         }

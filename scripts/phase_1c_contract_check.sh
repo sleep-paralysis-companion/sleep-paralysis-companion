@@ -12,7 +12,7 @@ for required in \
   "$SOURCE_ROOT/Features/Grounding/GroundingView.swift" \
   "$SOURCE_ROOT/Features/CheckIn/MorningCheckInView.swift" \
   "$SOURCE_ROOT/SleepSchedule/SleepReminderService.swift" \
-  "$REPOSITORY_ROOT/ios/Widget/ParaluxManualEpisodeWidget.swift"
+  "$REPOSITORY_ROOT/ios/Widget/SleepParalysisCompanionManualEpisodeWidget.swift"
 do
   [[ -f "$required" ]] || {
     echo "Missing integrated Phase 1 source: $required" >&2

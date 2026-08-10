@@ -2,36 +2,36 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-struct ParaluxWidgetEntry: TimelineEntry {
+struct SleepParalysisCompanionWidgetEntry: TimelineEntry {
     let date: Date
 }
 
-struct ParaluxWidgetProvider: TimelineProvider {
-    func placeholder(in context: Context) -> ParaluxWidgetEntry {
+struct SleepParalysisCompanionWidgetProvider: TimelineProvider {
+    func placeholder(in context: Context) -> SleepParalysisCompanionWidgetEntry {
         _ = context
-        return ParaluxWidgetEntry(date: Date())
+        return SleepParalysisCompanionWidgetEntry(date: Date())
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (ParaluxWidgetEntry) -> Void) {
+    func getSnapshot(in context: Context, completion: @escaping (SleepParalysisCompanionWidgetEntry) -> Void) {
         _ = context
-        completion(ParaluxWidgetEntry(date: Date()))
+        completion(SleepParalysisCompanionWidgetEntry(date: Date()))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<ParaluxWidgetEntry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<SleepParalysisCompanionWidgetEntry>) -> Void) {
         _ = context
-        completion(Timeline(entries: [ParaluxWidgetEntry(date: Date())], policy: .never))
+        completion(Timeline(entries: [SleepParalysisCompanionWidgetEntry(date: Date())], policy: .never))
     }
 }
 
-struct ParaluxManualEpisodeWidgetView: View {
-    let entry: ParaluxWidgetEntry
+struct SleepParalysisCompanionManualEpisodeWidgetView: View {
+    let entry: SleepParalysisCompanionWidgetEntry
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: "moon.stars.fill")
                 .font(.title)
                 .foregroundStyle(.cyan)
-            Text("Paralux")
+            Text("Sleep Paralysis Companion")
                 .font(.headline)
             Button(intent: ManualEpisodeIntent()) {
                 Label("I just had an episode", systemImage: "arrow.right.circle.fill")
@@ -58,22 +58,22 @@ struct ParaluxManualEpisodeWidgetView: View {
     }
 }
 
-struct ParaluxManualEpisodeWidget: Widget {
+struct SleepParalysisCompanionManualEpisodeWidget: Widget {
     let kind = "ParaluxManualEpisodeWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: ParaluxWidgetProvider()) { entry in
-            ParaluxManualEpisodeWidgetView(entry: entry)
+        StaticConfiguration(kind: kind, provider: SleepParalysisCompanionWidgetProvider()) { entry in
+            SleepParalysisCompanionManualEpisodeWidgetView(entry: entry)
         }
         .configurationDisplayName("Manual grounding")
-        .description("Open the user-initiated Paralux grounding experience.")
+        .description("Open the user-initiated Sleep Paralysis Companion grounding experience.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
 @main
-struct ParaluxWidgetBundle: WidgetBundle {
+struct SleepParalysisCompanionWidgetBundle: WidgetBundle {
     var body: some Widget {
-        ParaluxManualEpisodeWidget()
+        SleepParalysisCompanionManualEpisodeWidget()
     }
 }

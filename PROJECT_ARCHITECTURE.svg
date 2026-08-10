@@ -1,0 +1,341 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1600" viewBox="0 0 2400 1600" role="img" aria-labelledby="title desc">
+  <title id="title">Sleep Paralysis Companion project architecture</title>
+  <desc id="desc">Complete repository-grounded architecture diagram for the native SwiftUI iOS app, local-first persistence and synchronization, Supabase backend contracts, privacy boundaries, and GitHub Actions verification evidence.</desc>
+
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#eef3f9"/>
+    </linearGradient>
+    <linearGradient id="header" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#13233e"/>
+      <stop offset="1" stop-color="#244d70"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#12233d" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowNavy" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#284663"/>
+    </marker>
+    <marker id="arrowTeal" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#168f96"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7357b7"/>
+    </marker>
+    <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#cf7c32"/>
+    </marker>
+    <style>
+      .ink { fill:#1b2d43; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+      .muted { fill:#637487; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+      .white { fill:#ffffff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+      .title { font-size:38px; font-weight:760; letter-spacing:-0.8px; }
+      .subtitle { font-size:17px; font-weight:420; }
+      .laneTitle { font-size:21px; font-weight:760; letter-spacing:0.2px; }
+      .laneSub { font-size:13px; font-weight:520; }
+      .cardTitle { font-size:17px; font-weight:740; }
+      .body { font-size:14px; font-weight:440; }
+      .small { font-size:12px; font-weight:470; }
+      .tiny { font-size:11px; font-weight:500; }
+      .label { font-size:12px; font-weight:710; }
+      .section { fill:#ffffff; stroke:#d6e0eb; stroke-width:1.4; }
+      .nested { fill:#f8fbff; stroke:#dce6f0; stroke-width:1.1; }
+      .local { fill:#effafa; stroke:#8dd4d3; stroke-width:1.25; }
+      .remote { fill:#f6f1ff; stroke:#c6b8ea; stroke-width:1.25; }
+      .external { fill:#fff7ec; stroke:#e8bc85; stroke-width:1.25; }
+      .evidence { fill:#fff8f0; stroke:#edc38d; stroke-width:1.25; }
+      .pill { fill:#e6eef7; stroke:#c9d8e7; stroke-width:1; }
+      .arrow { fill:none; stroke:#284663; stroke-width:2.2; marker-end:url(#arrowNavy); }
+      .arrowLocal { fill:none; stroke:#168f96; stroke-width:2.5; marker-end:url(#arrowTeal); }
+      .arrowRemote { fill:none; stroke:#7357b7; stroke-width:2.4; stroke-dasharray:8 7; marker-end:url(#arrowPurple); }
+      .arrowEvidence { fill:none; stroke:#cf7c32; stroke-width:2.2; stroke-dasharray:7 6; marker-end:url(#arrowOrange); }
+      .divider { stroke:#d7e2ee; stroke-width:1.2; }
+      .dot { fill:#168f96; }
+      .dotPurple { fill:#7357b7; }
+      .dotOrange { fill:#cf7c32; }
+    </style>
+  </defs>
+
+  <rect width="2400" height="1600" fill="url(#page)"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="2400" height="174" fill="url(#header)"/>
+  <text x="70" y="67" class="white title">Sleep Paralysis Companion</text>
+  <text x="70" y="103" class="white subtitle">Complete project architecture · repository-grounded native iOS + local-first data + Supabase contracts</text>
+  <text x="70" y="137" class="white small" opacity="0.78">Checked-out source and canonical phase documents · 10 Aug 2026 · compatibility-sensitive identifiers retained where required</text>
+  <rect x="1850" y="47" width="460" height="80" rx="18" fill="#ffffff" opacity="0.12"/>
+  <text x="1880" y="78" class="white label">PRIMARY PRODUCT BOUNDARY</text>
+  <text x="1880" y="106" class="white body">Privacy-conscious, non-medical iPhone companion</text>
+
+  <!-- Main lane frames -->
+  <rect x="50" y="210" width="690" height="938" rx="20" class="section" filter="url(#shadow)"/>
+  <rect x="770" y="210" width="640" height="938" rx="20" class="section" filter="url(#shadow)"/>
+  <rect x="1440" y="210" width="910" height="938" rx="20" class="section" filter="url(#shadow)"/>
+
+  <!-- Lane headers -->
+  <rect x="50" y="210" width="690" height="76" rx="20" fill="#eaf1f8"/>
+  <rect x="770" y="210" width="640" height="76" rx="20" fill="#e8f7f7"/>
+  <rect x="1440" y="210" width="910" height="76" rx="20" fill="#f3effd"/>
+  <text x="80" y="245" class="ink laneTitle">1 · iOS product surface</text>
+  <text x="80" y="267" class="muted laneSub">SwiftUI views, typed navigation, system entry points</text>
+  <text x="800" y="245" class="ink laneTitle">2 · local-first runtime</text>
+  <text x="800" y="267" class="muted laneSub">Actor isolation, GRDB, protected files, offline queue</text>
+  <text x="1470" y="245" class="ink laneTitle">3 · Supabase + delivery evidence</text>
+  <text x="1470" y="267" class="muted laneSub">Auth, RLS/RPC mutation boundary, deletion, hosted verification</text>
+
+  <!-- iOS entry points -->
+  <rect x="80" y="316" width="190" height="94" rx="14" class="nested"/>
+  <circle cx="105" cy="344" r="8" fill="#284663"/>
+  <text x="123" y="349" class="ink cardTitle">User + iPhone</text>
+  <text x="101" y="375" class="muted small">SwiftUI screens</text>
+  <text x="101" y="394" class="muted small">permissions + intent</text>
+
+  <rect x="292" y="316" width="190" height="94" rx="14" class="nested"/>
+  <circle cx="317" cy="344" r="8" fill="#284663"/>
+  <text x="335" y="349" class="ink cardTitle">WidgetKit</text>
+  <text x="313" y="375" class="muted small">ManualEpisodeIntent</text>
+  <text x="313" y="394" class="muted small">deep-link into app shell</text>
+
+  <rect x="504" y="316" width="206" height="94" rx="14" class="nested"/>
+  <circle cx="529" cy="344" r="8" fill="#284663"/>
+  <text x="547" y="349" class="ink cardTitle">Scene + route state</text>
+  <text x="525" y="375" class="muted small">typed AppRoute/AppTab</text>
+  <text x="525" y="394" class="muted small">SceneStorage restoration</text>
+
+  <!-- Composition root -->
+  <rect x="80" y="438" width="630" height="150" rx="15" fill="#f5f8fc" stroke="#aac0d5" stroke-width="1.3"/>
+  <text x="105" y="469" class="ink cardTitle">Composition root + state owner</text>
+  <text x="105" y="496" class="ink body">AppCompositionRoot</text>
+  <text x="105" y="518" class="muted small">creates configuration, privacy-safe logger, access policy, authentication, and store</text>
+  <rect x="105" y="536" width="192" height="30" rx="15" class="pill"/>
+  <text x="121" y="556" class="ink small">AppModel · @MainActor</text>
+  <rect x="312" y="536" width="180" height="30" rx="15" class="pill"/>
+  <text x="328" y="556" class="ink small">typed navigation state</text>
+  <rect x="507" y="536" width="178" height="30" rx="15" class="pill"/>
+  <text x="523" y="556" class="ink small">cancellable activation</text>
+
+  <!-- Features -->
+  <rect x="80" y="614" width="630" height="228" rx="15" class="nested"/>
+  <text x="105" y="645" class="ink cardTitle">SwiftUI feature modules</text>
+  <rect x="105" y="665" width="180" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="118" y="690" class="ink small">Onboarding + OAuth</text>
+  <rect x="298" y="665" width="180" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="311" y="690" class="ink small">Home / History / Settings</text>
+  <rect x="491" y="665" width="194" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="504" y="690" class="ink small">Questionnaire + persona</text>
+  <rect x="105" y="721" width="180" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="118" y="746" class="ink small">Grounding + recovery audio</text>
+  <rect x="298" y="721" width="180" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="311" y="746" class="ink small">Check-in + history</text>
+  <rect x="491" y="721" width="194" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="504" y="746" class="ink small">Sleep schedule + reminders</text>
+  <rect x="105" y="777" width="276" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="118" y="802" class="ink small">Data privacy / export / deletion</text>
+  <rect x="394" y="777" width="291" height="42" rx="10" fill="#eaf1f8"/>
+  <text x="407" y="802" class="ink small">DesignSystem + accessibility states</text>
+
+  <!-- App services -->
+  <rect x="80" y="868" width="630" height="252" rx="15" fill="#f8fbff" stroke="#aac0d5" stroke-width="1.3"/>
+  <text x="105" y="899" class="ink cardTitle">Typed use-case and adapter boundaries</text>
+  <text x="105" y="926" class="muted small">SwiftUI emits typed intent; views do not call persistence, Supabase, AVFoundation, or networking directly.</text>
+  <rect x="105" y="949" width="184" height="46" rx="10" fill="#eaf1f8"/>
+  <text x="119" y="976" class="ink small">IntegratedPhase1Store</text>
+  <rect x="302" y="949" width="184" height="46" rx="10" fill="#eaf1f8"/>
+  <text x="316" y="976" class="ink small">Authentication services</text>
+  <rect x="499" y="949" width="186" height="46" rx="10" fill="#eaf1f8"/>
+  <text x="513" y="976" class="ink small">SynchronizationEngine</text>
+  <rect x="105" y="1009" width="184" height="46" rx="10" fill="#eaf1f8"/>
+  <text x="119" y="1036" class="ink small">PersonalAudio services</text>
+  <rect x="302" y="1009" width="184" height="46" rx="10" fill="#eaf1f8"/>
+  <text x="316" y="1036" class="ink small">SleepReminderService</text>
+  <rect x="499" y="1009" width="186" height="46" rx="10" fill="#eaf1f8"/>
+  <text x="513" y="1036" class="ink small">Data-rights coordinators</text>
+  <text x="105" y="1087" class="muted tiny">Domain · Core · Configuration · DataInterfaces · PlatformInterfaces · DesignSystem</text>
+
+  <!-- Local runtime -->
+  <rect x="800" y="316" width="580" height="202" rx="15" class="local"/>
+  <text x="825" y="348" class="ink cardTitle">Local-first application boundary</text>
+  <rect x="825" y="370" width="250" height="54" rx="11" fill="#ffffff" stroke="#9fd7d6"/>
+  <text x="840" y="393" class="ink small">IntegratedPhase1Store</text>
+  <text x="840" y="411" class="muted tiny">actor · immediate UI authority</text>
+  <rect x="1093" y="370" width="250" height="54" rx="11" fill="#ffffff" stroke="#9fd7d6"/>
+  <text x="1108" y="393" class="ink small">SynchronizationEngine</text>
+  <text x="1108" y="411" class="muted tiny">claim → apply → acknowledge/retry</text>
+  <rect x="825" y="441" width="518" height="52" rx="11" fill="#ffffff" stroke="#9fd7d6"/>
+  <text x="840" y="464" class="ink small">AuthenticationCoordinator · GuestConversionCoordinator</text>
+  <text x="840" y="482" class="muted tiny">explicit user/profile binding; no sync without authenticated user + queued operation</text>
+
+  <rect x="800" y="544" width="580" height="252" rx="15" class="local"/>
+  <text x="825" y="576" class="ink cardTitle">Device data + Apple system services</text>
+  <rect x="825" y="598" width="250" height="68" rx="11" fill="#ffffff" stroke="#9fd7d6"/>
+  <text x="840" y="622" class="ink small">LocalDatabase</text>
+  <text x="840" y="641" class="muted tiny">actor around GRDB DatabasePool</text>
+  <text x="840" y="657" class="muted tiny">schema v4 · integrity constraints</text>
+  <rect x="1093" y="598" width="250" height="68" rx="11" fill="#ffffff" stroke="#9fd7d6"/>
+  <text x="1108" y="622" class="ink small">KeychainSessionStore</text>
+  <text x="1108" y="641" class="muted tiny">Supabase refresh/access material</text>
+  <text x="1108" y="657" class="muted tiny">account-bound preferences</text>
+  <rect x="825" y="683" width="250" height="87" rx="11" fill="#ffffff" stroke="#9fd7d6"/>
+  <text x="840" y="707" class="ink small">Protected local files</text>
+  <text x="840" y="726" class="muted tiny">personal audio bytes</text>
+  <text x="840" y="744" class="muted tiny">temporary exports / metadata</text>
+  <text x="840" y="762" class="muted tiny">bytes never cross remote boundary</text>
+  <rect x="1093" y="683" width="250" height="87" rx="11" fill="#ffffff" stroke="#9fd7d6"/>
+  <text x="1108" y="707" class="ink small">Apple frameworks</text>
+  <text x="1108" y="726" class="muted tiny">WidgetKit + AppIntents</text>
+  <text x="1108" y="744" class="muted tiny">AVAudioSession / recorder / player</text>
+  <text x="1108" y="762" class="muted tiny">notifications + reminders</text>
+
+  <rect x="800" y="822" width="580" height="298" rx="15" class="local"/>
+  <text x="825" y="854" class="ink cardTitle">Local schema and offline semantics</text>
+  <text x="825" y="880" class="muted tiny">Core rows</text>
+  <text x="825" y="900" class="ink small">local_profiles · app_settings · alarm_preferences · submitted_checkins</text>
+  <text x="825" y="923" class="muted tiny">Persona and audio</text>
+  <text x="825" y="943" class="ink small">questionnaire_drafts · persona_answer_aggregates</text>
+  <text x="825" y="963" class="ink small">personal_audio_clip_metadata · local_recovery_audio_defaults</text>
+  <line x1="825" y1="981" x2="1352" y2="981" class="divider"/>
+  <text x="825" y="1008" class="muted tiny">Sync and rights</text>
+  <text x="825" y="1028" class="ink small">sync_operations · entity_revisions · deletion_tombstones</text>
+  <text x="825" y="1048" class="ink small">conversion_checkpoints · policy_notices · export_metadata</text>
+  <rect x="825" y="1068" width="518" height="32" rx="16" fill="#d8f2f1"/>
+  <text x="842" y="1089" class="ink small">Offline writes enqueue idempotent operations; retry/conflict/authRequired remain explicit.</text>
+
+  <!-- Supabase runtime -->
+  <rect x="1470" y="316" width="850" height="190" rx="15" class="remote"/>
+  <text x="1495" y="348" class="ink cardTitle">Supabase authenticated boundary</text>
+  <rect x="1495" y="370" width="255" height="100" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="1510" y="395" class="ink small">Supabase Auth</text>
+  <text x="1510" y="415" class="muted tiny">Apple / Google native ID token</text>
+  <text x="1510" y="434" class="muted tiny">session refresh + sign-out</text>
+  <text x="1510" y="453" class="muted tiny">user ID must match local profile</text>
+  <rect x="1770" y="370" width="255" height="100" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="1785" y="395" class="ink small">PostgREST + RLS</text>
+  <text x="1785" y="415" class="muted tiny">authenticated reads</text>
+  <text x="1785" y="434" class="muted tiny">owner-scoped rows</text>
+  <text x="1785" y="453" class="muted tiny">anon denied for app data</text>
+  <rect x="2045" y="370" width="250" height="100" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="2060" y="395" class="ink small">Remote data scope</text>
+  <text x="2060" y="415" class="muted tiny">app_profiles + settings</text>
+  <text x="2060" y="434" class="muted tiny">alarm + check-ins + persona</text>
+  <text x="2060" y="453" class="muted tiny">no personal audio bytes</text>
+
+  <rect x="1470" y="532" width="850" height="250" rx="15" class="remote"/>
+  <text x="1495" y="564" class="ink cardTitle">RPC-only mutation boundary</text>
+  <rect x="1495" y="586" width="320" height="118" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="1510" y="611" class="ink small">public.apply_sync_mutation</text>
+  <text x="1510" y="632" class="muted tiny">authenticated invoker wrapper</text>
+  <text x="1510" y="651" class="muted tiny">payload + owner identity checks</text>
+  <text x="1510" y="670" class="muted tiny">revision + compatibility checks</text>
+  <text x="1510" y="689" class="muted tiny">receipt / acknowledgment response</text>
+  <rect x="1836" y="586" width="235" height="118" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="1851" y="611" class="ink small">private trusted function</text>
+  <text x="1851" y="632" class="muted tiny">security definer</text>
+  <text x="1851" y="651" class="muted tiny">empty search_path</text>
+  <text x="1851" y="670" class="muted tiny">legacy path isolated</text>
+  <text x="1851" y="689" class="muted tiny">no client service key</text>
+  <rect x="2092" y="586" width="203" height="118" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="2107" y="611" class="ink small">Integrity controls</text>
+  <text x="2107" y="632" class="muted tiny">mutation_receipts</text>
+  <text x="2107" y="651" class="muted tiny">revision guards</text>
+  <text x="2107" y="670" class="muted tiny">tombstones + 30-day purge</text>
+  <text x="2107" y="689" class="muted tiny">RLS owner policies</text>
+
+  <rect x="1470" y="808" width="850" height="205" rx="15" class="remote"/>
+  <text x="1495" y="840" class="ink cardTitle">Account deletion Edge Function</text>
+  <rect x="1495" y="862" width="292" height="105" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="1510" y="887" class="ink small">delete-account</text>
+  <text x="1510" y="908" class="muted tiny">Bearer access token</text>
+  <text x="1510" y="927" class="muted tiny">recent OAuth re-auth required</text>
+  <text x="1510" y="946" class="muted tiny">request binding + retry token</text>
+  <text x="1510" y="965" class="muted tiny">recoverable 503 semantics</text>
+  <rect x="1807" y="862" width="244" height="105" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="1822" y="887" class="ink small">Supabase Auth Admin</text>
+  <text x="1822" y="908" class="muted tiny">service-role key only here</text>
+  <text x="1822" y="927" class="muted tiny">delete auth.users record</text>
+  <text x="1822" y="946" class="muted tiny">404 treated as complete</text>
+  <text x="1822" y="965" class="muted tiny">never shipped to iOS</text>
+  <rect x="2071" y="862" width="224" height="105" rx="11" fill="#ffffff" stroke="#c6b8ea"/>
+  <text x="2086" y="887" class="ink small">account_deletion_audit</text>
+  <text x="2086" y="908" class="muted tiny">idempotent checkpoint</text>
+  <text x="2086" y="927" class="muted tiny">completed / retryable</text>
+  <text x="2086" y="946" class="muted tiny">purge_after recorded</text>
+
+  <rect x="1470" y="1039" width="850" height="81" rx="15" fill="#fdf9f2" stroke="#e8bc85" stroke-width="1.25"/>
+  <text x="1495" y="1070" class="ink cardTitle">Truthful boundary</text>
+  <text x="1495" y="1094" class="muted small">Supabase stores account-linked metadata and check-in/persona state; personal audio remains device-local by contract.</text>
+
+  <!-- Cross-lane connectors -->
+  <path d="M175,410 C175,422 175,426 175,438" class="arrow"/>
+  <path d="M387,410 C387,422 387,426 387,438" class="arrow"/>
+  <path d="M607,410 C607,422 607,426 607,438" class="arrow"/>
+  <path d="M395,588 C395,599 395,604 395,614" class="arrow"/>
+  <path d="M395,842 C395,853 395,858 395,868" class="arrow"/>
+  <path d="M710,994 C744,994 759,994 800,994" class="arrowLocal"/>
+  <text x="715" y="978" class="label" fill="#168f96">typed local calls</text>
+  <path d="M710,1035 C870,1035 1000,516 1470,516" class="arrowRemote"/>
+  <text x="1002" y="744" class="label" fill="#7357b7" transform="rotate(-29 1002 744)">authenticated sync mutations</text>
+  <path d="M1380,418 C1412,418 1432,418 1470,418" class="arrowRemote"/>
+  <text x="1390" y="402" class="label" fill="#7357b7">HTTPS / Supabase client</text>
+  <path d="M1075,518 C1075,530 1075,538 1075,544" class="arrowLocal"/>
+  <path d="M1075,796 C1075,807 1075,812 1075,822" class="arrowLocal"/>
+  <path d="M1815,506 C1815,518 1815,522 1815,532" class="arrowRemote"/>
+  <path d="M1950,782 C1950,794 1950,800 1950,808" class="arrowRemote"/>
+
+  <!-- Bottom evidence and source lanes -->
+  <rect x="50" y="1190" width="2300" height="350" rx="20" class="section" filter="url(#shadow)"/>
+  <text x="80" y="1230" class="ink laneTitle">4 · source contracts, verification, and evidence</text>
+  <text x="80" y="1253" class="muted laneSub">The repository separates implementation, local/runtime proof, hosted CI proof, and production/device claims.</text>
+
+  <rect x="80" y="1280" width="690" height="214" rx="15" fill="#f5f8fc" stroke="#aac0d5" stroke-width="1.3"/>
+  <text x="105" y="1312" class="ink cardTitle">Canonical source and contracts</text>
+  <text x="105" y="1341" class="ink small">ios/</text>
+  <text x="165" y="1341" class="muted small">SwiftUI target · sources · tests · widget · project.yml</text>
+  <text x="105" y="1365" class="ink small">supabase/</text>
+  <text x="165" y="1365" class="muted small">migrations · pgTAP tests · delete-account function</text>
+  <text x="105" y="1389" class="ink small">docs/phase-0</text>
+  <text x="195" y="1389" class="muted small">product spec · privacy · data lifecycle · threat model</text>
+  <text x="105" y="1413" class="ink small">docs/phase-1*</text>
+  <text x="195" y="1413" class="muted small">architecture · data boundaries · gates · evidence contracts</text>
+  <text x="105" y="1450" class="muted tiny">Controlling rule: supplied product evidence and canonical contracts outrank stale implementation notes.</text>
+
+  <rect x="800" y="1280" width="690" height="214" rx="15" class="evidence"/>
+  <text x="825" y="1312" class="ink cardTitle">GitHub Actions hosted verification</text>
+  <rect x="825" y="1332" width="300" height="42" rx="10" fill="#fff0dd"/>
+  <text x="840" y="1357" class="ink small">macOS 26 · Xcode 26.6</text>
+  <text x="1140" y="1357" class="muted tiny">build · unit tests · UI tests · visual journey</text>
+  <rect x="825" y="1385" width="300" height="42" rx="10" fill="#fff0dd"/>
+  <text x="840" y="1410" class="ink small">Ubuntu 24.04 · Supabase 2.110</text>
+  <text x="1140" y="1410" class="muted tiny">isolated migrations · RLS · RPC · Deno tests</text>
+  <text x="825" y="1450" class="muted tiny">Artifacts: xcresult, screenshots/MP4, generated project, migrations, pgTAP results.</text>
+  <text x="825" y="1472" class="muted tiny">Exact-head SHA, job result, and artifact are required for gate claims.</text>
+
+  <rect x="1520" y="1280" width="800" height="214" rx="15" class="evidence"/>
+  <text x="1545" y="1312" class="ink cardTitle">Evidence boundary and current caveat</text>
+  <circle cx="1557" cy="1343" r="5" class="dotOrange"/>
+  <text x="1572" y="1348" class="ink small">Source evidence ≠ runtime evidence</text>
+  <circle cx="1557" cy="1371" r="5" class="dotOrange"/>
+  <text x="1572" y="1376" class="ink small">Simulator/hosted CI ≠ physical iPhone/TestFlight proof</text>
+  <circle cx="1557" cy="1399" r="5" class="dotOrange"/>
+  <text x="1572" y="1404" class="ink small">CI ≠ production OAuth, signing, or live Supabase confirmation</text>
+  <circle cx="1557" cy="1427" r="5" class="dotOrange"/>
+  <text x="1572" y="1432" class="ink small">Unavailable proof remains NOT PASSED / unknown, not inferred as passed</text>
+  <text x="1545" y="1472" class="muted tiny">This is an architecture map, not a claim that every phase gate is currently accepted.</text>
+
+  <!-- Evidence connectors -->
+  <path d="M400,1148 C400,1166 400,1174 400,1190" class="arrowEvidence"/>
+  <path d="M1080,1148 C1080,1166 1080,1174 1080,1190" class="arrowEvidence"/>
+  <path d="M1900,1120 C1900,1150 1900,1165 1900,1190" class="arrowEvidence"/>
+
+  <!-- Legend -->
+  <rect x="80" y="1557" width="2240" height="28" rx="14" fill="#e7eef6"/>
+  <line x1="110" y1="1571" x2="165" y2="1571" stroke="#284663" stroke-width="2.2" marker-end="url(#arrowNavy)"/>
+  <text x="176" y="1575" class="ink tiny">typed in-process dependency</text>
+  <line x1="430" y1="1571" x2="485" y2="1571" stroke="#168f96" stroke-width="2.5" marker-end="url(#arrowTeal)"/>
+  <text x="496" y="1575" class="ink tiny">local/device boundary</text>
+  <line x1="710" y1="1571" x2="765" y2="1571" stroke="#7357b7" stroke-width="2.4" stroke-dasharray="8 7" marker-end="url(#arrowPurple)"/>
+  <text x="776" y="1575" class="ink tiny">authenticated remote boundary</text>
+  <line x1="1055" y1="1571" x2="1110" y2="1571" stroke="#cf7c32" stroke-width="2.2" stroke-dasharray="7 6" marker-end="url(#arrowOrange)"/>
+  <text x="1121" y="1575" class="ink tiny">hosted evidence / verification</text>
+  <text x="1780" y="1575" class="muted tiny">SVG artifact: PROJECT_ARCHITECTURE.svg</text>
+</svg>

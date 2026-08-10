@@ -72,13 +72,13 @@ nonisolated struct ProvidedRecoveryAudio: Identifiable, Equatable, Sendable {
         ProvidedRecoveryAudio(
             id: "grounding-short",
             title: "Grounding audio",
-            detail: "A short Paralux-provided recovery track.",
+            detail: "A short Sleep Paralysis Companion-provided recovery track.",
             bundledResourceName: nil
         ),
         ProvidedRecoveryAudio(
             id: "wind-down",
             title: "Wind-down audio",
-            detail: "A longer Paralux-provided sleep preparation track.",
+            detail: "A longer Sleep Paralysis Companion-provided sleep preparation track.",
             bundledResourceName: nil
         ),
     ]

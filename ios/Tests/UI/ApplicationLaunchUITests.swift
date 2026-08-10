@@ -166,7 +166,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         capture("04-introduction-audio", app: app)
         app.buttons["Continue to sign in"].tap()
 
-        XCTAssertTrue(app.staticTexts["Welcome to Paralux"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Welcome to Sleep Paralysis Companion"].waitForExistence(timeout: 5))
         capture("05-authentication-configuration-boundary", app: app)
         app.terminate()
 

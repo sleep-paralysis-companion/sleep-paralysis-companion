@@ -1,7 +1,7 @@
 # iOS 2026 Engineering and App Store Best Practices
 
 **Status:** Mandatory Phase 1 engineering and release standard  
-**Applies to:** SP / Paralux Phase 1 iPhone application  
+**Applies to:** Sleep Paralysis Companion Phase 1 iPhone application
 **Verified against official Apple documentation:** 20 July 2026  
 **Primary platform:** Native Swift and SwiftUI  
 **Backend:** Supabase  

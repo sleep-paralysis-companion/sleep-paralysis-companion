@@ -319,7 +319,7 @@ def add_masthead(doc: Document) -> None:
 
     header = section.header
     hp = header.paragraphs[0]
-    hp.text = "SP App Technical Plan"
+    hp.text = "Sleep Paralysis Companion Technical Plan"
     hp.alignment = WD_ALIGN_PARAGRAPH.LEFT
     set_run_font(hp.runs[0], size=9, color=MUTED)
 
@@ -338,7 +338,7 @@ def add_masthead(doc: Document) -> None:
 
     subtitle = add_para(
         doc,
-        "SP App / Sleep Paralysis Companion - iOS-first MVP with Apple Watch and Android planned from day one",
+        "Sleep Paralysis Companion - iOS-first MVP with Apple Watch and Android planned from day one",
     )
     subtitle.paragraph_format.space_after = Pt(14)
     for run in subtitle.runs:

@@ -235,7 +235,7 @@ final class AppModel {
                 launchDestination = .home
                 resetNavigation()
             } catch {
-                feedbackMessage = "The schedule could not be saved. You can continue using Paralux without reminders."
+                feedbackMessage = "The schedule could not be saved. You can continue using Sleep Paralysis Companion without reminders."
             }
         }
     }
@@ -332,7 +332,7 @@ final class AppModel {
             isRecording: isRecording,
             sceneIsActive: phase == .active
         ) else { return }
-        cancelRecording(reason: "Recording stopped when Paralux left the foreground. No partial recording was kept.")
+        cancelRecording(reason: "Recording stopped when Sleep Paralysis Companion left the foreground. No partial recording was kept.")
     }
 
     private func cancelRecording(reason: String?) {
@@ -364,7 +364,7 @@ final class AppModel {
 
     func selectProvidedAudio(_ item: ProvidedRecoveryAudio) {
         guard item.isBundled else {
-            feedbackMessage = "Production Paralux audio assets are not bundled in this checkout."
+            feedbackMessage = "Production Sleep Paralysis Companion audio assets are not bundled in this checkout."
             return
         }
         setAudioDefault(.catalogItem(item.id))

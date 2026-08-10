@@ -67,7 +67,7 @@ struct PersonalAudioSetupView: View {
                     }
                 }
 
-                Text("Paralux-provided audio")
+                Text("Sleep Paralysis Companion-provided audio")
                     .font(AppTypographyRole.sectionTitle)
                 ForEach(model.providedAudio) { item in
                     NightCard {

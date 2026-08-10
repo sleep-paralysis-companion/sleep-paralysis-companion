@@ -6,7 +6,7 @@ Verified outcome (2026-07-28): Gate 1B passed for repository, simulator, and iso
 candidate `6b80c0d6269168b6f1a5494893869fc3278df47e` in hosted run
 `30322506101`. Gate 0 remains `NOT PASSED`; see `docs/phase-1b/GATE_1B_REVIEW.md`.
 
-You are working in the SP / Paralux repository. This session is exclusively for **Phase 1B: Data, authentication, security, and offline foundation**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
+You are working in the Sleep Paralysis Companion repository. This session is exclusively for **Phase 1B: Data, authentication, security, and offline foundation**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate
 

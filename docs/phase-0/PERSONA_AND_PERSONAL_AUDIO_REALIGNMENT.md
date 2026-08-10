@@ -49,7 +49,7 @@ The answers, derived persona, routing-rule version, and calculation instant are 
 
 ## 4. Personal comfort audio - local-only boundary
 
-Phase 1 includes explicit recording, importing existing audio files, storing multiple personal clips locally, selecting one personal clip or Paralux-provided audio as the default recovery audio, individual clip deletion, complete local-data deletion, and user-initiated individual audio export.
+Phase 1 includes explicit recording, importing existing audio files, storing multiple personal clips locally, selecting one personal clip or Sleep Paralysis Companion-provided audio as the default recovery audio, individual clip deletion, complete local-data deletion, and user-initiated individual audio export.
 
 Personal recordings and imported audio are device-local only:
 
@@ -57,7 +57,7 @@ Personal recordings and imported audio are device-local only:
 - Never include audio bytes, original filenames, filesystem paths, transcripts, waveform data, or derived voice data in analytics, diagnostics, notifications, crash logs, widgets, or lock-screen content.
 - Keep only privacy-safe local metadata: opaque clip ID, source (`recorded` or `imported`), storage format, byte count, duration when available, creation/import time, integrity/availability state, and local protection version. Do not persist an imported original filename or path.
 - Protect audio files and their local metadata with iOS file protection. The intended class is `completeUntilFirstUserAuthentication`, consistent with protected local app data; playback behavior while locked must be established by physical-device evidence before it is claimed.
-- A personal clip default is device-local. Sync must never create a remote personal-audio reference or a cross-device expectation that its bytes exist. A Paralux-provided asset default may follow its separately approved catalog/cache contract.
+- A personal clip default is device-local. Sync must never create a remote personal-audio reference or a cross-device expectation that its bytes exist. A Sleep Paralysis Companion-provided asset default may follow its separately approved catalog/cache contract.
 
 ### Recording, import, selection, export, and deletion
 
@@ -65,9 +65,9 @@ Personal recordings and imported audio are device-local only:
 |---|---|
 | Record | Begin only after the person taps a visible Record control, sees a recording state, and grants microphone access just in time. The UI always exposes Stop and Cancel. No ambient, background, overnight, continuous, or hidden recording is permitted. |
 | Import | User explicitly invokes the system-supported audio import/document route. Validate supported type, readability, size policy, and local copy integrity before it becomes available. Import failure leaves no partial clip. |
-| Select default | The person explicitly selects one ready personal clip or one ready Paralux-provided item. Selection does not start playback and does not imply an episode occurred. |
-| Missing/corrupt selected personal clip | Do not choose a different personal clip silently. Explain that the selected item is unavailable and use a ready Paralux-provided recovery item when available; otherwise provide the documented silent visual fallback. |
-| Playback unavailable/offline | Personal clips and bundled Paralux items remain usable without network once locally present. An unavailable, decoder-failed, interrupted, or corrupt item falls back to a ready approved Paralux item, then silent visual grounding. Do not promise locked/background playback until physical validation. |
+| Select default | The person explicitly selects one ready personal clip or one ready Sleep Paralysis Companion-provided item. Selection does not start playback and does not imply an episode occurred. |
+| Missing/corrupt selected personal clip | Do not choose a different personal clip silently. Explain that the selected item is unavailable and use a ready Sleep Paralysis Companion-provided recovery item when available; otherwise provide the documented silent visual fallback. |
+| Playback unavailable/offline | Personal clips and bundled Sleep Paralysis Companion items remain usable without network once locally present. An unavailable, decoder-failed, interrupted, or corrupt item falls back to a ready approved Sleep Paralysis Companion item, then silent visual grounding. Do not promise locked/background playback until physical validation. |
 | Export | The person explicitly exports one selected personal clip through a user-selected iOS share/document destination. Create a protected temporary copy only for that operation and clean it up after completion/cancel or bounded recovery. Audio bytes are never added automatically to a structured data export. |
 | Delete one clip | Confirm the exact local-only effect, stop any active use safely, remove the bytes, metadata, temporary copies, and device-local default reference atomically/recoverably. It never deletes another clip or server data. |
 | Delete all local data | Remove every personal recording/import, audio metadata, local selection/default, temporary export/import files, and protected local cache alongside the rest of the documented local-data deletion. Remote account data and Apple subscriptions remain distinct. |
@@ -76,11 +76,11 @@ Personal recordings and imported audio are device-local only:
 
 Microphone access is allowed only for the explicit user-initiated recording feature described above. It is not requested on splash, feature introduction, authentication, questionnaire, recommended setup, schedule setup, ordinary launch, import, playback, manual episode action, or background execution.
 
-If access is denied, restricted, revoked, or unavailable, recording stays unavailable with an honest recovery explanation and a route to iOS Settings where appropriate. The person can still import audio, choose Paralux-provided audio, use silent visual grounding, continue setup, and reach Home. The app must not repeatedly prompt, block onboarding, or activate an input session after denial.
+If access is denied, restricted, revoked, or unavailable, recording stays unavailable with an honest recovery explanation and a route to iOS Settings where appropriate. The person can still import audio, choose Sleep Paralysis Companion-provided audio, use silent visual grounding, continue setup, and reach Home. The app must not repeatedly prompt, block onboarding, or activate an input session after denial.
 
 ## 6. Manual episode action and system surfaces
 
-The episode entry remains manual: the person explicitly taps the intended Home Screen WidgetKit quick action or an in-app action. The app never infers an episode. The selected personal or Paralux-provided recovery audio then begins only through the documented iOS-supported path.
+The episode entry remains manual: the person explicitly taps the intended Home Screen WidgetKit quick action or an in-app action. The app never infers an episode. The selected personal or Sleep Paralysis Companion-provided recovery audio then begins only through the documented iOS-supported path.
 
 The Home Screen widget is the intended primary external surface. Lock Screen and Control Center availability, unlock requirements, app-terminated/background behavior, and recovery-audio playback are unverified until physical-device feasibility tests pass. No implementation or copy may claim "no unlock required," locked/background playback, or Control Center support beforehand.
 

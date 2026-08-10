@@ -1,6 +1,6 @@
 # Session Prompt: Phase 1F - Ultra-Light Check-In and Personal History
 
-You are working in the SP / Paralux repository. This session is exclusively for **Phase 1F: Ultra-light morning check-in and personal history**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
+You are working in the Sleep Paralysis Companion repository. This session is exclusively for **Phase 1F: Ultra-light morning check-in and personal history**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate
 

@@ -77,7 +77,7 @@ actor SystemReminderNotificationScheduler: ReminderNotificationScheduling {
         components.minute = plan.minute
         let content = UNMutableNotificationContent()
         content.title = "Wind down for sleep"
-        content.body = "Your sleep reminder is ready. Open Paralux when you want to prepare."
+        content.body = "Your sleep reminder is ready. Open Sleep Paralysis Companion when you want to prepare."
         content.sound = .default
         try await center.add(
             UNNotificationRequest(

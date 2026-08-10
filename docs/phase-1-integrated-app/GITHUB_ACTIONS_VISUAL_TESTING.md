@@ -18,7 +18,7 @@ The macOS job:
 5. exercises the integrated visual journey;
 6. retains the full `.xcresult` bundles;
 7. exports named screenshots for sixteen product checkpoints; and
-8. records the journey as `paralux-visual-journey.mp4`.
+8. records the journey as `sleep-paralysis-companion-visual-journey.mp4`.
 
 The Linux job starts an isolated local Supabase stack and runs the repository
 migrations, pgTAP tests, database lint, and Edge Function verification. It does
@@ -33,7 +33,7 @@ After an explicitly authorized push of the candidate:
 3. wait for both jobs to reach a terminal result;
 4. verify that both jobs reference the exact pushed commit;
 5. download `phase-1-integrated-visual-journey-<run>-<attempt>`;
-6. open `paralux-visual-journey.mp4`; and
+6. open `sleep-paralysis-companion-visual-journey.mp4`; and
 7. review the named screenshots and `README.md` in the same artifact.
 
 Before this workflow reaches the default branch, its branch-specific `push`

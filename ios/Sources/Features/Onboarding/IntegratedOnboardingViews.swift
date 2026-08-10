@@ -282,7 +282,7 @@ struct AuthenticationView: View {
             VStack(spacing: AppSpacing.standard) {
                 Spacer(minLength: 56)
                 OnboardingArtwork(size: 94, symbol: nil)
-                Text(state == .sessionExpired ? "Sign in again" : "Welcome to Paralux")
+                Text(state == .sessionExpired ? "Sign in again" : "Welcome to Sleep Paralysis Companion")
                     .font(.title.weight(.bold))
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
@@ -540,6 +540,6 @@ struct RecommendedSetupView: View {
     }
 
     private var audioDetail: String {
-        "Choose a private personal clip or a Paralux-provided recovery item."
+        "Choose a private personal clip or a Sleep Paralysis Companion-provided recovery item."
     }
 }

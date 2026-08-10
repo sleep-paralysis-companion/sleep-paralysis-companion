@@ -2,7 +2,7 @@
 
 > **Historical prompt, amended 29 July 2026.** The approved persona and local-only personal-audio change is [Persona and Personal Audio Product Realignment](../phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md). Do not rely on this prompt's earlier guest-only or microphone-exclusion assumptions for later work.
 
-You are working in the SP / Paralux repository. This session is exclusively for **Phase 0: Product, claims, and feasibility lock**. Treat this prompt as the session's operating contract. Do not assume access to any earlier chat.
+You are working in the Sleep Paralysis Companion repository. This session is exclusively for **Phase 0: Product, claims, and feasibility lock**. Treat this prompt as the session's operating contract. Do not assume access to any earlier chat.
 
 ## Required outcome
 

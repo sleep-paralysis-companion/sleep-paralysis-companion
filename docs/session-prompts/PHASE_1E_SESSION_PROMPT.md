@@ -1,6 +1,6 @@
 # Session Prompt: Phase 1E - Manual Episode Action and Grounding
 
-You are working in the SP / Paralux repository. This session is exclusively for **Phase 1E: Manual episode action and grounding**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
+You are working in the Sleep Paralysis Companion repository. This session is exclusively for **Phase 1E: Manual episode action and grounding**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate
 

@@ -8,7 +8,7 @@ RESULT_ROOT="$REPOSITORY_ROOT/ios/TestResults"
 RESULT_BUNDLE="$RESULT_ROOT/VisualJourney.xcresult"
 ARTIFACT_ROOT="$RESULT_ROOT/VisualJourney"
 SCREENSHOT_ROOT="$ARTIFACT_ROOT/Screenshots"
-VIDEO_PATH="$ARTIFACT_ROOT/paralux-visual-journey.mp4"
+VIDEO_PATH="$ARTIFACT_ROOT/sleep-paralysis-companion-visual-journey.mp4"
 RECORDING_PID=""
 
 rm -rf "$RESULT_BUNDLE" "$ARTIFACT_ROOT"
@@ -67,7 +67,7 @@ xcrun xcresulttool export attachments \
 SCREENSHOT_COUNT="$(find "$SCREENSHOT_ROOT" -type f \( -name '*.png' -o -name '*.heic' \) | wc -l | tr -d ' ')"
 
 cat >"$ARTIFACT_ROOT/README.md" <<EOF
-# Paralux visual journey
+# Sleep Paralysis Companion visual journey
 
 - Commit: \`$(git -C "$REPOSITORY_ROOT" rev-parse HEAD)\`
 - Simulator: \`$SIMULATOR_DESTINATION\`
@@ -81,7 +81,7 @@ the real unconfigured-provider boundary. It does not prove production OAuth,
 signing, TestFlight, physical-device behavior, locked-device behavior, or audio
 quality.
 
-Open \`paralux-visual-journey.mp4\` for the walkthrough. The \`Screenshots\`
+Open \`sleep-paralysis-companion-visual-journey.mp4\` for the walkthrough. The \`Screenshots\`
 folder contains the named visual checkpoints and the xcresult export manifest.
 EOF
 

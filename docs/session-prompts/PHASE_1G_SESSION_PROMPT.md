@@ -1,6 +1,6 @@
 # Session Prompt: Phase 1G - Settings, Privacy, Accounts, and Purchases
 
-You are working in the SP / Paralux repository. This session is exclusively for **Phase 1G: Settings, privacy, accounts, RevenueCat/StoreKit access, paywall, and purchases**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
+You are working in the Sleep Paralysis Companion repository. This session is exclusively for **Phase 1G: Settings, privacy, accounts, RevenueCat/StoreKit access, paywall, and purchases**. Treat this prompt as the session's operating contract. Do not assume access to earlier chat.
 
 ## Entry gate
 

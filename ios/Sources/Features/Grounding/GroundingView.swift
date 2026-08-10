@@ -92,7 +92,7 @@ struct GroundingView: View {
         case .failed:
             "Choose another local clip or continue silently."
         case .playing, .paused:
-            "Playback is local and never overlaps another Paralux clip."
+            "Playback is local and never overlaps another Sleep Paralysis Companion clip."
         case .idle:
             "Use the manual action again after selecting an available personal clip."
         }

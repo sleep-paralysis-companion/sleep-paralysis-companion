@@ -1,4 +1,4 @@
-# SP / Paralux — Phase 1 Execution Plan
+# Sleep Paralysis Companion — Phase 1 Execution Plan
 
 > **29 July 2026 approved product-change override.** [Persona and Personal Audio Product Realignment](phase-0/PERSONA_AND_PERSONAL_AUDIO_REALIGNMENT.md) controls the authenticated Q1-Q3/persona onboarding, local-only personal audio, microphone, widget/manual-action, and Phase 1B/1C delta scope. Any guest-only onboarding, questionnaire/persona exclusion, personal-recording exclusion, or incompatible Phase 1C sequence below is historical baseline text and is superseded.
 
@@ -14,7 +14,7 @@ An agent must not infer a feature merely because it appears in one source. When 
 
 ## 2. Product definition
 
-SP / Paralux is an iOS-first sleep-wellness companion for people who experience sleep paralysis. Phase 1 supports a deliberate user journey:
+Sleep Paralysis Companion is an iOS-first sleep-wellness companion for people who experience sleep paralysis. Phase 1 supports a deliberate user journey:
 
 1. The user understands the product's wellness purpose and completes lightweight onboarding.
 2. The user prepares for sleep with a schedule, reminder, and calming audio.
@@ -121,7 +121,7 @@ Gate 0 must resolve each item below in a short decision record. The provisional 
 
 | Decision | Provisional Phase 1 default | Required evidence |
 |---|---|---|
-| Product name | Use “SP / Paralux” internally; do not finalize store metadata | Trademark/name check and approved naming record |
+| Product name | Use “Sleep Paralysis Companion” as the product/store name; `SP` may remain an internal abbreviation | Trademark/name check and approved naming record |
 | Wellness positioning | Non-medical wellness companion | Approved claims and content matrix |
 | Profile model | One local person profile | Final field list and rationale for every field |
 | Account boundary | Guest/local-first; offer account only for approved sync needs | Account journey and deletion journey |

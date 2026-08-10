@@ -36,14 +36,14 @@ struct DataPrivacyView: View {
                 Text("Delete app data")
             } footer: {
                 Text(
-                    "This removes this device’s Paralux data and local personal audio. " +
+                    "This removes this device’s Sleep Paralysis Companion data and local personal audio. " +
                         "It is distinct from deleting the Supabase account and does not cancel an Apple subscription."
                 )
             }
         }
         .navigationTitle("Data and privacy")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("Delete all local Paralux data?", isPresented: $confirmLocalDeletion) {
+        .confirmationDialog("Delete all local Sleep Paralysis Companion data?", isPresented: $confirmLocalDeletion) {
             Button("Delete local data", role: .destructive) { model.deleteAllLocalData() }
             Button("Cancel", role: .cancel) {}
         } message: {

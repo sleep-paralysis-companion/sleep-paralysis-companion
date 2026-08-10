@@ -28,16 +28,16 @@ from silently becoming Phase 1 scope.
 ## Apple verification register
 
 All entries below were checked against official Apple sources on
-**23 July 2026**. They are requirements or platform facts, not Paralux
+**23 July 2026**. They are requirements or platform facts, not Sleep Paralysis Companion
 feasibility evidence.
 
 | ID | Official source | Verified constraint |
 |---|---|---|
 | `S-APPLE-SDK` | [Upcoming requirements](https://developer.apple.com/news/upcoming-requirements/) | Since 28 April 2026, App Store Connect uploads must use Xcode 26 or later and the iOS/iPadOS 26 SDK or later. The exact stable accepted toolchain must be rechecked at archive time. |
 | `S-APPLE-ARG` | [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) | Submissions must be complete and tested on-device; login apps need review access; premium digital functionality uses In-App Purchase; privacy policy and honest metadata are required; account creation implies in-app deletion. |
-| `S-APPLE-ALARM` | [AlarmKit](https://developer.apple.com/documentation/AlarmKit) and [WWDC25 AlarmKit session](https://developer.apple.com/videos/play/wwdc2025/230/) | AlarmKit is an iOS/iPadOS 26 framework for prominent alarms/timers, including Lock Screen surfaces. People opt in per app. Actual Paralux behavior must be proven physically. |
+| `S-APPLE-ALARM` | [AlarmKit](https://developer.apple.com/documentation/AlarmKit) and [WWDC25 AlarmKit session](https://developer.apple.com/videos/play/wwdc2025/230/) | AlarmKit is an iOS/iPadOS 26 framework for prominent alarms/timers, including Lock Screen surfaces. People opt in per app. Actual Sleep Paralysis Companion behavior must be proven physically. |
 | `S-APPLE-ALARM-KEY` | [NSAlarmKitUsageDescription](https://developer.apple.com/documentation/BundleResources/Information-Property-List/NSAlarmKitUsageDescription) | A clear nonempty purpose string is required; without it the app cannot schedule AlarmKit alarms. |
-| `S-APPLE-INTENT` | [Creating your first App Intent](https://developer.apple.com/documentation/appintents/creating-your-first-app-intent) | App Intents can expose approved actions to system experiences; execution context, privacy, authentication, idempotency, and lifecycle still require Paralux-specific device tests. |
+| `S-APPLE-INTENT` | [Creating your first App Intent](https://developer.apple.com/documentation/appintents/creating-your-first-app-intent) | App Intents can expose approved actions to system experiences; execution context, privacy, authentication, idempotency, and lifecycle still require Sleep Paralysis Companion-specific device tests. |
 | `S-APPLE-AUDIO` | [Handling audio interruptions](https://developer.apple.com/documentation/AVFAudio/handling-audio-interruptions) | Audio-session interruption and route behavior must follow observed system events; the exact resume/background policy remains a product and physical-device decision. |
 | `S-APPLE-DELETE` | [Offering account deletion in your app](https://developer.apple.com/support/offering-account-deletion-in-your-app/) | An app that supports account creation must let every user initiate full account deletion in-app, explain timing and subscription consequences, and revoke Sign in with Apple tokens when applicable. |
 | `S-APPLE-STOREKIT` | [StoreKit current entitlements](https://developer.apple.com/documentation/storekit/transaction/currententitlements) and [billing grace period](https://developer.apple.com/help/app-store-connect/manage-subscriptions/enable-billing-grace-period-for-auto-renewable-subscriptions) | Apple transaction and renewal state remains purchase authority. The owner selected Billing Grace Period off; RevenueCat must not add custom grace. |
@@ -87,7 +87,7 @@ preserved below rather than reconstructed:
 | Occurrence | “Did you have an episode last night?” — “Yes / No” | `ADOPTED EXACT SOURCE COPY` for the optional check-in |
 | Present state | “How are you feeling now?” — “I’m fine now” / “Still a bit shaken” / “Exhausted” | `ADOPTED EXACT SOURCE COPY`, subject to accessibility/localization review |
 | Intensity summary | “Q2 — Intensity” — “Mild / Moderate / Severe / Extreme” | `PARTIAL`: exact option words exist, but the tab does not contain one unambiguous full question sentence and elsewhere uses Q2 for a different question |
-| App benefit question | “Did Paralux help?” / “How did you feel after using SPC?” | `OUT OF CURRENT FOUR-FIELD CONTRACT`: would add outcome/benefit data and needs an explicit scope/data decision |
+| App benefit question | “Did Sleep Paralysis Companion help?” / “How did you feel after using SPC?” | `OUT OF CURRENT FOUR-FIELD CONTRACT`: would add outcome/benefit data and needs an explicit scope/data decision |
 | Partner/voice/call | “Do you have someone whose voice calms you down?”, “Call Partner”, “Hear Partner’s Voice” | `EXCLUDED`: conflicts with the no-voice/no-partner-call Phase 1 boundary |
 | Audio assertions | “All audio is originally produced” and “all audio downloads and plays offline” | `PLACEHOLDER GOAL, NOT CURRENT FACT`: user will provide assets later |
 
