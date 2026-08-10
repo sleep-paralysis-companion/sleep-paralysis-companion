@@ -17,7 +17,7 @@ struct SleepScheduleView: View {
                     "Create an ordinary sleep reminder. Sleep Paralysis Companion does not claim to wake you " +
                         "like a system alarm."
                 )
-                    .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(.white.opacity(0.72))
 
                 NightCard {
                     DatePicker(
