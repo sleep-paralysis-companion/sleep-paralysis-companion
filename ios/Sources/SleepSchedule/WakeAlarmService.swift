@@ -47,13 +47,12 @@ actor WakeAlarmService {
 
         do {
             let authorization = manager.authorizationState
-            let authorized: Bool
-            if authorization == .authorized {
-                authorized = true
+            let authorized = if authorization == .authorized {
+                true
             } else if authorization == .notDetermined {
-                authorized = try await manager.requestAuthorization() == .authorized
+                try await manager.requestAuthorization() == .authorized
             } else {
-                authorized = false
+                false
             }
             guard authorized else {
                 return (updated(preference, systemState: .denied, result: .denied, systemAlarmID: nil), .denied)
