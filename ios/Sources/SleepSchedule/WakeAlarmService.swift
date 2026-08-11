@@ -3,11 +3,11 @@ import AlarmKit
 import Foundation
 import SwiftUI
 
-nonisolated private struct WakeAlarmMetadata: AlarmMetadata {
+private nonisolated struct WakeAlarmMetadata: AlarmMetadata {
     let contentVersion: Int
 }
 
-nonisolated private enum WakeAlarmAudioAsset {
+private nonisolated enum WakeAlarmAudioAsset {
     /// The approved asset will be added in a later pass. Until then, the AlarmKit path stays unavailable.
     static let resourceName = "SPCWakeUpGentleLoop"
     static let resourceExtension = "caf"
@@ -47,8 +47,14 @@ actor WakeAlarmService {
 
         do {
             let authorization = manager.authorizationState
-            let authorized = authorization == .authorized
-                || (authorization == .notDetermined && try await manager.requestAuthorization() == .authorized)
+            let authorized: Bool
+            if authorization == .authorized {
+                authorized = true
+            } else if authorization == .notDetermined {
+                authorized = try await manager.requestAuthorization() == .authorized
+            } else {
+                authorized = false
+            }
             guard authorized else {
                 return (updated(preference, systemState: .denied, result: .denied, systemAlarmID: nil), .denied)
             }

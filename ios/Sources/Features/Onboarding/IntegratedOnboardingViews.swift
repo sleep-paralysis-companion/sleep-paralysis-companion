@@ -1,3 +1,5 @@
+// swiftlint:disable file_length
+
 import SwiftUI
 
 private enum OnboardingStyle {
@@ -992,7 +994,9 @@ private struct QuestionnaireReferenceOption: View {
         let selected: Bool
         let action: () -> Void
 
-        var id: String { title }
+        var id: String {
+            title
+        }
 
         init(_ title: String, emoji: String, selected: Bool, action: @escaping () -> Void) {
             self.title = title

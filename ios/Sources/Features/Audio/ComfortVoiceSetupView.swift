@@ -191,10 +191,10 @@ struct PersonalAudioSetupView: View {
                     "breath and let go — I'm right here, and\n" +
                     "you're going to be okay.\""
             )
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
-                .lineSpacing(5)
-                .foregroundStyle(ComfortVoiceStyle.scriptText)
-                .padding(.top, 27)
+            .font(.system(size: 20, weight: .semibold, design: .rounded))
+            .lineSpacing(5)
+            .foregroundStyle(ComfortVoiceStyle.scriptText)
+            .padding(.top, 27)
 
             Label("Say it calmly and slowly · Ideal length 20–40 seconds", systemImage: "info.circle")
                 .font(.system(size: 14, weight: .regular, design: .rounded))
@@ -329,7 +329,7 @@ struct PersonalAudioSetupView: View {
 
     private func recordingDuration(at date: Date) -> String {
         let duration = max(0, date.timeIntervalSince(recordingStartedAt ?? date))
-        return durationText(milliseconds: Int64(duration * 1_000))
+        return durationText(milliseconds: Int64(duration * 1000))
     }
 
     private func clipDuration(_ clip: PersonalAudioClipMetadata) -> String {
@@ -337,7 +337,7 @@ struct PersonalAudioSetupView: View {
     }
 
     private func durationText(milliseconds: Int64) -> String {
-        let seconds = max(0, milliseconds / 1_000)
+        let seconds = max(0, milliseconds / 1000)
         return String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 }

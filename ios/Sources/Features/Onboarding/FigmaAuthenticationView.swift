@@ -56,8 +56,12 @@ struct FigmaAuthenticationView: View {
     }
 
     private var visibleMessage: String? {
-        if let localMessage { return localMessage }
-        if let feedback { return feedback }
+        if let localMessage {
+            return localMessage
+        }
+        if let feedback {
+            return feedback
+        }
         if state == .configurationRequired {
             return "Provider sign-in will be available once configuration is complete."
         }

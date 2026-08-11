@@ -28,10 +28,10 @@ struct FigmaSleepScheduleContent: View {
                         "We'll remind you 15 minutes before bedtime, giving you time to relax "
                             + "and prepare for sleep peacefully."
                     )
-                        .font(.system(size: 18, weight: .regular, design: .rounded))
-                        .foregroundStyle(Color(red: 0.62, green: 0.59, blue: 0.76))
-                        .lineSpacing(4)
-                        .padding(.top, 12)
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .foregroundStyle(Color(red: 0.62, green: 0.59, blue: 0.76))
+                    .lineSpacing(4)
+                    .padding(.top, 12)
 
                     scheduleHeading(title: "Bedtime", symbol: "moon.fill")
                         .padding(.top, 42)
@@ -54,10 +54,10 @@ struct FigmaSleepScheduleContent: View {
                             "Your wake-up reminder choice is saved. Gentle audio will become available "
                                 + "once it is added to the app."
                         )
-                            .font(.footnote)
-                            .foregroundStyle(Color(red: 0.64, green: 0.60, blue: 0.78))
-                            .padding(.top, 12)
-                            .accessibilityIdentifier("schedule.wakeReminder.assetUnavailable")
+                        .font(.footnote)
+                        .foregroundStyle(Color(red: 0.64, green: 0.60, blue: 0.78))
+                        .padding(.top, 12)
+                        .accessibilityIdentifier("schedule.wakeReminder.assetUnavailable")
                     }
 
                     saveButton
@@ -68,9 +68,9 @@ struct FigmaSleepScheduleContent: View {
                             "Bedtime reminders use your notification preference. Wake-up audio needs its own "
                                 + "alarm permission once the audio asset is included."
                         )
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.62))
-                            .padding(.top, 16)
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.62))
+                        .padding(.top, 16)
                     }
                 }
                 .padding(.horizontal, dynamicTypeSize.isAccessibilitySize ? 18 : 30)
@@ -363,7 +363,7 @@ private struct WakeReminderConfigurationView: View {
                             "Your chosen time will be saved. The gentle audio asset is being added "
                                 + "before this alarm can be activated."
                         )
-                            .font(.footnote)
+                        .font(.footnote)
                     }
                 }
             }
