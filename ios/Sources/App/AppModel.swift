@@ -20,6 +20,7 @@ final class AppModel {
     private(set) var recoveryAudioDefault: LocalRecoveryAudioDefault?
     private(set) var sleepSchedule = SleepSchedule.defaultValue
     private(set) var reminderAuthorization = ReminderAuthorizationState.notDetermined
+    private(set) var wakeAlarmOutcome = WakeAlarmSchedulingOutcome.notRequested
     private(set) var checkIns: [SubmittedCheckIn] = []
     private(set) var playbackState = GroundingPlaybackState.idle
     private(set) var isRecording = false
@@ -36,6 +37,7 @@ final class AppModel {
     private let audioFiles: PersonalAudioFileStore
     private let audioController: RecoveryAudioController
     private let reminders: SleepReminderService
+    private let wakeAlarms: WakeAlarmService
     private let logger: any PrivacySafeLogging
     private let restorationCodec: RouteRestorationCodec
     private let deepLinkResolver: DeepLinkResolver
@@ -53,6 +55,7 @@ final class AppModel {
         audioFiles: PersonalAudioFileStore = PersonalAudioFileStore(),
         audioController: RecoveryAudioController = RecoveryAudioController(),
         reminders: SleepReminderService = SleepReminderService(),
+        wakeAlarms: WakeAlarmService = WakeAlarmService(),
         logger: any PrivacySafeLogging,
         restorationCodec: RouteRestorationCodec = RouteRestorationCodec(),
         deepLinkResolver: DeepLinkResolver = DeepLinkResolver()
@@ -64,6 +67,7 @@ final class AppModel {
         self.audioFiles = audioFiles
         self.audioController = audioController
         self.reminders = reminders
+        self.wakeAlarms = wakeAlarms
         self.logger = logger
         self.restorationCodec = restorationCodec
         self.deepLinkResolver = deepLinkResolver
@@ -133,6 +137,11 @@ final class AppModel {
         } else {
             launchDestination = .authentication
         }
+    }
+
+    func skipIntroduction() {
+        guard case .introduction = launchDestination else { return }
+        launchDestination = .authentication
     }
 
     func signIn(provider: AuthenticationProvider) {
@@ -227,11 +236,25 @@ final class AppModel {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                try await store.saveSchedule(schedule, profileID: profileID, userID: userID)
+                let wakePreference = try await store.saveSchedule(
+                    schedule,
+                    profileID: profileID,
+                    userID: userID
+                )
                 sleepSchedule = schedule
                 reminderAuthorization = requestPermission
                     ? try await reminders.requestPermissionAndSchedule(schedule)
                     : try await reminders.updateWithoutPrompt(schedule)
+                let wakeResult = await wakeAlarms.reconcile(
+                    schedule: schedule,
+                    preference: wakePreference
+                )
+                wakeAlarmOutcome = wakeResult.1
+                try await store.saveWakeAlarmPreference(
+                    wakeResult.0,
+                    profileID: profileID,
+                    userID: userID
+                )
                 launchDestination = .home
                 resetNavigation()
             } catch {
@@ -689,6 +712,7 @@ final class AppModel {
         personalClips = snapshot.clips
         recoveryAudioDefault = snapshot.audioDefault
         sleepSchedule = snapshot.schedule
+        wakeAlarmOutcome = snapshot.schedule.wakeAlarmIsRequested ? .audioAssetUnavailable : .notRequested
         checkIns = snapshot.checkIns.sorted { $0.reportedForLocalDate > $1.reportedForLocalDate }
         feedbackMessage = nil
 

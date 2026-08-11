@@ -17,19 +17,26 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(buildProfileButton.waitForExistence(timeout: 5))
         buildProfileButton.tap()
 
-        let continueButton = app.buttons["Continue"]
-        XCTAssertTrue(continueButton.waitForExistence(timeout: 5))
-        continueButton.tap()
+        XCTAssertTrue(buildProfileButton.waitForExistence(timeout: 5))
+        buildProfileButton.tap()
 
-        let signInButton = app.buttons["Continue to sign in"]
-        XCTAssertTrue(signInButton.waitForExistence(timeout: 5))
-        signInButton.tap()
+        XCTAssertTrue(buildProfileButton.waitForExistence(timeout: 5))
+        buildProfileButton.tap()
 
-        XCTAssertTrue(app.buttons["authentication.apple"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["authentication.createAccount"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["authentication.apple"].exists)
         XCTAssertTrue(app.buttons["authentication.google"].exists)
-        XCTAssertFalse(app.buttons["authentication.apple"].isEnabled)
-        XCTAssertFalse(app.buttons["authentication.google"].isEnabled)
-        XCTAssertTrue(app.staticTexts["Provider configuration required"].exists)
+        XCTAssertTrue(app.textFields["authentication.fullName"].exists)
+        app.buttons["authentication.goToLogin"].tap()
+        XCTAssertTrue(app.staticTexts["Welcome Back"].waitForExistence(timeout: 3))
+        app.buttons["authentication.goToCreateAccount"].tap()
+        XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 3))
+        app.buttons["authentication.google"].tap()
+        XCTAssertTrue(
+            app.staticTexts[
+                "Provider sign-in will be available once configuration is complete."
+            ].waitForExistence(timeout: 3)
+        )
         XCTAssertFalse(app.buttons["Start trial"].exists)
         XCTAssertFalse(app.staticTexts["Paywall"].exists)
     }
@@ -128,10 +135,13 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["Continue to comfort audio"].waitForExistence(timeout: 8))
         app.buttons["Continue to comfort audio"].tap()
-        XCTAssertTrue(app.staticTexts["Add a comfort voice"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["Record"].exists)
-        XCTAssertTrue(app.buttons["Import audio file"].exists)
-        app.buttons["Continue to sleep schedule"].tap()
+        let recordAction = app.buttons["comfortVoice.record"]
+        let uploadAction = app.buttons["comfortVoice.upload"]
+        let skipAction = app.buttons["comfortVoice.skip"]
+        XCTAssertTrue(recordAction.waitForExistence(timeout: 8))
+        XCTAssertTrue(uploadAction.exists)
+        XCTAssertTrue(skipAction.exists)
+        skipAction.tap()
 
         XCTAssertTrue(app.staticTexts["Sleep schedule"].waitForExistence(timeout: 8))
         app.switches["Enable sleep reminders"].tap()
@@ -158,15 +168,15 @@ final class ApplicationLaunchUITests: XCTestCase {
         capture("02-introduction-schedule", app: app)
         app.buttons["Build my sleep profile"].tap()
 
-        XCTAssertTrue(app.staticTexts["Support when you need it most"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Support when you\nneed it most."].waitForExistence(timeout: 5))
         capture("03-introduction-grounding", app: app)
-        app.buttons["Continue"].tap()
+        app.buttons["Build my sleep profile"].tap()
 
-        XCTAssertTrue(app.staticTexts["A familiar voice guiding you to calmness"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["A familiar voice\nguiding to calmness"].waitForExistence(timeout: 5))
         capture("04-introduction-audio", app: app)
-        app.buttons["Continue to sign in"].tap()
+        app.buttons["Build my sleep profile"].tap()
 
-        XCTAssertTrue(app.staticTexts["Welcome to Sleep Paralysis Companion"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 5))
         capture("05-authentication-configuration-boundary", app: app)
         app.terminate()
 
@@ -183,22 +193,22 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Do you have someone whose voice calms you down?"].waitForExistence(timeout: 8))
         capture("08-questionnaire-comfort-context", app: app)
-        let aloneChoice = app.buttons.matching(
-            NSPredicate(format: "label CONTAINS %@", "go through this alone")
+        let partnerNotAlwaysPresentChoice = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "not always with me")
         ).firstMatch
-        XCTAssertTrue(aloneChoice.exists)
-        aloneChoice.tap()
+        XCTAssertTrue(partnerNotAlwaysPresentChoice.exists)
+        partnerNotAlwaysPresentChoice.tap()
 
         let recommendedSetupAction = app.buttons["Continue to comfort audio"]
         XCTAssertTrue(recommendedSetupAction.waitForExistence(timeout: 8))
         capture("09-recommended-setup", app: app)
         recommendedSetupAction.tap()
 
-        XCTAssertTrue(app.staticTexts["Add a comfort voice"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["comfortVoice.record"].waitForExistence(timeout: 8))
         capture("10-comfort-audio", app: app)
-        let continueToSchedule = app.buttons["Continue to sleep schedule"]
-        makeHittable(continueToSchedule, in: app)
-        continueToSchedule.tap()
+        let skipAction = app.buttons["comfortVoice.skip"]
+        makeHittable(skipAction, in: app)
+        skipAction.tap()
 
         XCTAssertTrue(app.staticTexts["Sleep schedule"].waitForExistence(timeout: 8))
         capture("11-sleep-schedule", app: app)

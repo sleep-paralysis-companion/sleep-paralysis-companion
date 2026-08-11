@@ -100,30 +100,30 @@ actor IntegratedPhase1Store {
         _ schedule: SleepSchedule,
         profileID: UUID,
         userID: UUID
-    ) async throws {
+    ) async throws -> AlarmPreference {
         guard schedule.isValid else { throw Phase1ActionError.invalidSchedule }
         try await preferences.write(schedule, userID: userID)
         let database = try databaseInstance()
         let existing = try await database.alarms(profileID: profileID).first
         let now = Date()
         let alarmID = existing?.id ?? UUID()
-        try await database.saveAlarm(
-            AlarmPreference(
-                id: alarmID,
-                profileID: profileID,
-                systemAlarmID: nil,
-                localHour: schedule.wakeHour,
-                localMinute: schedule.wakeMinute,
-                weekdaysMask: schedule.weekdaysMask,
-                snoozeMinutes: nil,
-                enabledIntent: schedule.isEnabled,
-                systemState: schedule.isEnabled ? .scheduled : .notScheduled,
-                lastScheduleResult: .success,
-                createdAt: existing?.createdAt ?? now,
-                updatedAt: now,
-                revision: (existing?.revision ?? 0) + 1
-            )
+        let wakePlan = WakeAlarmPlanner.plan(for: schedule)
+        let preference = AlarmPreference(
+            id: alarmID,
+            profileID: profileID,
+            systemAlarmID: nil,
+            localHour: wakePlan?.hour ?? schedule.wakeHour,
+            localMinute: wakePlan?.minute ?? schedule.wakeMinute,
+            weekdaysMask: wakePlan.map { weekdaysMask(for: $0) } ?? schedule.weekdaysMask,
+            snoozeMinutes: nil,
+            enabledIntent: schedule.wakeAlarmIsRequested,
+            systemState: .notScheduled,
+            lastScheduleResult: .none,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+            revision: (existing?.revision ?? 0) + 1
         )
+        try await database.saveAlarm(preference)
         try await enqueueLatestUpsert(
             database: database,
             profileID: profileID,
@@ -135,6 +135,25 @@ actor IntegratedPhase1Store {
             profileID: profileID,
             userID: userID,
             completedAt: now
+        )
+        await synchronizePending(profileID: profileID, userID: userID)
+        return preference
+    }
+
+    func saveWakeAlarmPreference(
+        _ preference: AlarmPreference,
+        profileID: UUID,
+        userID: UUID
+    ) async throws {
+        guard preference.profileID == profileID else { throw Phase1ActionError.accountMismatch }
+        let database = try databaseInstance()
+        try await database.saveAlarm(preference)
+        try await enqueueLatestUpsert(
+            database: database,
+            profileID: profileID,
+            entityType: .alarm,
+            entityID: preference.id,
+            revision: preference.revision
         )
         await synchronizePending(profileID: profileID, userID: userID)
     }
@@ -285,6 +304,12 @@ actor IntegratedPhase1Store {
                 at: Date()
             )
         )
+    }
+
+    private func weekdaysMask(for plan: WakeAlarmPlan) -> Int {
+        plan.weekdays.reduce(into: 0) { mask, weekday in
+            mask |= 1 << (weekday - 1)
+        }
     }
 
     private func makeUpsert(

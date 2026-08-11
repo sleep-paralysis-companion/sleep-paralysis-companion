@@ -76,9 +76,11 @@ struct AppRootView: View {
         case let .introduction(page):
             FeatureIntroductionView(page: page) {
                 model.advanceIntroduction(from: page)
+            } skipAction: {
+                model.skipIntroduction()
             }
         case .authentication:
-            AuthenticationView(
+            FigmaAuthenticationView(
                 state: model.authenticationState,
                 feedback: model.feedbackMessage,
                 isConfigured: model.isAuthenticationConfigured,

@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-struct PersonalAudioSetupView: View {
+private struct LegacyPersonalAudioSetupView: View {
     @Bindable var model: AppModel
     var isOnboarding = false
 

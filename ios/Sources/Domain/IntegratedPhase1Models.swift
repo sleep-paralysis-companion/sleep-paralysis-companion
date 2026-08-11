@@ -20,6 +20,8 @@ nonisolated enum AuthenticationPresentationState: Equatable, Sendable {
 }
 
 nonisolated struct SleepSchedule: Codable, Equatable, Sendable {
+    static let wakeReminderLeadOptions = [5, 10, 15, 30]
+
     var sleepHour: Int
     var sleepMinute: Int
     var wakeHour: Int
@@ -27,6 +29,28 @@ nonisolated struct SleepSchedule: Codable, Equatable, Sendable {
     var weekdaysMask: Int
     var reminderLeadMinutes: Int
     var isEnabled: Bool
+    /// `nil` means the person has turned the wake-up audio alarm off.
+    var wakeReminderLeadMinutes: Int?
+
+    init(
+        sleepHour: Int,
+        sleepMinute: Int,
+        wakeHour: Int,
+        wakeMinute: Int,
+        weekdaysMask: Int,
+        reminderLeadMinutes: Int,
+        isEnabled: Bool,
+        wakeReminderLeadMinutes: Int? = nil
+    ) {
+        self.sleepHour = sleepHour
+        self.sleepMinute = sleepMinute
+        self.wakeHour = wakeHour
+        self.wakeMinute = wakeMinute
+        self.weekdaysMask = weekdaysMask
+        self.reminderLeadMinutes = reminderLeadMinutes
+        self.isEnabled = isEnabled
+        self.wakeReminderLeadMinutes = wakeReminderLeadMinutes
+    }
 
     static let defaultValue = SleepSchedule(
         sleepHour: 22,
@@ -35,7 +59,8 @@ nonisolated struct SleepSchedule: Codable, Equatable, Sendable {
         wakeMinute: 30,
         weekdaysMask: 0b0111_1111,
         reminderLeadMinutes: 15,
-        isEnabled: true
+        isEnabled: true,
+        wakeReminderLeadMinutes: 15
     )
 
     var isValid: Bool {
@@ -45,6 +70,34 @@ nonisolated struct SleepSchedule: Codable, Equatable, Sendable {
             && (0 ... 59).contains(wakeMinute)
             && (0 ... 127).contains(weekdaysMask)
             && [0, 5, 10, 15, 30, 60].contains(reminderLeadMinutes)
+            && (wakeReminderLeadMinutes == nil || Self.wakeReminderLeadOptions.contains(wakeReminderLeadMinutes!))
+    }
+
+    var wakeAlarmIsRequested: Bool {
+        wakeReminderLeadMinutes != nil
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case sleepHour
+        case sleepMinute
+        case wakeHour
+        case wakeMinute
+        case weekdaysMask
+        case reminderLeadMinutes
+        case isEnabled
+        case wakeReminderLeadMinutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sleepHour = try container.decode(Int.self, forKey: .sleepHour)
+        sleepMinute = try container.decode(Int.self, forKey: .sleepMinute)
+        wakeHour = try container.decode(Int.self, forKey: .wakeHour)
+        wakeMinute = try container.decode(Int.self, forKey: .wakeMinute)
+        weekdaysMask = try container.decode(Int.self, forKey: .weekdaysMask)
+        reminderLeadMinutes = try container.decode(Int.self, forKey: .reminderLeadMinutes)
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        wakeReminderLeadMinutes = try container.decodeIfPresent(Int.self, forKey: .wakeReminderLeadMinutes)
     }
 }
 

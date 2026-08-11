@@ -47,6 +47,8 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Sleep Paralysis Companion uses the microphone only when you tap Record to create a private comfort-audio clip stored on this device.</string>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>Sleep Paralysis Companion schedules the wake-up audio alarms you choose.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

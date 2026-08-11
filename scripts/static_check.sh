@@ -5,11 +5,18 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_ROOT="$REPOSITORY_ROOT/ios/Sources"
 RESOURCE_ROOT="$REPOSITORY_ROOT/ios/Resources"
 
-FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|AlarmKit|HealthKit|AdSupport)|URLSession|try!|as!'
+FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|HealthKit|AdSupport)|URLSession|try!|as!'
 FORBIDDEN_RESOURCE='NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription|UIBackgroundModes'
 
 if grep -R -n -E "$FORBIDDEN_SOURCE" "$SOURCE_ROOT"; then
   echo "Forbidden Phase 1B source pattern found." >&2
+  exit 1
+fi
+
+ALARMKIT_SOURCE="$SOURCE_ROOT/SleepSchedule/WakeAlarmService.swift"
+if grep -R -l -E 'import[[:space:]]+AlarmKit' "$SOURCE_ROOT" \
+  | grep -F -v -x "$ALARMKIT_SOURCE"; then
+  echo "AlarmKit may only be used by the wake-alarm scheduling boundary." >&2
   exit 1
 fi
 
