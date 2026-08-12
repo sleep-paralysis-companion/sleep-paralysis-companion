@@ -143,9 +143,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(skipAction.exists)
         skipAction.tap()
 
-        XCTAssertTrue(app.staticTexts["Sleep schedule"].waitForExistence(timeout: 8))
-        app.switches["Enable sleep reminders"].tap()
-        app.buttons["Save schedule and open Home"].tap()
+        XCTAssertTrue(app.staticTexts["What time do you want to sleep?"].waitForExistence(timeout: 8))
+        let saveSchedule = app.buttons["schedule.save"]
+        makeHittable(saveSchedule, in: app)
+        saveSchedule.tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
 
         app.buttons["home.manualEpisode"].tap()
@@ -210,10 +211,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         makeHittable(skipAction, in: app)
         skipAction.tap()
 
-        XCTAssertTrue(app.staticTexts["Sleep schedule"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["What time do you want to sleep?"].waitForExistence(timeout: 8))
         capture("11-sleep-schedule", app: app)
-        app.switches["Enable sleep reminders"].tap()
-        let saveSchedule = app.buttons["Save schedule and open Home"]
+        let saveSchedule = app.buttons["schedule.save"]
         makeHittable(saveSchedule, in: app)
         saveSchedule.tap()
 
