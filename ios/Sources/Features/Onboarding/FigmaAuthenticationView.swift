@@ -138,7 +138,11 @@ private struct AuthenticationReferenceLayout: View {
 
     private var createAccountLayout: some View {
         ZStack(alignment: .topLeading) {
-            heading("Create your account", subtitle: "Start sleeping better tonight", y: 249)
+            heading(
+                "Create your account",
+                subtitle: "Start sleeping better tonight",
+                verticalPosition: 249
+            )
 
             TextField("Full Name", text: $fullName)
                 .font(.system(size: 17, weight: .regular))
@@ -218,7 +222,7 @@ private struct AuthenticationReferenceLayout: View {
 
     private var loginLayout: some View {
         ZStack(alignment: .topLeading) {
-            heading("Welcome Back", subtitle: "Continue your journey", y: 282)
+            heading("Welcome Back", subtitle: "Continue your journey", verticalPosition: 282)
 
             VStack(spacing: 24) {
                 AuthenticationProviderButton(
@@ -263,7 +267,7 @@ private struct AuthenticationReferenceLayout: View {
         }
     }
 
-    private func heading(_ title: String, subtitle: String, y: CGFloat) -> some View {
+    private func heading(_ title: String, subtitle: String, verticalPosition: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 15) {
             Text(title)
                 .font(.system(size: 29, weight: .bold))
@@ -274,7 +278,7 @@ private struct AuthenticationReferenceLayout: View {
                 .foregroundStyle(AuthenticationPalette.secondaryText)
         }
         .frame(width: 348, alignment: .leading)
-        .position(x: 215, y: y + 31)
+        .position(x: 215, y: verticalPosition + 31)
     }
 
     private var policyLine: some View {
@@ -413,6 +417,8 @@ private struct GoogleMark: View {
 private struct AuthenticationSkyBackdrop: View {
     let mode: AuthenticationEntryMode
 
+    // Decorative star data is most readable as fixed x/y/size/color tuples.
+    // swiftlint:disable:next large_tuple
     private let stars: [(CGFloat, CGFloat, CGFloat, Color)] = [
         (42, 15, 2.0, AuthenticationPalette.starPurple), (151, 20, 2.6, .white.opacity(0.34)),
         (227, 0, 2.1, AuthenticationPalette.starPurple), (406, 19, 2.2, AuthenticationPalette.starPurple),
@@ -458,23 +464,23 @@ private struct AuthenticationConstellation: Shape {
     let mode: AuthenticationEntryMode
 
     func path(in rect: CGRect) -> Path {
-        let x = rect.width / AuthenticationReferenceLayout.width
-        let y = rect.height / AuthenticationReferenceLayout.height
+        let xScale = rect.width / AuthenticationReferenceLayout.width
+        let yScale = rect.height / AuthenticationReferenceLayout.height
         var path = Path()
         switch mode {
         case .createAccount:
-            path.move(to: CGPoint(x: 50 * x, y: 281 * y))
-            path.addLine(to: CGPoint(x: 228 * x, y: 249 * y))
-            path.move(to: CGPoint(x: 392 * x, y: 225 * y))
-            path.addLine(to: CGPoint(x: 391 * x, y: 310 * y))
-            path.addLine(to: CGPoint(x: 303 * x, y: 351 * y))
+            path.move(to: CGPoint(x: 50 * xScale, y: 281 * yScale))
+            path.addLine(to: CGPoint(x: 228 * xScale, y: 249 * yScale))
+            path.move(to: CGPoint(x: 392 * xScale, y: 225 * yScale))
+            path.addLine(to: CGPoint(x: 391 * xScale, y: 310 * yScale))
+            path.addLine(to: CGPoint(x: 303 * xScale, y: 351 * yScale))
         case .logIn:
-            path.move(to: CGPoint(x: 81 * x, y: 284 * y))
-            path.addLine(to: CGPoint(x: 235 * x, y: 256 * y))
-            path.move(to: CGPoint(x: 392 * x, y: 226 * y))
-            path.addLine(to: CGPoint(x: 390 * x, y: 311 * y))
-            path.addLine(to: CGPoint(x: 310 * x, y: 353 * y))
-            path.addLine(to: CGPoint(x: 323 * x, y: 416 * y))
+            path.move(to: CGPoint(x: 81 * xScale, y: 284 * yScale))
+            path.addLine(to: CGPoint(x: 235 * xScale, y: 256 * yScale))
+            path.move(to: CGPoint(x: 392 * xScale, y: 226 * yScale))
+            path.addLine(to: CGPoint(x: 390 * xScale, y: 311 * yScale))
+            path.addLine(to: CGPoint(x: 310 * xScale, y: 353 * yScale))
+            path.addLine(to: CGPoint(x: 323 * xScale, y: 416 * yScale))
         }
         return path
     }

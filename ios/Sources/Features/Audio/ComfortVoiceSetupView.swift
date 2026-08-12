@@ -215,14 +215,17 @@ struct PersonalAudioSetupView: View {
     private func voiceRecordingCard(_ clip: PersonalAudioClipMetadata) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: 16) {
-                Button(action: { togglePlayback(clip) }) {
-                    Image(systemName: isPlaying(clip) ? "pause.fill" : "play.fill")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 54, height: 54)
-                        .background(ComfortVoiceStyle.playFill)
-                        .clipShape(Circle())
-                }
+                Button(
+                    action: { togglePlayback(clip) },
+                    label: {
+                        Image(systemName: isPlaying(clip) ? "pause.fill" : "play.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 54, height: 54)
+                            .background(ComfortVoiceStyle.playFill)
+                            .clipShape(Circle())
+                    }
+                )
                 .buttonStyle(.plain)
                 .accessibilityLabel(isPlaying(clip) ? "Pause voice recording" : "Play voice recording")
 
@@ -392,6 +395,8 @@ private struct ComfortVoiceBackground: View {
 private struct ComfortVoiceConstellation: View {
     let size: CGSize
 
+    // Decorative star data is most readable as fixed x/y/size/color tuples.
+    // swiftlint:disable:next large_tuple
     private let stars: [(CGFloat, CGFloat, CGFloat, Color)] = [
         (0.19, 0.03, 4, .purple), (0.71, 0, 4, .purple), (0.94, 0.04, 4, .purple),
         (0.30, 0.10, 4, .purple), (0.74, 0.12, 3, .cyan), (0.88, 0.18, 3, .cyan),

@@ -341,6 +341,8 @@ private struct FeatureIntroductionReferenceLayout: View {
 }
 
 private struct FeatureIntroductionBackdrop: View {
+    // Decorative star data is most readable as fixed x/y/size/color tuples.
+    // swiftlint:disable:next large_tuple
     private let stars: [(CGFloat, CGFloat, CGFloat, Color)] = [
         (26, 103, 2.1, .purple.opacity(0.67)), (151, 20, 2.6, .white.opacity(0.36)),
         (227, 0, 2.1, .purple.opacity(0.78)), (406, 19, 2.2, .purple.opacity(0.65)),
@@ -395,16 +397,16 @@ private struct FeatureIntroductionBackdrop: View {
 
 private struct FeatureIntroductionConstellation: Shape {
     func path(in rect: CGRect) -> Path {
-        let x = rect.width / 430
-        let y = rect.height / 932
+        let xScale = rect.width / 430
+        let yScale = rect.height / 932
         var path = Path()
-        path.move(to: CGPoint(x: 50 * x, y: 280 * y))
-        path.addLine(to: CGPoint(x: 228 * x, y: 248 * y))
-        path.move(to: CGPoint(x: 392 * x, y: 226 * y))
-        path.addLine(to: CGPoint(x: 391 * x, y: 310 * y))
-        path.addLine(to: CGPoint(x: 303 * x, y: 351 * y))
-        path.move(to: CGPoint(x: 303 * x, y: 351 * y))
-        path.addLine(to: CGPoint(x: 317 * x, y: 417 * y))
+        path.move(to: CGPoint(x: 50 * xScale, y: 280 * yScale))
+        path.addLine(to: CGPoint(x: 228 * xScale, y: 248 * yScale))
+        path.move(to: CGPoint(x: 392 * xScale, y: 226 * yScale))
+        path.addLine(to: CGPoint(x: 391 * xScale, y: 310 * yScale))
+        path.addLine(to: CGPoint(x: 303 * xScale, y: 351 * yScale))
+        path.move(to: CGPoint(x: 303 * xScale, y: 351 * yScale))
+        path.addLine(to: CGPoint(x: 317 * xScale, y: 417 * yScale))
         return path
     }
 }

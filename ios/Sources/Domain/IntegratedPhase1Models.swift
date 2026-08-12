@@ -70,7 +70,7 @@ nonisolated struct SleepSchedule: Codable, Equatable, Sendable {
             && (0 ... 59).contains(wakeMinute)
             && (0 ... 127).contains(weekdaysMask)
             && [0, 5, 10, 15, 30, 60].contains(reminderLeadMinutes)
-            && (wakeReminderLeadMinutes == nil || Self.wakeReminderLeadOptions.contains(wakeReminderLeadMinutes!))
+            && (wakeReminderLeadMinutes.map(Self.wakeReminderLeadOptions.contains) ?? true)
     }
 
     var wakeAlarmIsRequested: Bool {
