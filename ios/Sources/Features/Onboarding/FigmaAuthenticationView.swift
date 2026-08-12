@@ -464,8 +464,8 @@ private struct AuthenticationConstellation: Shape {
     let mode: AuthenticationEntryMode
 
     func path(in rect: CGRect) -> Path {
-        let xScale = rect.width / AuthenticationReferenceLayout.width
-        let yScale = rect.height / AuthenticationReferenceLayout.height
+        let xScale = rect.width / 430
+        let yScale = rect.height / 932
         var path = Path()
         switch mode {
         case .createAccount:
