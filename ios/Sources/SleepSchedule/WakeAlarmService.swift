@@ -20,20 +20,18 @@ private nonisolated enum WakeAlarmAudioAsset {
     }
 }
 
-actor WakeAlarmService {
-    private let manager = AlarmManager.shared
-
+nonisolated struct WakeAlarmService: Sendable {
     func reconcile(
         schedule: SleepSchedule,
         preference: AlarmPreference
     ) async -> (AlarmPreference, WakeAlarmSchedulingOutcome) {
         guard let plan = WakeAlarmPlanner.plan(for: schedule) else {
-            try? manager.cancel(id: preference.id)
+            try? AlarmManager.shared.cancel(id: preference.id)
             return (updated(preference, systemState: .notScheduled, result: .none, systemAlarmID: nil), .notRequested)
         }
 
         guard let soundName = WakeAlarmAudioAsset.alertSoundName else {
-            try? manager.cancel(id: preference.id)
+            try? AlarmManager.shared.cancel(id: preference.id)
             return (
                 updated(
                     preference,
@@ -46,11 +44,11 @@ actor WakeAlarmService {
         }
 
         do {
-            let authorization = manager.authorizationState
+            let authorization = AlarmManager.shared.authorizationState
             let authorized = if authorization == .authorized {
                 true
             } else if authorization == .notDetermined {
-                try await manager.requestAuthorization() == .authorized
+                try await AlarmManager.shared.requestAuthorization() == .authorized
             } else {
                 false
             }
@@ -58,8 +56,8 @@ actor WakeAlarmService {
                 return (updated(preference, systemState: .denied, result: .denied, systemAlarmID: nil), .denied)
             }
 
-            try? manager.cancel(id: preference.id)
-            let alarm = try await manager.schedule(
+            try? AlarmManager.shared.cancel(id: preference.id)
+            let alarm = try await AlarmManager.shared.schedule(
                 id: preference.id,
                 configuration: configuration(for: plan, soundName: soundName)
             )
