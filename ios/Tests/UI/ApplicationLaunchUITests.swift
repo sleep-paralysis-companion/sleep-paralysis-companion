@@ -147,7 +147,8 @@ final class ApplicationLaunchUITests: XCTestCase {
         let saveSchedule = app.buttons["schedule.save"]
         makeHittable(saveSchedule, in: app)
         saveSchedule.tap()
-        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
+        acceptNotificationPermissionIfNeeded()
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 12))
 
         app.buttons["home.manualEpisode"].tap()
         XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
@@ -216,8 +217,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         let saveSchedule = app.buttons["schedule.save"]
         makeHittable(saveSchedule, in: app)
         saveSchedule.tap()
+        acceptNotificationPermissionIfNeeded()
 
-        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 12))
         capture("12-home", app: app)
         app.buttons["home.manualEpisode"].tap()
 
@@ -302,6 +304,15 @@ final class ApplicationLaunchUITests: XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(element.isHittable)
+    }
+
+    @MainActor
+    private func acceptNotificationPermissionIfNeeded() {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let allowButton = springboard.buttons["Allow"]
+        if allowButton.waitForExistence(timeout: 3) {
+            allowButton.tap()
+        }
     }
 
     @MainActor
