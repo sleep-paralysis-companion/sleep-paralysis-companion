@@ -153,7 +153,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.buttons["home.manualEpisode"].tap()
         XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
         app.buttons["Optional check-in"].tap()
-        XCTAssertTrue(app.navigationBars["Morning check-in"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
     }
 
     @MainActor
@@ -227,7 +227,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         capture("13-grounding", app: app)
         app.buttons["Optional check-in"].tap()
 
-        XCTAssertTrue(app.navigationBars["Morning check-in"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
         capture("14-morning-check-in", app: app)
         app.buttons["No"].tap()
         app.buttons["Save check-in"].tap()

@@ -17,7 +17,10 @@ struct SleepParalysisCompanionWidgetProvider: TimelineProvider {
         completion(SleepParalysisCompanionWidgetEntry(date: Date()))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SleepParalysisCompanionWidgetEntry>) -> Void) {
+    func getTimeline(
+        in context: Context,
+        completion: @escaping (Timeline<SleepParalysisCompanionWidgetEntry>) -> Void
+    ) {
         _ = context
         completion(Timeline(entries: [SleepParalysisCompanionWidgetEntry(date: Date())], policy: .never))
     }
