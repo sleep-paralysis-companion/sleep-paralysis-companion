@@ -229,11 +229,14 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
         capture("14-morning-check-in", app: app)
-        app.buttons["No"].tap()
-        app.buttons["Save check-in"].tap()
+        app.buttons["No, I did not have an episode"].tap()
+        let noSleepHelp = app.buttons["Didn't use it"]
+        XCTAssertTrue(noSleepHelp.waitForExistence(timeout: 8))
+        noSleepHelp.tap()
+        let returnHome = app.buttons["Return To Home"]
+        XCTAssertTrue(returnHome.waitForExistence(timeout: 8))
+        returnHome.tap()
 
-        XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
-        app.navigationBars["Grounding"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.tabBars.buttons["History"].tap()
         XCTAssertTrue(app.staticTexts["No episode reported"].waitForExistence(timeout: 8))
