@@ -7,11 +7,11 @@ import UIKit
 @Observable
 final class AppModel {
     private(set) var launchDestination = LaunchDestination.loading
-    private(set) var path: [AppRoute] = []
-    private(set) var selectedTab = AppTab.home
-    private(set) var isMorningCheckInPresented = false
+    var path: [AppRoute] = []
+    var selectedTab = AppTab.home
+    var isMorningCheckInPresented = false
     private(set) var presentedSheet: AppSheet?
-    private(set) var feedbackMessage: String?
+    var feedbackMessage: String?
     private(set) var authenticationState = AuthenticationPresentationState.ready
     private(set) var accountAccessState = AccountAccessState.signedOut
     private(set) var profileID: UUID?
@@ -21,7 +21,7 @@ final class AppModel {
     private(set) var personalClips: [PersonalAudioClipMetadata] = []
     private(set) var recoveryAudioDefault: LocalRecoveryAudioDefault?
     private(set) var sleepSchedule = SleepSchedule.defaultValue
-    private(set) var reminderAuthorization = ReminderAuthorizationState.notDetermined
+    var reminderAuthorization = ReminderAuthorizationState.notDetermined
     private(set) var wakeAlarmOutcome = WakeAlarmSchedulingOutcome.notRequested
     private(set) var checkIns: [SubmittedCheckIn] = []
     private(set) var playbackState = GroundingPlaybackState.idle
@@ -29,18 +29,18 @@ final class AppModel {
     private(set) var exportURL: URL?
     private(set) var audioExportURL: URL?
     private(set) var selectedCheckInID: UUID?
-    private(set) var profile: LocalProfile?
-    private(set) var settings: AppSettings?
+    var profile: LocalProfile?
+    var settings: AppSettings?
 
     let environment: AppEnvironment
     let accessPolicy: AccessPolicy
     let providedAudio = ProvidedRecoveryAudio.approvedCatalog
 
-    private let store: IntegratedPhase1Store
+    let store: IntegratedPhase1Store
     private let authentication: any OAuthSessionServicing
     private let audioFiles: PersonalAudioFileStore
     private let audioController: RecoveryAudioController
-    private let reminders: SleepReminderService
+    let reminders: SleepReminderService
     private let wakeAlarms: WakeAlarmService
     private let logger: any PrivacySafeLogging
     private let restorationCodec: RouteRestorationCodec
@@ -592,61 +592,6 @@ final class AppModel {
         }
     }
 
-    func updateDisplayName(_ value: String) {
-        guard let userID, var profile else { return }
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, trimmed.count <= 80 else {
-            feedbackMessage = "Enter a display name between 1 and 80 characters."
-            return
-        }
-        profile.displayName = trimmed
-        profile.revision += 1
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                try await store.saveProfile(profile, userID: userID)
-                self.profile = profile
-            } catch {
-                feedbackMessage = "Your display name was not changed."
-            }
-        }
-    }
-
-    func saveDefaultSupport(sleep: DefaultEpisodeSupport, postEpisode: DefaultEpisodeSupport) {
-        guard let userID, var settings else { return }
-        settings.defaultSleepSupport = sleep
-        settings.defaultPostEpisodeSupport = postEpisode
-        settings.updatedAt = Date()
-        settings.revision += 1
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                try await store.saveSettings(settings, userID: userID)
-                self.settings = settings
-                feedbackMessage = "Preferences saved."
-            } catch {
-                feedbackMessage = "Your preferences were not saved."
-            }
-        }
-    }
-
-    func manageNotifications() {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                reminderAuthorization = try await reminders.requestPermission()
-                if reminderAuthorization == .denied {
-                    feedbackMessage = "Notifications are off. Enable them in iOS Settings to receive sleep reminders."
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-            } catch {
-                feedbackMessage = "Notification permission could not be requested."
-            }
-        }
-    }
-
     func createStructuredExport() {
         guard let profileID, let userID else { return }
         Task { @MainActor [weak self] in
@@ -759,12 +704,6 @@ final class AppModel {
         if value != .sleep {
             isMorningCheckInPresented = false
         }
-    }
-
-    func completeMorningCheckIn() {
-        isMorningCheckInPresented = false
-        selectedTab = .home
-        path = []
     }
 
     func dismissSheet() {

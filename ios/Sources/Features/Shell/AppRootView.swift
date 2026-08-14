@@ -120,8 +120,17 @@ struct AppRootView: View {
         }
     }
 
-    @ViewBuilder
     private func destination(_ route: AppRoute) -> some View {
+        AppRouteDestinationView(model: model, route: route)
+    }
+}
+
+@MainActor
+private struct AppRouteDestinationView: View {
+    @Bindable var model: AppModel
+    let route: AppRoute
+
+    var body: some View {
         switch route {
         case .grounding:
             GroundingView(model: model)

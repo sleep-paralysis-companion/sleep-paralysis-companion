@@ -44,8 +44,6 @@ nonisolated enum AppRoute: String, CaseIterable, Codable, Hashable, Sendable {
     case account
     case editProfile
     case defaultSettings
-    case editProfile
-    case defaultSettings
 }
 
 nonisolated enum AppSheet: String, Codable, Hashable, Identifiable, Sendable {

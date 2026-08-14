@@ -26,7 +26,7 @@ nonisolated struct LocalProfile: Equatable, Codable, Sendable {
     var ownership: ProfileOwnership
     var accountUserID: UUID?
     var accountLinkState: AccountLinkState
-    var displayName: String? = nil
+    var displayName: String?
     var revision: Int64 = 1
 }
 

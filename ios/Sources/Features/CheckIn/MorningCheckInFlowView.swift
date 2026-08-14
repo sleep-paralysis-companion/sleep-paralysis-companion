@@ -48,32 +48,32 @@ struct MorningCheckInFlowView: View {
             case .feeling:
                 answerList(
                     [
-                        ("😌", "I'm fine now", { chooseFeeling(.fineNow) }),
-                        ("😟", "Still a bit shaken", { chooseFeeling(.stillShaken) }),
-                        ("😴", "Exhausted", { chooseFeeling(.exhausted) }),
+                        AnswerOption("😌", "I'm fine now") { chooseFeeling(.fineNow) },
+                        AnswerOption("😟", "Still a bit shaken") { chooseFeeling(.stillShaken) },
+                        AnswerOption("😴", "Exhausted") { chooseFeeling(.exhausted) },
                     ]
                 )
             case .spcOutcome:
                 answerList(
                     [
-                        ("🌙", "Calmer", { chooseSPCOutcome(.calmer) }),
-                        ("😐", "No difference", { chooseSPCOutcome(.noDifference) }),
+                        AnswerOption("🌙", "Calmer") { chooseSPCOutcome(.calmer) },
+                        AnswerOption("😐", "No difference") { chooseSPCOutcome(.noDifference) },
                     ]
                 )
             case .postEpisodeSupport:
                 answerList(
                     [
-                        ("📞", "Partner Call", { chooseSupport(.partnerCall) }),
-                        ("🎧", "Calming Audio", { chooseSupport(.calmingAudio) }),
-                        ("🫂", "Partner Audio", { chooseSupport(.partnerAudio) }),
+                        AnswerOption("📞", "Partner Call") { chooseSupport(.partnerCall) },
+                        AnswerOption("🎧", "Calming Audio") { chooseSupport(.calmingAudio) },
+                        AnswerOption("🫂", "Partner Audio") { chooseSupport(.partnerAudio) },
                     ]
                 )
             case .sleepHelp:
                 answerList(
                     [
-                        ("😌", "Audio helped", { chooseSleepHelp(.audioHelped) }),
-                        ("◯", "Didn't use it", { chooseSleepHelp(.didNotUseIt) }),
-                        ("💭", "Forget it was there", { chooseSleepHelp(.forgotItWasThere) }),
+                        AnswerOption("😌", "Audio helped") { chooseSleepHelp(.audioHelped) },
+                        AnswerOption("◯", "Didn't use it") { chooseSleepHelp(.didNotUseIt) },
+                        AnswerOption("💭", "Forget it was there") { chooseSleepHelp(.forgotItWasThere) },
                     ]
                 )
             case .affirmation:
@@ -123,17 +123,17 @@ struct MorningCheckInFlowView: View {
         .accessibilityLabel(title == "YES" ? "Yes, I had an episode" : "No, I did not have an episode")
     }
 
-    private func answerList(_ answers: [(String, String, () -> Void)]) -> some View {
+    private func answerList(_ answers: [AnswerOption]) -> some View {
         VStack(spacing: 16) {
             ForEach(Array(answers.enumerated()), id: \.offset) { _, answer in
-                Button(action: answer.2) {
+                Button(action: answer.action) {
                     HStack(spacing: 18) {
-                        Text(answer.0)
+                        Text(answer.emoji)
                             .font(.system(size: 34))
                             .frame(width: 62, height: 62)
                             .background(Color(red: 0.11, green: 0.12, blue: 0.31))
                             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        Text(answer.1)
+                        Text(answer.title)
                             .font(.system(size: 24, weight: .medium, design: .rounded))
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 0)
@@ -244,6 +244,18 @@ struct MorningCheckInFlowView: View {
                 step = .affirmation(occurrence)
             }
         }
+    }
+}
+
+private struct AnswerOption {
+    let emoji: String
+    let title: String
+    let action: () -> Void
+
+    init(_ emoji: String, _ title: String, action: @escaping () -> Void) {
+        self.emoji = emoji
+        self.title = title
+        self.action = action
     }
 }
 

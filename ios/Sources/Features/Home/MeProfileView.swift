@@ -69,7 +69,8 @@ struct MeProfileView: View {
                     ))
             }
             Text(
-                "Building this for people like you. I’d love to hear about your experience and answer any questions directly."
+                "Building this for people like you. I’d love to hear about your experience " +
+                    "and answer any questions directly."
             )
             .font(.title3).foregroundStyle(.white.opacity(0.68))
             Button { openURL(URL(string: "mailto:companionsp2026@gmail.com")!) } label: {
