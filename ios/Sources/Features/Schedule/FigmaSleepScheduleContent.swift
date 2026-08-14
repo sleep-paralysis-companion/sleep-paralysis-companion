@@ -14,7 +14,7 @@ struct FigmaSleepScheduleContent: View {
             NightBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    MoonMark(size: 72)
+                    MoonMark(size: 115)
                         .frame(maxWidth: .infinity)
                         .padding(.top, isOnboarding ? 46 : 22)
 
@@ -235,7 +235,7 @@ private struct SleepTimeWheelPicker: View {
     @Binding var minute: Int
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 14) {
             SleepWheelColumn(
                 selection: displayedHour,
                 values: Array(1 ... 12),
@@ -282,37 +282,28 @@ private struct SleepWheelColumn<Value: Hashable>: View {
     let label: (Value) -> String
 
     var body: some View {
-        ZStack {
-            Picker("", selection: $selection) {
-                ForEach(values, id: \.self) { value in
-                    Text(label(value))
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
-                        .tag(value)
-                }
+        Picker("", selection: $selection) {
+            ForEach(values, id: \.self) { value in
+                Text(label(value))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .tag(value)
             }
-            .pickerStyle(.wheel)
-            .labelsHidden()
-            .frame(height: 168)
-            .mask(
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .white, location: 0.28),
-                        .init(color: .white, location: 0.72),
-                        .init(color: .clear, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color(red: 0.39, green: 0.31, blue: 0.81), lineWidth: 2)
-                .background(Color.indigo.opacity(0.26), in: RoundedRectangle(cornerRadius: 20))
-                .frame(height: 62)
-                .allowsHitTesting(false)
         }
-        .frame(maxWidth: .infinity)
+        .pickerStyle(.wheel)
+        .labelsHidden()
+        .frame(width: 88, height: 168)
+        .mask(
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .white, location: 0.28),
+                    .init(color: .white, location: 0.72),
+                    .init(color: .clear, location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
         .accessibilityElement(children: .contain)
     }
 }

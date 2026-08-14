@@ -194,6 +194,16 @@ final class LocalDatabaseTests: XCTestCase {
         await XCTAssertThrowsErrorAsync {
             try await database.submitCheckIn(longNote, draftID: nil)
         }
+
+        let expected = Phase1BFixture.checkIn()
+        try await database.submitCheckIn(expected, draftID: nil)
+        let stored = try await database.checkIn(
+            id: expected.id,
+            profileID: expected.profileID
+        )
+        XCTAssertEqual(stored?.spcOutcome, .calmer)
+        XCTAssertEqual(stored?.postEpisodeSupport, .calmingAudio)
+        XCTAssertNil(stored?.sleepHelpOutcome)
     }
 
     func testIndividualDeletionCreatesTombstoneAndStableQueueOperation() async throws {
@@ -346,7 +356,7 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertThrowsError(try LocalDatabase(path: path)) { error in
             XCTAssertEqual(
                 error as? LocalDatabaseError,
-                .unsupportedNewerSchema(found: 99, supported: 4)
+                .unsupportedNewerSchema(found: 99, supported: 5)
             )
         }
         let preserved = try queue.read {
@@ -364,27 +374,27 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), bytes)
     }
 
-    func testMigrationFromCommittedV1ToV4() async throws {
+    func testMigrationFromCommittedV1ToV5() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v1_core_local_data")
 
         let migrated = try LocalDatabase(path: path)
         let version = try await migrated.schemaVersion()
-        XCTAssertEqual(version, 4)
+        XCTAssertEqual(version, 5)
     }
 
-    func testMigrationFromCommittedV2ToV4() async throws {
+    func testMigrationFromCommittedV2ToV5() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v2_sync_security_foundation")
 
         let migrated = try LocalDatabase(path: path)
         let version = try await migrated.schemaVersion()
-        XCTAssertEqual(version, 4)
+        XCTAssertEqual(version, 5)
     }
 
-    func testMigrationFromCommittedV3ToV4PreservesNoFabricatedPersonaData() async throws {
+    func testMigrationFromCommittedV3ToV5PreservesNoFabricatedPersonaData() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v3_persona_and_local_personal_audio")
@@ -400,7 +410,7 @@ final class LocalDatabaseTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             authenticatedUserID: Phase1BFixture.userID
         )
-        XCTAssertEqual(version, 4)
+        XCTAssertEqual(version, 5)
         XCTAssertNil(persona)
     }
 

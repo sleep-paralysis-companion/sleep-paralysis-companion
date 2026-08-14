@@ -32,6 +32,8 @@ extension LocalDatabase {
                             hapticsEnabled: true,
                             lastSelectedHistoryPeriod: .thirtyDays,
                             diagnosticsEnabled: false,
+                            defaultSleepSupport: .quickSleep,
+                            defaultPostEpisodeSupport: .calmingAudio,
                             updatedAt: now,
                             revision: 1
                         )
@@ -58,7 +60,9 @@ extension LocalDatabase {
                 productNoticeSeenAt: now,
                 ownership: .accountLinked,
                 accountUserID: userID,
-                accountLinkState: .linked
+                accountLinkState: .linked,
+                displayName: nil,
+                revision: 1
             )
             try LocalProfileRecord(profile).insert(database)
             try AppSettingsRecord(
@@ -69,6 +73,8 @@ extension LocalDatabase {
                     hapticsEnabled: true,
                     lastSelectedHistoryPeriod: .thirtyDays,
                     diagnosticsEnabled: false,
+                    defaultSleepSupport: .quickSleep,
+                    defaultPostEpisodeSupport: .calmingAudio,
                     updatedAt: now,
                     revision: 1
                 )

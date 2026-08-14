@@ -8,6 +8,7 @@ nonisolated struct Phase1ResumeSnapshot: Sendable {
     let audioDefault: LocalRecoveryAudioDefault?
     let schedule: SleepSchedule
     let checkIns: [SubmittedCheckIn]
+    let settings: AppSettings
 }
 
 actor IntegratedPhase1Store {
@@ -171,6 +172,21 @@ actor IntegratedPhase1Store {
         await synchronizePending(profileID: value.profileID, userID: userID)
     }
 
+    func saveProfile(_ profile: LocalProfile, userID: UUID) async throws {
+        guard profile.accountUserID == userID else { throw AuthenticationError.wrongAccount }
+        let database = try databaseInstance()
+        try await database.saveProfile(profile)
+        try await enqueueLatestUpsert(database: database, profileID: profile.id, entityType: .profile, entityID: profile.id, revision: profile.revision)
+        await synchronizePending(profileID: profile.id, userID: userID)
+    }
+
+    func saveSettings(_ settings: AppSettings, userID: UUID) async throws {
+        let database = try databaseInstance()
+        try await database.saveSettings(settings)
+        try await enqueueLatestUpsert(database: database, profileID: settings.profileID, entityType: .settings, entityID: settings.profileID, revision: settings.revision)
+        await synchronizePending(profileID: settings.profileID, userID: userID)
+    }
+
     func deleteCheckIn(_ value: SubmittedCheckIn, userID: UUID) async throws {
         try await databaseInstance().deleteCheckIn(
             DeleteCheckInRequest(
@@ -252,6 +268,9 @@ actor IntegratedPhase1Store {
         )
         let schedule = try await preferences.read(userID: userID) ?? .defaultValue
         let checkIns = try await database.checkIns(profileID: profile.id)
+        guard let settings = try await database.settings(profileID: profile.id) else {
+            throw LocalDatabaseError.corruptOrUnreadable
+        }
         return Phase1ResumeSnapshot(
             profile: profile,
             questionnaireDraft: questionnaireDraft,
@@ -259,7 +278,8 @@ actor IntegratedPhase1Store {
             clips: clips,
             audioDefault: audioDefault,
             schedule: schedule,
-            checkIns: checkIns
+            checkIns: checkIns,
+            settings: settings
         )
     }
 

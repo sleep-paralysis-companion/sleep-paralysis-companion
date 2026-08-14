@@ -152,15 +152,12 @@ nonisolated enum GroundingPlaybackState: Equatable, Sendable {
 nonisolated struct MorningCheckInForm: Equatable, Sendable {
     var occurrence: EpisodeOccurrence?
     var presentState: PresentState?
-    var perceivedIntensity: PerceivedIntensity?
-    var note = ""
+    var spcOutcome: SPCOutcome?
+    var postEpisodeSupport: PostEpisodeSupport?
+    var sleepHelpOutcome: SleepHelpOutcome?
 
     var canSubmit: Bool {
-        guard let occurrence else { return false }
-        if occurrence == .no {
-            return true
-        }
-        return presentState != nil
+        occurrence != nil
     }
 }
 

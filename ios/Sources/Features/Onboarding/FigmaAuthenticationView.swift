@@ -335,7 +335,12 @@ private struct AuthenticationProviderButton: View {
     private var providerMark: some View {
         switch provider {
         case .google:
-            GoogleMark()
+            Image(decorative: "GoogleGLogo", bundle: .main)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
+                // Google's supplied artwork is kept at its native aspect ratio.
+                .frame(width: 18, height: 18)
         case .apple:
             Image(systemName: "apple.logo")
                 .font(.system(size: 25, weight: .medium))
@@ -359,58 +364,7 @@ private struct AuthenticationInlineMessage: View {
 
 private struct AuthenticationMoon: View {
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [Color(red: 0.40, green: 0.22, blue: 0.95), .clear],
-                        center: .center,
-                        startRadius: 6,
-                        endRadius: 63
-                    )
-                )
-                .frame(width: 126, height: 126)
-                .blur(radius: 7)
-            Circle()
-                .fill(Color(red: 0.054, green: 0.018, blue: 0.22))
-                .frame(width: 68, height: 68)
-                .offset(x: 0, y: -4)
-            Circle()
-                .fill(AuthenticationPalette.background)
-                .frame(width: 68, height: 68)
-                .offset(x: 20, y: -17)
-        }
-        .frame(width: 126, height: 126)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct GoogleMark: View {
-    var body: some View {
-        ZStack {
-            Circle()
-                .trim(from: 0.05, to: 0.26)
-                .stroke(Color(red: 0.26, green: 0.52, blue: 0.96), style: StrokeStyle(lineWidth: 5, lineCap: .butt))
-                .rotationEffect(.degrees(-42))
-            Circle()
-                .trim(from: 0.27, to: 0.51)
-                .stroke(Color(red: 0.20, green: 0.69, blue: 0.32), style: StrokeStyle(lineWidth: 5, lineCap: .butt))
-                .rotationEffect(.degrees(-42))
-            Circle()
-                .trim(from: 0.52, to: 0.76)
-                .stroke(Color(red: 0.98, green: 0.75, blue: 0.16), style: StrokeStyle(lineWidth: 5, lineCap: .butt))
-                .rotationEffect(.degrees(-42))
-            Circle()
-                .trim(from: 0.77, to: 1)
-                .stroke(Color(red: 0.93, green: 0.28, blue: 0.23), style: StrokeStyle(lineWidth: 5, lineCap: .butt))
-                .rotationEffect(.degrees(-42))
-            Rectangle()
-                .fill(Color(red: 0.26, green: 0.52, blue: 0.96))
-                .frame(width: 10, height: 5)
-                .offset(x: 5, y: 1)
-        }
-        .frame(width: 24, height: 24)
-        .accessibilityHidden(true)
+        MoonMark(size: 126)
     }
 }
 

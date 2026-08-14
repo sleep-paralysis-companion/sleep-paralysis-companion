@@ -2,66 +2,9 @@ import SwiftUI
 
 struct MorningCheckInView: View {
     @Bindable var model: AppModel
-    let editing: SubmittedCheckIn?
-    @State private var form: MorningCheckInForm
-
-    init(model: AppModel, editing: SubmittedCheckIn? = nil) {
-        self.model = model
-        self.editing = editing
-        _form = State(
-            initialValue: MorningCheckInForm(
-                occurrence: editing?.occurrence,
-                presentState: editing?.presentState,
-                perceivedIntensity: editing?.perceivedIntensity,
-                note: editing?.note ?? ""
-            )
-        )
-    }
 
     var body: some View {
-        Form {
-            Section {
-                Picker("Did you have an episode last night?", selection: $form.occurrence) {
-                    Text("Choose").tag(EpisodeOccurrence?.none)
-                    Text("Yes").tag(EpisodeOccurrence?.some(.yes))
-                    Text("No").tag(EpisodeOccurrence?.some(.no))
-                }
-                .pickerStyle(.segmented)
-            }
-            if form.occurrence == .yes {
-                Section("How are you feeling now?") {
-                    Picker("Present state", selection: $form.presentState) {
-                        Text("Choose").tag(PresentState?.none)
-                        Text("I’m fine now").tag(PresentState?.some(.fineNow))
-                        Text("Still a bit shaken").tag(PresentState?.some(.stillShaken))
-                        Text("Exhausted").tag(PresentState?.some(.exhausted))
-                    }
-                    Picker("How intense did it feel? (optional)", selection: $form.perceivedIntensity) {
-                        Text("Not entered").tag(PerceivedIntensity?.none)
-                        ForEach(PerceivedIntensity.allCases, id: \.self) { value in
-                            Text(value.rawValue.capitalized).tag(PerceivedIntensity?.some(value))
-                        }
-                    }
-                }
-            }
-            Section("Private note (optional)") {
-                TextField("What would you like to remember?", text: $form.note, axis: .vertical)
-                    .lineLimit(3 ... 7)
-            }
-            Section {
-                Button(editing == nil ? "Save check-in" : "Save changes") {
-                    model.submitCheckIn(form, editing: editing)
-                }
-                .disabled(!form.canSubmit || form.note.count > 500)
-            } footer: {
-                Text(
-                    "This information is descriptive. Sleep Paralysis Companion does not calculate a clinical " +
-                        "score, diagnosis, or risk."
-                )
-            }
-        }
-        .navigationTitle(editing == nil ? "Morning check-in" : "Edit check-in")
-        .navigationBarTitleDisplayMode(.inline)
+        MorningCheckInFlowView(model: model)
     }
 }
 
@@ -83,9 +26,16 @@ struct CheckInDetailView: View {
                             if let presentState = value.presentState {
                                 LabeledContent("Current feeling", value: presentState.displayName)
                             }
-                            if let intensity = value.perceivedIntensity {
-                                LabeledContent("Entered intensity", value: intensity.rawValue.capitalized)
+                            if let spcOutcome = value.spcOutcome {
+                                LabeledContent("After SPC", value: spcOutcome.displayName)
                             }
+                            if let support = value.postEpisodeSupport {
+                                LabeledContent("Used after episode", value: support.displayName)
+                            }
+                        }
+                    } else if let sleepHelp = value.sleepHelpOutcome {
+                        Section("SPC and sleep") {
+                            LabeledContent("Outcome", value: sleepHelp.displayName)
                         }
                     }
                     if let note = value.note {
@@ -100,7 +50,7 @@ struct CheckInDetailView: View {
                 }
                 .sheet(isPresented: $editing) {
                     NavigationStack {
-                        MorningCheckInView(model: model, editing: value)
+                        CheckInEditorView(model: model, editing: value)
                             .toolbar {
                                 ToolbarItem(placement: .cancellationAction) {
                                     Button("Close") { editing = false }
@@ -127,6 +77,35 @@ private extension PresentState {
         case .fineNow: "I’m fine now"
         case .stillShaken: "Still a bit shaken"
         case .exhausted: "Exhausted"
+        }
+    }
+}
+
+private extension SPCOutcome {
+    var displayName: String {
+        switch self {
+        case .calmer: "Calmer"
+        case .noDifference: "No difference"
+        }
+    }
+}
+
+private extension PostEpisodeSupport {
+    var displayName: String {
+        switch self {
+        case .partnerCall: "Partner Call"
+        case .calmingAudio: "Calming Audio"
+        case .partnerAudio: "Partner Audio"
+        }
+    }
+}
+
+private extension SleepHelpOutcome {
+    var displayName: String {
+        switch self {
+        case .audioHelped: "Audio helped"
+        case .didNotUseIt: "Didn't use it"
+        case .forgotItWasThere: "Forget it was there"
         }
     }
 }

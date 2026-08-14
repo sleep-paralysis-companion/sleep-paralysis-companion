@@ -594,10 +594,6 @@ private struct FeatureIntroductionCommunity: View {
                 avatar("M", color: Color(red: 0.08, green: 0.29, blue: 0.74))
                 avatar("J", color: Color(red: 0.00, green: 0.32, blue: 0.48))
             }
-            Text("Joined by 12,400+ people")
-                .font(.system(size: 15, weight: .regular))
-                .foregroundStyle(Color(red: 0.66, green: 0.54, blue: 1))
-                .padding(.leading, 13)
         }
         .frame(width: 246, height: 30, alignment: .leading)
     }

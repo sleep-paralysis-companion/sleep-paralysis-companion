@@ -388,11 +388,14 @@ final class AuthenticatedJourneyDomainCoverageTests: XCTestCase {
     func testCheckInHistoryAndDeletionFormsRetainExplicitValidation() {
         XCTAssertFalse(MorningCheckInForm().canSubmit)
         XCTAssertTrue(MorningCheckInForm(occurrence: .no).canSubmit)
+        XCTAssertTrue(MorningCheckInForm(occurrence: .yes).canSubmit)
+        XCTAssertTrue(MorningCheckInForm(occurrence: .no, sleepHelpOutcome: .didNotUseIt).canSubmit)
         XCTAssertTrue(
             MorningCheckInForm(
                 occurrence: .yes,
                 presentState: .stillShaken,
-                perceivedIntensity: .moderate
+                spcOutcome: .noDifference,
+                postEpisodeSupport: .partnerCall
             ).canSubmit
         )
     }

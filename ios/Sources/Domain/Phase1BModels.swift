@@ -26,6 +26,16 @@ nonisolated struct LocalProfile: Equatable, Codable, Sendable {
     var ownership: ProfileOwnership
     var accountUserID: UUID?
     var accountLinkState: AccountLinkState
+    var displayName: String? = nil
+    var revision: Int64 = 1
+}
+
+nonisolated enum DefaultEpisodeSupport: String, Codable, CaseIterable, Sendable {
+    case quickSleep
+    case longSleepAid
+    case callPartner
+    case calmingAudio
+    case partnerVoice
 }
 
 nonisolated enum GroundingModality: String, Codable, CaseIterable, Sendable {
@@ -47,6 +57,8 @@ nonisolated struct AppSettings: Equatable, Codable, Sendable {
     var hapticsEnabled: Bool
     var lastSelectedHistoryPeriod: HistoryPeriod
     var diagnosticsEnabled: Bool
+    var defaultSleepSupport: DefaultEpisodeSupport = .quickSleep
+    var defaultPostEpisodeSupport: DefaultEpisodeSupport = .calmingAudio
     var updatedAt: Date
     var revision: Int64
 }
@@ -131,6 +143,23 @@ nonisolated enum PresentState: String, Codable, CaseIterable, Sendable {
     case exhausted
 }
 
+nonisolated enum SPCOutcome: String, Codable, CaseIterable, Sendable {
+    case calmer
+    case noDifference = "no_difference"
+}
+
+nonisolated enum PostEpisodeSupport: String, Codable, CaseIterable, Sendable {
+    case partnerCall = "partner_call"
+    case calmingAudio = "calming_audio"
+    case partnerAudio = "partner_audio"
+}
+
+nonisolated enum SleepHelpOutcome: String, Codable, CaseIterable, Sendable {
+    case audioHelped = "audio_helped"
+    case didNotUseIt = "did_not_use_it"
+    case forgotItWasThere = "forgot_it_was_there"
+}
+
 nonisolated struct SubmittedCheckIn: Equatable, Codable, Sendable {
     let id: UUID
     let profileID: UUID
@@ -139,6 +168,9 @@ nonisolated struct SubmittedCheckIn: Equatable, Codable, Sendable {
     var occurrence: EpisodeOccurrence
     var perceivedIntensity: PerceivedIntensity?
     var presentState: PresentState?
+    var spcOutcome: SPCOutcome?
+    var postEpisodeSupport: PostEpisodeSupport?
+    var sleepHelpOutcome: SleepHelpOutcome?
     var note: String?
     let createdAt: Date
     var updatedAt: Date
@@ -281,6 +313,7 @@ nonisolated enum Phase1BValidationError: Error, Equatable, Sendable {
     case invalidLocalDate
     case invalidAlarmTime
     case intensityWithoutOccurrence
+    case invalidCheckInFlow
     case invalidRevision
     case wrongAccount
     case unsupportedProvider

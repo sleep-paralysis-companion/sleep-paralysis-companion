@@ -18,9 +18,7 @@ struct PersonalAudioSetupView: View {
                     heading
                     microphoneStage
 
-                    if model.isRecording || latestClip != nil {
-                        suggestedScript.padding(.top, 30)
-                    }
+                    suggestedScript.padding(.top, 30)
 
                     if let latestClip {
                         voiceRecordingCard(latestClip).padding(.top, 34)

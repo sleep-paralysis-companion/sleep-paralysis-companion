@@ -4,12 +4,14 @@ nonisolated struct RemoteProfileDTO: Codable, Equatable, Sendable {
     let id: UUID
     let ownerUserID: UUID
     let profileCreatedAt: Date
+    let displayName: String?
     let revision: Int64
 
     enum CodingKeys: String, CodingKey {
         case id
         case ownerUserID = "owner_user_id"
         case profileCreatedAt = "profile_created_at"
+        case displayName = "display_name"
         case revision
     }
 }
@@ -20,6 +22,8 @@ nonisolated struct RemoteSettingsDTO: Codable, Equatable, Sendable {
     let preferredGroundingAssetID: String?
     let preferredModality: String
     let hapticsEnabled: Bool
+    let defaultSleepSupport: String
+    let defaultPostEpisodeSupport: String
     let revision: Int64
 
     enum CodingKeys: String, CodingKey {
@@ -28,6 +32,8 @@ nonisolated struct RemoteSettingsDTO: Codable, Equatable, Sendable {
         case preferredGroundingAssetID = "preferred_grounding_asset_id"
         case preferredModality = "preferred_modality"
         case hapticsEnabled = "haptics_enabled"
+        case defaultSleepSupport = "default_sleep_support"
+        case defaultPostEpisodeSupport = "default_post_episode_support"
         case revision
     }
 }

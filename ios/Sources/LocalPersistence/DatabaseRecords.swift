@@ -12,6 +12,8 @@ nonisolated struct LocalProfileRecord: Codable, FetchableRecord, PersistableReco
     var ownership: String
     var accountUserID: String?
     var accountLinkState: String
+    var displayName: String?
+    var revision: Int64
 }
 
 nonisolated struct AppSettingsRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
@@ -23,6 +25,8 @@ nonisolated struct AppSettingsRecord: Codable, FetchableRecord, PersistableRecor
     var hapticsEnabled: Bool
     var lastSelectedHistoryPeriod: String
     var diagnosticsEnabled: Bool
+    var defaultSleepSupport: String
+    var defaultPostEpisodeSupport: String
     var updatedAt: Double
     var revision: Int64
 }
@@ -80,6 +84,9 @@ nonisolated struct SubmittedCheckInRecord: Codable, FetchableRecord, Persistable
     var occurrence: String
     var perceivedIntensity: String?
     var presentState: String?
+    var spcOutcome: String?
+    var postEpisodeSupport: String?
+    var sleepHelpOutcome: String?
     var note: String?
     var createdAt: Double
     var updatedAt: Double

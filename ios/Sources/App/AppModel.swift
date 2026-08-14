@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import UIKit
 
 @MainActor
 @Observable
@@ -8,6 +9,7 @@ final class AppModel {
     private(set) var launchDestination = LaunchDestination.loading
     private(set) var path: [AppRoute] = []
     private(set) var selectedTab = AppTab.home
+    private(set) var isMorningCheckInPresented = false
     private(set) var presentedSheet: AppSheet?
     private(set) var feedbackMessage: String?
     private(set) var authenticationState = AuthenticationPresentationState.ready
@@ -27,6 +29,8 @@ final class AppModel {
     private(set) var exportURL: URL?
     private(set) var audioExportURL: URL?
     private(set) var selectedCheckInID: UUID?
+    private(set) var profile: LocalProfile?
+    private(set) var settings: AppSettings?
 
     let environment: AppEnvironment
     let accessPolicy: AccessPolicy
@@ -491,8 +495,11 @@ final class AppModel {
         return true
     }
 
-    func submitCheckIn(_ form: MorningCheckInForm, editing: SubmittedCheckIn? = nil) {
-        guard let profileID, let userID, let occurrence = form.occurrence, form.canSubmit else { return }
+    @discardableResult
+    func submitCheckIn(_ form: MorningCheckInForm, editing: SubmittedCheckIn? = nil) async -> Bool {
+        guard let profileID, let userID, let occurrence = form.occurrence, form.canSubmit else {
+            return false
+        }
         let now = Date()
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -504,28 +511,28 @@ final class AppModel {
             reportedForLocalDate: editing?.reportedForLocalDate ?? formatter.string(from: now),
             reportedTimezoneID: TimeZone.current.identifier,
             occurrence: occurrence,
-            perceivedIntensity: occurrence == .yes ? form.perceivedIntensity : nil,
+            perceivedIntensity: nil,
             presentState: occurrence == .yes ? form.presentState : nil,
-            note: form.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? nil
-                : form.note.trimmingCharacters(in: .whitespacesAndNewlines),
+            spcOutcome: occurrence == .yes ? form.spcOutcome : nil,
+            postEpisodeSupport: occurrence == .yes ? form.postEpisodeSupport : nil,
+            sleepHelpOutcome: occurrence == .no ? form.sleepHelpOutcome : nil,
+            note: nil,
             createdAt: editing?.createdAt ?? now,
             updatedAt: now,
             revision: (editing?.revision ?? 0) + 1,
             deletedAt: nil
         )
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                try await store.saveCheckIn(value, userID: userID)
-                checkIns.removeAll { $0.id == value.id }
-                checkIns.insert(value, at: 0)
-                if path.last == .morningCheckIn {
-                    path.removeLast()
-                }
-            } catch {
-                feedbackMessage = "The check-in could not be saved. Your draft remains on screen."
+        do {
+            try await store.saveCheckIn(value, userID: userID)
+            checkIns.removeAll { $0.id == value.id }
+            checkIns.insert(value, at: 0)
+            if path.last == .morningCheckIn {
+                path.removeLast()
             }
+            return true
+        } catch {
+            feedbackMessage = "The check-in could not be saved. Your answers remain on screen."
+            return false
         }
     }
 
@@ -581,6 +588,61 @@ final class AppModel {
                 path.removeAll { $0 == .editQuestionnaire }
             } catch {
                 feedbackMessage = "The answers were not changed."
+            }
+        }
+    }
+
+    func updateDisplayName(_ value: String) {
+        guard let userID, var profile else { return }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.count <= 80 else {
+            feedbackMessage = "Enter a display name between 1 and 80 characters."
+            return
+        }
+        profile.displayName = trimmed
+        profile.revision += 1
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await store.saveProfile(profile, userID: userID)
+                self.profile = profile
+            } catch {
+                feedbackMessage = "Your display name was not changed."
+            }
+        }
+    }
+
+    func saveDefaultSupport(sleep: DefaultEpisodeSupport, postEpisode: DefaultEpisodeSupport) {
+        guard let userID, var settings else { return }
+        settings.defaultSleepSupport = sleep
+        settings.defaultPostEpisodeSupport = postEpisode
+        settings.updatedAt = Date()
+        settings.revision += 1
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await store.saveSettings(settings, userID: userID)
+                self.settings = settings
+                feedbackMessage = "Preferences saved."
+            } catch {
+                feedbackMessage = "Your preferences were not saved."
+            }
+        }
+    }
+
+    func manageNotifications() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                reminderAuthorization = try await reminders.requestPermission()
+                if reminderAuthorization == .denied {
+                    feedbackMessage = "Notifications are off. Enable them in iOS Settings to receive sleep reminders."
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            } catch {
+                feedbackMessage = "Notification permission could not be requested."
             }
         }
     }
@@ -664,6 +726,12 @@ final class AppModel {
 
     func open(_ route: AppRoute) {
         guard launchDestination == .home else { return }
+        if route == .morningCheckIn {
+            isMorningCheckInPresented = true
+            selectedTab = .sleep
+            path = []
+            return
+        }
         path.append(route)
         if route == .grounding {
             logger.record(.routeChanged, category: .navigation)
@@ -687,6 +755,15 @@ final class AppModel {
 
     func selectTab(_ value: AppTab) {
         selectedTab = value
+        path = []
+        if value != .sleep {
+            isMorningCheckInPresented = false
+        }
+    }
+
+    func completeMorningCheckIn() {
+        isMorningCheckInPresented = false
+        selectedTab = .home
         path = []
     }
 
@@ -714,6 +791,8 @@ final class AppModel {
         sleepSchedule = snapshot.schedule
         wakeAlarmOutcome = snapshot.schedule.wakeAlarmIsRequested ? .audioAssetUnavailable : .notRequested
         checkIns = snapshot.checkIns.sorted { $0.reportedForLocalDate > $1.reportedForLocalDate }
+        profile = snapshot.profile
+        settings = snapshot.settings
         feedbackMessage = nil
 
         if let next = snapshot.questionnaireDraft?.firstUnansweredQuestion {
@@ -753,12 +832,18 @@ final class AppModel {
         selectedTab = envelope.selectedTab
         path = envelope.path
         presentedSheet = envelope.sheet
+        if path.last == .morningCheckIn {
+            path.removeLast()
+            isMorningCheckInPresented = true
+            selectedTab = .sleep
+        }
     }
 
     private func resetNavigation() {
         selectedTab = .home
         path = []
         presentedSheet = nil
+        isMorningCheckInPresented = false
     }
 
     private func clearSessionState() {
@@ -766,6 +851,8 @@ final class AppModel {
         session = nil
         userID = nil
         profileID = nil
+        profile = nil
+        settings = nil
         questionnaireDraft = nil
         persona = nil
         personalClips = []

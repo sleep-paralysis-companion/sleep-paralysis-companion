@@ -122,6 +122,7 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
                 id: profile.id,
                 ownerUserID: ownerUserID,
                 profileCreatedAt: profile.createdAt,
+                displayName: profile.displayName,
                 revision: operation.localRevision
             )
         )
@@ -145,6 +146,8 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
                 preferredGroundingAssetID: settings.preferredGroundingAssetID,
                 preferredModality: settings.preferredModality.rawValue,
                 hapticsEnabled: settings.hapticsEnabled,
+                defaultSleepSupport: settings.defaultSleepSupport.rawValue,
+                defaultPostEpisodeSupport: settings.defaultPostEpisodeSupport.rawValue,
                 revision: settings.revision
             )
         )

@@ -638,6 +638,20 @@ actor LocalDatabase {
         if checkIn.occurrence == .no, checkIn.perceivedIntensity != nil {
             throw Phase1BValidationError.intensityWithoutOccurrence
         }
+        switch checkIn.occurrence {
+        case .yes:
+            guard checkIn.sleepHelpOutcome == nil
+            else {
+                throw Phase1BValidationError.invalidCheckInFlow
+            }
+        case .no:
+            guard checkIn.presentState == nil,
+                  checkIn.spcOutcome == nil,
+                  checkIn.postEpisodeSupport == nil
+            else {
+                throw Phase1BValidationError.invalidCheckInFlow
+            }
+        }
         try validateNote(checkIn.note)
     }
 

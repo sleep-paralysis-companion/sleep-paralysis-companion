@@ -31,7 +31,7 @@ final class NavigationStateTests: XCTestCase {
         let profileID = UUID()
         let envelope = RouteRestorationEnvelope(
             profileID: profileID,
-            selectedTab: .settings,
+            selectedTab: .me,
             path: [.dataPrivacy, .helpLegal],
             sheet: .structuredExport
         )
@@ -59,15 +59,17 @@ final class NavigationStateTests: XCTestCase {
         XCTAssertFalse(invalidReminder.isValid)
     }
 
-    func testMorningCheckInRequiresOccurrenceAndPresentStateAfterEpisode() {
+    func testMorningCheckInCanSubmitAfterTheEpisodeAnswerWhenLaterQuestionsAreSkipped() {
         XCTAssertFalse(MorningCheckInForm().canSubmit)
         XCTAssertTrue(MorningCheckInForm(occurrence: .no).canSubmit)
-        XCTAssertFalse(MorningCheckInForm(occurrence: .yes).canSubmit)
+        XCTAssertTrue(MorningCheckInForm(occurrence: .no, sleepHelpOutcome: .audioHelped).canSubmit)
+        XCTAssertTrue(MorningCheckInForm(occurrence: .yes).canSubmit)
         XCTAssertTrue(
             MorningCheckInForm(
                 occurrence: .yes,
                 presentState: .fineNow,
-                perceivedIntensity: .moderate
+                spcOutcome: .calmer,
+                postEpisodeSupport: .calmingAudio
             ).canSubmit
         )
     }

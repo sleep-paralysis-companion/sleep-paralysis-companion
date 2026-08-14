@@ -30,7 +30,9 @@ extension LocalDatabase {
             productNoticeSeenAt: value.productNoticeSeenAt,
             ownership: .guestLocal,
             accountUserID: nil,
-            accountLinkState: .localOnly
+            accountLinkState: .localOnly,
+            displayName: nil,
+            revision: 1
         )
         try write { database in
             try LocalProfileRecord(profile).insert(database)

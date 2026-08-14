@@ -14,6 +14,8 @@ nonisolated extension LocalProfileRecord {
         ownership = value.ownership.rawValue
         accountUserID = value.accountUserID?.uuidString
         accountLinkState = value.accountLinkState.rawValue
+        displayName = value.displayName
+        revision = value.revision
     }
 
     func domainValue() throws -> LocalProfile {
@@ -31,7 +33,9 @@ nonisolated extension LocalProfileRecord {
             productNoticeSeenAt: Date(timeIntervalSince1970: productNoticeSeenAt),
             ownership: storedOwnership,
             accountUserID: accountUserID.flatMap(UUID.init(uuidString:)),
-            accountLinkState: linkState
+            accountLinkState: linkState,
+            displayName: displayName,
+            revision: revision
         )
     }
 }
@@ -44,6 +48,8 @@ nonisolated extension AppSettingsRecord {
         hapticsEnabled = value.hapticsEnabled
         lastSelectedHistoryPeriod = value.lastSelectedHistoryPeriod.rawValue
         diagnosticsEnabled = value.diagnosticsEnabled
+        defaultSleepSupport = value.defaultSleepSupport.rawValue
+        defaultPostEpisodeSupport = value.defaultPostEpisodeSupport.rawValue
         updatedAt = value.updatedAt.timeIntervalSince1970
         revision = value.revision
     }
@@ -51,7 +57,9 @@ nonisolated extension AppSettingsRecord {
     func domainValue() throws -> AppSettings {
         guard let identifier = UUID(uuidString: profileID),
               let modality = GroundingModality(rawValue: preferredModality),
-              let period = HistoryPeriod(rawValue: lastSelectedHistoryPeriod)
+              let period = HistoryPeriod(rawValue: lastSelectedHistoryPeriod),
+              let sleepSupport = DefaultEpisodeSupport(rawValue: defaultSleepSupport),
+              let postEpisodeSupport = DefaultEpisodeSupport(rawValue: defaultPostEpisodeSupport)
         else {
             throw RecordMappingError.invalidStoredValue(table: Self.databaseTableName, field: "enum")
         }
@@ -62,6 +70,8 @@ nonisolated extension AppSettingsRecord {
             hapticsEnabled: hapticsEnabled,
             lastSelectedHistoryPeriod: period,
             diagnosticsEnabled: diagnosticsEnabled,
+            defaultSleepSupport: sleepSupport,
+            defaultPostEpisodeSupport: postEpisodeSupport,
             updatedAt: Date(timeIntervalSince1970: updatedAt),
             revision: revision
         )
@@ -120,6 +130,9 @@ nonisolated extension SubmittedCheckInRecord {
         occurrence = value.occurrence.rawValue
         perceivedIntensity = value.perceivedIntensity?.rawValue
         presentState = value.presentState?.rawValue
+        spcOutcome = value.spcOutcome?.rawValue
+        postEpisodeSupport = value.postEpisodeSupport?.rawValue
+        sleepHelpOutcome = value.sleepHelpOutcome?.rawValue
         note = value.note
         createdAt = value.createdAt.timeIntervalSince1970
         updatedAt = value.updatedAt.timeIntervalSince1970
@@ -142,6 +155,9 @@ nonisolated extension SubmittedCheckInRecord {
             occurrence: storedOccurrence,
             perceivedIntensity: perceivedIntensity.flatMap(PerceivedIntensity.init(rawValue:)),
             presentState: presentState.flatMap(PresentState.init(rawValue:)),
+            spcOutcome: spcOutcome.flatMap(SPCOutcome.init(rawValue:)),
+            postEpisodeSupport: postEpisodeSupport.flatMap(PostEpisodeSupport.init(rawValue:)),
+            sleepHelpOutcome: sleepHelpOutcome.flatMap(SleepHelpOutcome.init(rawValue:)),
             note: note,
             createdAt: Date(timeIntervalSince1970: createdAt),
             updatedAt: Date(timeIntervalSince1970: updatedAt),

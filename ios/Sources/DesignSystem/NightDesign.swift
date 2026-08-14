@@ -61,27 +61,11 @@ struct MoonMark: View {
     var size: CGFloat = 112
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [Color.purple.opacity(0.75), .clear],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: size * 0.8
-                    )
-                )
-                .frame(width: size * 1.6, height: size * 1.6)
-            Circle()
-                .fill(Color(red: 0.03, green: 0.02, blue: 0.14))
-                .frame(width: size, height: size)
-                .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(Color.indigo.opacity(0.45))
-                        .frame(width: size * 0.44)
-                }
-        }
-        .accessibilityHidden(true)
+        Image(decorative: "MoonArtwork", bundle: .main)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
     }
 }
 

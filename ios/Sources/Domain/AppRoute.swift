@@ -1,9 +1,34 @@
 import Foundation
 
 nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
+    case sleep
+    case journal
     case home
-    case history
-    case settings
+    case report
+    case me
+
+    init(from decoder: any Decoder) throws {
+        let rawValue = try decoder.singleValueContainer().decode(String.self)
+        switch rawValue {
+        case "history":
+            self = .journal
+        case "settings":
+            self = .me
+        default:
+            guard let value = Self(rawValue: rawValue) else {
+                throw DecodingError.dataCorruptedError(
+                    in: try decoder.singleValueContainer(),
+                    debugDescription: "Unknown app tab: \(rawValue)"
+                )
+            }
+            self = value
+        }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
 
 nonisolated enum AppRoute: String, CaseIterable, Codable, Hashable, Sendable {
@@ -17,6 +42,10 @@ nonisolated enum AppRoute: String, CaseIterable, Codable, Hashable, Sendable {
     case dataPrivacy
     case helpLegal
     case account
+    case editProfile
+    case defaultSettings
+    case editProfile
+    case defaultSettings
 }
 
 nonisolated enum AppSheet: String, Codable, Hashable, Identifiable, Sendable {

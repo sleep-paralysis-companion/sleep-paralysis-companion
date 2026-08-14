@@ -156,7 +156,7 @@ nonisolated struct LocalExportService: Sendable {
         let settingsData = try encoder.encode(snapshot.settings)
         let alarmData = try encoder.encode(snapshot.alarm)
         let visibleCheckIns = snapshot.checkIns.filter { $0.deletedAt == nil }
-        let checkInsData = try encoder.encode(visibleCheckIns)
+        let checkInsData = try encoder.encode(visibleCheckIns.map(CheckInExport.init))
         let checkInsCSV = Data(csv(checkIns: visibleCheckIns).utf8)
 
         var provisional: [(String, Data)] = [
@@ -206,6 +206,38 @@ nonisolated struct LocalExportService: Sendable {
             return value
         }
         return "\"\(value.replacingOccurrences(of: "\"", with: "\"\""))\""
+    }
+}
+
+/// The newly added morning-flow answers remain local until a separate export
+/// decision is approved. Keep the established export contract unchanged.
+private nonisolated struct CheckInExport: Codable {
+    let id: UUID
+    let profileID: UUID
+    let reportedForLocalDate: String
+    let reportedTimezoneID: String
+    let occurrence: EpisodeOccurrence
+    let perceivedIntensity: PerceivedIntensity?
+    let presentState: PresentState?
+    let note: String?
+    let createdAt: Date
+    let updatedAt: Date
+    let revision: Int64
+    let deletedAt: Date?
+
+    init(_ value: SubmittedCheckIn) {
+        id = value.id
+        profileID = value.profileID
+        reportedForLocalDate = value.reportedForLocalDate
+        reportedTimezoneID = value.reportedTimezoneID
+        occurrence = value.occurrence
+        perceivedIntensity = value.perceivedIntensity
+        presentState = value.presentState
+        note = value.note
+        createdAt = value.createdAt
+        updatedAt = value.updatedAt
+        revision = value.revision
+        deletedAt = value.deletedAt
     }
 }
 

@@ -121,6 +121,13 @@ actor SleepReminderService: AppCreatedAlarmRemoving {
         return await authorizationState()
     }
 
+    func requestPermission() async throws -> ReminderAuthorizationState {
+        let state = await authorizationState()
+        guard state == .notDetermined else { return state }
+        _ = try await scheduler.requestAuthorization()
+        return await authorizationState()
+    }
+
     func updateWithoutPrompt(_ schedule: SleepSchedule) async throws -> ReminderAuthorizationState {
         let state = await authorizationState()
         if !schedule.isEnabled {

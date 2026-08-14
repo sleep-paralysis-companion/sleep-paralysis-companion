@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 
 nonisolated enum LocalSchema {
-    static let currentVersion = 4
+    static let currentVersion = 6
 
     static func migrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
@@ -10,6 +10,8 @@ nonisolated enum LocalSchema {
         registerSyncSecurityFoundation(on: &migrator)
         registerPersonaAndLocalAudio(on: &migrator)
         registerPersonaAudioRepair(on: &migrator)
+        registerMorningCheckInFlow(on: &migrator)
+        registerMeProfile(on: &migrator)
         return migrator
     }
 
@@ -77,6 +79,13 @@ nonisolated enum LocalSchema {
                     ),
                     presentState TEXT CHECK (
                         presentState IN ('fine_now', 'still_shaken', 'exhausted')
+                    ),
+                    spcOutcome TEXT CHECK (spcOutcome IN ('calmer', 'no_difference')),
+                    postEpisodeSupport TEXT CHECK (
+                        postEpisodeSupport IN ('partner_call', 'calming_audio', 'partner_audio')
+                    ),
+                    sleepHelpOutcome TEXT CHECK (
+                        sleepHelpOutcome IN ('audio_helped', 'did_not_use_it', 'forgot_it_was_there')
                     ),
                     note TEXT CHECK (note IS NULL OR length(note) BETWEEN 1 AND 500),
                     createdAt REAL NOT NULL,
@@ -440,6 +449,37 @@ nonisolated enum LocalSchema {
             END;
 
             UPDATE spc_schema_metadata SET schema_version = 4 WHERE singleton = 1;
+            """)
+        }
+    }
+
+    private static func registerMorningCheckInFlow(on migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v5_morning_checkin_flow") { database in
+            try database.execute(sql: """
+            ALTER TABLE submitted_checkins ADD COLUMN spcOutcome TEXT
+                CHECK (spcOutcome IN ('calmer', 'no_difference'));
+            ALTER TABLE submitted_checkins ADD COLUMN postEpisodeSupport TEXT
+                CHECK (postEpisodeSupport IN ('partner_call', 'calming_audio', 'partner_audio'));
+            ALTER TABLE submitted_checkins ADD COLUMN sleepHelpOutcome TEXT
+                CHECK (sleepHelpOutcome IN ('audio_helped', 'did_not_use_it', 'forgot_it_was_there'));
+
+            UPDATE spc_schema_metadata SET schema_version = 5 WHERE singleton = 1;
+            """)
+        }
+    }
+
+    private static func registerMeProfile(on migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v6_me_profile_preferences") { database in
+            try database.execute(sql: """
+            ALTER TABLE local_profiles ADD COLUMN displayName TEXT
+                CHECK (displayName IS NULL OR length(trim(displayName)) BETWEEN 1 AND 80);
+            ALTER TABLE local_profiles ADD COLUMN revision INTEGER NOT NULL DEFAULT 1
+                CHECK (revision > 0);
+            ALTER TABLE app_settings ADD COLUMN defaultSleepSupport TEXT NOT NULL DEFAULT 'quickSleep'
+                CHECK (defaultSleepSupport IN ('quickSleep', 'longSleepAid'));
+            ALTER TABLE app_settings ADD COLUMN defaultPostEpisodeSupport TEXT NOT NULL DEFAULT 'calmingAudio'
+                CHECK (defaultPostEpisodeSupport IN ('callPartner', 'calmingAudio', 'partnerVoice'));
+            UPDATE spc_schema_metadata SET schema_version = 6 WHERE singleton = 1;
             """)
         }
     }

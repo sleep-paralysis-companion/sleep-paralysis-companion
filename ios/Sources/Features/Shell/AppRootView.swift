@@ -143,6 +143,10 @@ struct AppRootView: View {
             HelpLegalView()
         case .account:
             AccountView(model: model)
+        case .editProfile:
+            EditProfileView(model: model)
+        case .defaultSettings:
+            DefaultSupportSettingsView(model: model)
         }
     }
 }
