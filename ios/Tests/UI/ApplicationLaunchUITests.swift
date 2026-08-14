@@ -230,7 +230,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
         capture("14-morning-check-in", app: app)
         app.buttons["No, I did not have an episode"].tap()
-        let noSleepHelp = app.buttons["Didn't use it"]
+        let noSleepHelp = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@", "Didn't use it")
+        ).firstMatch
         XCTAssertTrue(noSleepHelp.waitForExistence(timeout: 8))
         noSleepHelp.tap()
         let returnHome = app.buttons["Return To Home"]
