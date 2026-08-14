@@ -16,8 +16,8 @@ nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
             self = .me
         default:
             guard let value = Self(rawValue: rawValue) else {
-                throw DecodingError.dataCorruptedError(
-                    in: try decoder.singleValueContainer(),
+                throw try DecodingError.dataCorruptedError(
+                    in: decoder.singleValueContainer(),
                     debugDescription: "Unknown app tab: \(rawValue)"
                 )
             }

@@ -16,10 +16,10 @@ struct AppTabShellView: View {
                     MorningCheckInFlowView(model: model)
                 }
             }
-                .tabItem {
-                    Label("Sleep", systemImage: "moon.stars.fill")
-                }
-                .tag(AppTab.sleep)
+            .tabItem {
+                Label("Sleep", systemImage: "moon.stars.fill")
+            }
+            .tag(AppTab.sleep)
 
             HistoryView(model: model)
                 .tabItem {

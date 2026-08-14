@@ -32,7 +32,6 @@ struct MorningCheckInFlowView: View {
         .accessibilityIdentifier("morningCheckIn.flow")
     }
 
-    @ViewBuilder
     private var questionCard: some View {
         VStack(alignment: .leading, spacing: 28) {
             Text(step.questionTitle)
@@ -393,7 +392,8 @@ private struct MorningCheckInBackdrop: View {
                 constellation(in: proxy.size)
                 ForEach(0 ..< 40, id: \.self) { index in
                     Circle()
-                        .fill(index.isMultiple(of: 5) ? Color(red: 0.42, green: 0.31, blue: 0.75) : .white.opacity(0.36))
+                        .fill(index.isMultiple(of: 5) ? Color(red: 0.42, green: 0.31, blue: 0.75) : .white
+                            .opacity(0.36))
                         .frame(width: index.isMultiple(of: 7) ? 4 : 2)
                         .position(
                             x: starPosition(index, width: proxy.size.width, modulus: 97),

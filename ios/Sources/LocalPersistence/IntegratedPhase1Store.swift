@@ -176,14 +176,26 @@ actor IntegratedPhase1Store {
         guard profile.accountUserID == userID else { throw AuthenticationError.wrongAccount }
         let database = try databaseInstance()
         try await database.saveProfile(profile)
-        try await enqueueLatestUpsert(database: database, profileID: profile.id, entityType: .profile, entityID: profile.id, revision: profile.revision)
+        try await enqueueLatestUpsert(
+            database: database,
+            profileID: profile.id,
+            entityType: .profile,
+            entityID: profile.id,
+            revision: profile.revision
+        )
         await synchronizePending(profileID: profile.id, userID: userID)
     }
 
     func saveSettings(_ settings: AppSettings, userID: UUID) async throws {
         let database = try databaseInstance()
         try await database.saveSettings(settings)
-        try await enqueueLatestUpsert(database: database, profileID: settings.profileID, entityType: .settings, entityID: settings.profileID, revision: settings.revision)
+        try await enqueueLatestUpsert(
+            database: database,
+            profileID: settings.profileID,
+            entityType: .settings,
+            entityID: settings.profileID,
+            revision: settings.revision
+        )
         await synchronizePending(profileID: settings.profileID, userID: userID)
     }
 

@@ -62,30 +62,29 @@ struct CheckInEditorView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    @ViewBuilder
     private var episodeSections: some View {
-        Group {
-            Section("How are you feeling now?") {
-                Picker("Current feeling", selection: $form.presentState) {
-                    Text("Choose").tag(PresentState?.none)
-                    Text("I'm fine now").tag(PresentState?.some(.fineNow))
-                    Text("Still a bit shaken").tag(PresentState?.some(.stillShaken))
-                    Text("Exhausted").tag(PresentState?.some(.exhausted))
-                }
+        Section("How are you feeling now?") {
+            Picker("Current feeling", selection: $form.presentState) {
+                Text("Choose").tag(PresentState?.none)
+                Text("I'm fine now").tag(PresentState?.some(.fineNow))
+                Text("Still a bit shaken").tag(PresentState?.some(.stillShaken))
+                Text("Exhausted").tag(PresentState?.some(.exhausted))
             }
-            Section("How did you feel after using guided sleep meditation?") {
-                Picker("After SPC", selection: $form.spcOutcome) {
-                    Text("Choose").tag(SPCOutcome?.none)
-                    Text("Calmer").tag(SPCOutcome?.some(.calmer))
-                    Text("No difference").tag(SPCOutcome?.some(.noDifference))
-                }
+        }
+        Section("How did you feel after using guided sleep meditation?") {
+            Picker("After SPC", selection: $form.spcOutcome) {
+                Text("Choose").tag(SPCOutcome?.none)
+                Text("Calmer").tag(SPCOutcome?.some(.calmer))
+                Text("No difference").tag(SPCOutcome?.some(.noDifference))
             }
-            Section("What did you use after the episode?") {
-                Picker("Support used", selection: $form.postEpisodeSupport) {
-                    Text("Choose").tag(PostEpisodeSupport?.none)
-                    Text("Partner Call").tag(PostEpisodeSupport?.some(.partnerCall))
-                    Text("Calming Audio").tag(PostEpisodeSupport?.some(.calmingAudio))
-                    Text("Partner Audio").tag(PostEpisodeSupport?.some(.partnerAudio))
-                }
+        }
+        Section("What did you use after the episode?") {
+            Picker("Support used", selection: $form.postEpisodeSupport) {
+                Text("Choose").tag(PostEpisodeSupport?.none)
+                Text("Partner Call").tag(PostEpisodeSupport?.some(.partnerCall))
+                Text("Calming Audio").tag(PostEpisodeSupport?.some(.calmingAudio))
+                Text("Partner Audio").tag(PostEpisodeSupport?.some(.partnerAudio))
             }
         }
     }
