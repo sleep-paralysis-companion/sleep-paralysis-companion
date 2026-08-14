@@ -18,7 +18,10 @@ declare
   v_existing public.mutation_receipts%rowtype;
   v_hash text;
 begin
-  if v_owner is null or p_operation <> 'upsert' or p_entity_type not in ('profile', 'settings')
+  if v_owner is null then
+    raise exception 'authentication required' using errcode = '42501';
+  end if;
+  if p_operation <> 'upsert' or p_entity_type not in ('profile', 'settings')
     or p_entity_revision <> p_base_revision + 1 or p_payload is null then
     raise exception 'invalid mutation envelope' using errcode = '22023';
   end if;
