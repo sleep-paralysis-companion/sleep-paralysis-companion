@@ -2,6 +2,26 @@ import UIKit
 
 @MainActor
 extension AppModel {
+    var restorationValue: String {
+        guard let profileID, launchDestination == .home else { return "" }
+        return restorationCodec.encode(
+            RouteRestorationEnvelope(
+                profileID: profileID,
+                selectedTab: selectedTab,
+                path: path,
+                sheet: presentedSheet
+            )
+        ) ?? ""
+    }
+
+    var selectedCheckIn: SubmittedCheckIn? {
+        checkIns.first { $0.id == selectedCheckInID }
+    }
+
+    var isAuthenticationConfigured: Bool {
+        authentication.isConfigured
+    }
+
     func updateDisplayName(_ value: String) {
         guard let userID, var profile else { return }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)

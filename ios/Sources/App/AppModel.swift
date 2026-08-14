@@ -37,13 +37,13 @@ final class AppModel {
     let providedAudio = ProvidedRecoveryAudio.approvedCatalog
 
     let store: IntegratedPhase1Store
-    private let authentication: any OAuthSessionServicing
+    let authentication: any OAuthSessionServicing
     private let audioFiles: PersonalAudioFileStore
     private let audioController: RecoveryAudioController
     let reminders: SleepReminderService
     private let wakeAlarms: WakeAlarmService
     private let logger: any PrivacySafeLogging
-    private let restorationCodec: RouteRestorationCodec
+    let restorationCodec: RouteRestorationCodec
     private let deepLinkResolver: DeepLinkResolver
 
     @ObservationIgnored private var session: AuthenticationSessionMaterial?
@@ -78,26 +78,6 @@ final class AppModel {
         self.audioController.recordingEndedUnexpectedly = { [weak self] in
             self?.cancelRecording(reason: "Recording stopped before it could be saved. No partial recording was kept.")
         }
-    }
-
-    var restorationValue: String {
-        guard let profileID, launchDestination == .home else { return "" }
-        return restorationCodec.encode(
-            RouteRestorationEnvelope(
-                profileID: profileID,
-                selectedTab: selectedTab,
-                path: path,
-                sheet: presentedSheet
-            )
-        ) ?? ""
-    }
-
-    var selectedCheckIn: SubmittedCheckIn? {
-        checkIns.first { $0.id == selectedCheckInID }
-    }
-
-    var isAuthenticationConfigured: Bool {
-        authentication.isConfigured
     }
 
     func activate(restoredState: String = "") {
