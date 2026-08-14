@@ -40,7 +40,7 @@ begin
   end if;
   if p_entity_type = 'profile' then
     if p_payload - array['id','owner_user_id','profile_created_at','display_name','revision']::text[] <> '{}'::jsonb
-      or not (p_payload ?& array['id','owner_user_id','profile_created_at','display_name','revision'])
+      or not (p_payload ?& array['id','owner_user_id','profile_created_at','revision'])
       or (p_payload ->> 'revision')::bigint is distinct from p_entity_revision
       or (p_payload ->> 'profile_created_at')::timestamptz is null
       or (p_payload ? 'display_name' and p_payload ->> 'display_name' is not null
@@ -60,21 +60,27 @@ begin
     end if;
   else
     if p_payload - array['id','owner_user_id','preferred_grounding_asset_id','preferred_modality','haptics_enabled','default_sleep_support','default_post_episode_support','revision']::text[] <> '{}'::jsonb
-      or not (p_payload ?& array['id','owner_user_id','preferred_grounding_asset_id','preferred_modality','haptics_enabled','default_sleep_support','default_post_episode_support','revision'])
+      or not (p_payload ?& array['id','owner_user_id','preferred_grounding_asset_id','preferred_modality','haptics_enabled','revision'])
       or (p_payload ->> 'preferred_modality') not in ('audio','visual','silent')
-      or (p_payload ->> 'default_sleep_support') not in ('quickSleep','longSleepAid')
-      or (p_payload ->> 'default_post_episode_support') not in ('callPartner','calmingAudio','partnerVoice')
+      or (p_payload ? 'default_sleep_support'
+        and (p_payload ->> 'default_sleep_support') not in ('quickSleep','longSleepAid'))
+      or (p_payload ? 'default_post_episode_support'
+        and (p_payload ->> 'default_post_episode_support') not in ('callPartner','calmingAudio','partnerVoice'))
       or (p_payload ->> 'revision')::bigint is distinct from p_entity_revision then
       raise exception 'malformed settings payload' using errcode = '22023';
     end if;
     update public.app_settings set preferred_grounding_asset_id = p_payload ->> 'preferred_grounding_asset_id',
       preferred_modality = p_payload ->> 'preferred_modality', haptics_enabled = (p_payload ->> 'haptics_enabled')::boolean,
-      default_sleep_support = p_payload ->> 'default_sleep_support', default_post_episode_support = p_payload ->> 'default_post_episode_support', revision = p_entity_revision
+      default_sleep_support = coalesce(p_payload ->> 'default_sleep_support', default_sleep_support),
+      default_post_episode_support = coalesce(p_payload ->> 'default_post_episode_support', default_post_episode_support),
+      revision = p_entity_revision
     where id = p_entity_id and owner_user_id = v_owner and revision = p_base_revision;
     if not found then
       if exists (select 1 from public.app_settings where id = p_entity_id) or p_base_revision <> 0 then raise exception 'settings revision conflict' using errcode = '40001'; end if;
       insert into public.app_settings (id, owner_user_id, preferred_grounding_asset_id, preferred_modality, haptics_enabled, default_sleep_support, default_post_episode_support, revision)
-      values (p_entity_id, v_owner, p_payload ->> 'preferred_grounding_asset_id', p_payload ->> 'preferred_modality', (p_payload ->> 'haptics_enabled')::boolean, p_payload ->> 'default_sleep_support', p_payload ->> 'default_post_episode_support', p_entity_revision);
+      values (p_entity_id, v_owner, p_payload ->> 'preferred_grounding_asset_id', p_payload ->> 'preferred_modality',
+        (p_payload ->> 'haptics_enabled')::boolean, coalesce(p_payload ->> 'default_sleep_support', 'quickSleep'),
+        coalesce(p_payload ->> 'default_post_episode_support', 'calmingAudio'), p_entity_revision);
     end if;
   end if;
   insert into public.mutation_receipts (id, owner_user_id, idempotency_key, entity_type, entity_id, operation, base_revision, entity_revision, payload_hash, expires_at)
@@ -90,10 +96,10 @@ create or replace function public.apply_sync_mutation(
 returns table (server_mutation_id uuid, accepted_revision bigint, acknowledged_at timestamptz, purge_after timestamptz)
 language sql security invoker set search_path = '' as $$
   select * from private.apply_me_profile_settings_mutation(p_receipt_id, p_idempotency_key, p_entity_type, p_entity_id, p_operation, p_base_revision, p_entity_revision, p_payload)
-  where p_entity_type in ('profile', 'settings')
+  where p_entity_type in ('profile', 'settings') and p_operation = 'upsert'
   union all
   select * from private.apply_sync_mutation_trusted(p_receipt_id, p_idempotency_key, p_entity_type, p_entity_id, p_operation, p_base_revision, p_entity_revision, p_payload)
-  where p_entity_type not in ('profile', 'settings');
+  where p_entity_type not in ('profile', 'settings') or p_operation <> 'upsert';
 $$;
 
 revoke all on function private.apply_me_profile_settings_mutation(uuid, uuid, text, uuid, text, bigint, bigint, jsonb) from public, anon;

@@ -68,7 +68,7 @@ extension AppModel {
                 if reminderAuthorization == .denied {
                     feedbackMessage = "Notifications are off. Enable them in iOS Settings to receive sleep reminders."
                     if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
+                        await UIApplication.shared.open(url)
                     }
                 }
             } catch {
