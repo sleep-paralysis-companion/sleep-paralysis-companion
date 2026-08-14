@@ -80,13 +80,6 @@ nonisolated enum LocalSchema {
                     presentState TEXT CHECK (
                         presentState IN ('fine_now', 'still_shaken', 'exhausted')
                     ),
-                    spcOutcome TEXT CHECK (spcOutcome IN ('calmer', 'no_difference')),
-                    postEpisodeSupport TEXT CHECK (
-                        postEpisodeSupport IN ('partner_call', 'calming_audio', 'partner_audio')
-                    ),
-                    sleepHelpOutcome TEXT CHECK (
-                        sleepHelpOutcome IN ('audio_helped', 'did_not_use_it', 'forgot_it_was_there')
-                    ),
                     note TEXT CHECK (note IS NULL OR length(note) BETWEEN 1 AND 500),
                     createdAt REAL NOT NULL,
                     updatedAt REAL NOT NULL CHECK (updatedAt >= createdAt),
