@@ -244,7 +244,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["No episode reported"].waitForExistence(timeout: 8))
         capture("15-history", app: app)
 
-        app.tabBars.buttons["Settings"].tap()
+        app.tabBars.buttons["Me"].tap()
         XCTAssertTrue(app.buttons["Questionnaire answers"].waitForExistence(timeout: 8))
         capture("16-settings", app: app)
     }
