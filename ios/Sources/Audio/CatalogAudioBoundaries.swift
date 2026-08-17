@@ -221,20 +221,15 @@ actor CatalogAudioFileStore: CatalogAudioFileStoring {
     }
 }
 
-/// FileManager is documented as thread-safe for concurrent file-system operations.
-nonisolated struct SystemCatalogAudioStorageCapacityChecker: CatalogAudioStorageCapacityChecking, @unchecked Sendable {
-    private let fileManager: FileManager
+nonisolated struct SystemCatalogAudioStorageCapacityChecker: CatalogAudioStorageCapacityChecking {
     private let installationMargin: Int64
 
-    init(
-        fileManager: FileManager = .default,
-        installationMargin: Int64 = 1_048_576
-    ) {
-        self.fileManager = fileManager
+    init(installationMargin: Int64 = 1_048_576) {
         self.installationMargin = installationMargin
     }
 
     func ensureCapacity(for asset: CatalogAudioAsset) async throws {
+        let fileManager = FileManager.default
         let cacheURL = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? fileManager.temporaryDirectory
         let values = try cacheURL.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
