@@ -75,7 +75,9 @@ final class CatalogAudioLibraryModel {
         hasAttemptedLoad = true
 
         #if DEBUG
-            if uiTestScenario != nil { return }
+            if uiTestScenario != nil {
+                return
+            }
         #endif
 
         do {
@@ -133,9 +135,9 @@ final class CatalogAudioLibraryModel {
     func isPlaying(_ asset: CatalogAudioAsset) -> Bool {
         switch playbackState {
         case let .playing(id), let .streaming(id):
-            return id == asset.id
+            id == asset.id
         default:
-            return false
+            false
         }
     }
 
@@ -325,18 +327,18 @@ final class CatalogAudioLibraryModel {
     private func canPlay(_ asset: CatalogAudioAsset) -> Bool {
         switch cacheState(for: asset) {
         case .availableOffline, .availableRemotely, .streaming, .playing, .paused, .interrupted, .verified:
-            return !asset.isRevokedOrRetired
+            !asset.isRevokedOrRetired
         default:
-            return false
+            false
         }
     }
 
     private func isLocallyAvailable(_ asset: CatalogAudioAsset) -> Bool {
         switch cacheState(for: asset) {
         case .availableOffline, .verified:
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 
@@ -397,7 +399,6 @@ final class CatalogAudioLibraryModel {
             lastAccessedAt: nil
         )
     }
-
 }
 
 struct CatalogAudioLibraryView: View {
@@ -554,8 +555,8 @@ struct CatalogAudioLibraryView: View {
                     "The library will show audio here after its delivery, rights, accessibility, " +
                         "and device-readiness checks are complete."
                 )
-                    .font(AppTypographyRole.body)
-                    .foregroundStyle(.white.opacity(0.68))
+                .font(AppTypographyRole.body)
+                .foregroundStyle(.white.opacity(0.68))
             }
             .accessibilityIdentifier("catalogAudio.empty")
         case let .failed(message):
@@ -605,8 +606,8 @@ struct CatalogAudioLibraryView: View {
                 "No approved file is available for \(category.displayName). " +
                     "No duration or download size is shown until real delivery metadata exists."
             )
-                .font(AppTypographyRole.body)
-                .foregroundStyle(.white.opacity(0.68))
+            .font(AppTypographyRole.body)
+            .foregroundStyle(.white.opacity(0.68))
         }
         .accessibilityIdentifier("catalogAudio.emptyCategory.\(category.rawValue)")
     }
@@ -758,8 +759,12 @@ private struct CatalogAudioAssetCard: View {
     }
 
     private var statusText: String {
-        if model.isPlaying(asset) { return "Playing preview" }
-        if model.isPaused(asset) { return "Preview paused" }
+        if model.isPlaying(asset) {
+            return "Playing preview"
+        }
+        if model.isPaused(asset) {
+            return "Preview paused"
+        }
         switch state {
         case .notAvailable:
             return model.networkAvailable ? "Unavailable" : "Unavailable offline"
@@ -811,14 +816,22 @@ private struct CatalogAudioAssetCard: View {
     }
 
     private var playbackTitle: String {
-        if model.isPlaying(asset) { return "Pause preview" }
-        if model.isPaused(asset) { return "Resume preview" }
+        if model.isPlaying(asset) {
+            return "Pause preview"
+        }
+        if model.isPaused(asset) {
+            return "Resume preview"
+        }
         return "Play preview"
     }
 
     private var playbackIcon: String {
-        if model.isPlaying(asset) { return "pause.fill" }
-        if model.isPaused(asset) { return "play.fill" }
+        if model.isPlaying(asset) {
+            return "pause.fill"
+        }
+        if model.isPaused(asset) {
+            return "play.fill"
+        }
         return "play.fill"
     }
 
@@ -857,12 +870,16 @@ private extension CatalogAudioCategory {
 
 private extension CatalogAudioAsset {
     var durationText: String {
-        let totalSeconds = max(0, durationMilliseconds / 1_000)
-        let hours = totalSeconds / 3_600
-        let minutes = (totalSeconds % 3_600) / 60
+        let totalSeconds = max(0, durationMilliseconds / 1000)
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
-        if hours > 0 { return "\(hours)h \(minutes)m" }
-        if minutes > 0 { return "\(minutes)m \(seconds)s" }
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        }
         return "\(seconds)s"
     }
 
@@ -884,177 +901,179 @@ private extension CatalogAudioBoundaryError {
 }
 
 #if DEBUG
-private extension CatalogAudioLibraryModel {
-    func configureUITestScenario(_ scenario: String) {
-        loadState = switch scenario {
-        case "loading": .loading
-        case "empty": .empty
-        case "error": .failed("The test catalog could not be verified.")
-        default: .ready
-        }
-        guard loadState == .ready else { return }
+    private extension CatalogAudioLibraryModel {
+        func configureUITestScenario(_ scenario: String) {
+            loadState = switch scenario {
+            case "loading": .loading
+            case "empty": .empty
+            case "error": .failed("The test catalog could not be verified.")
+            default: .ready
+            }
+            guard loadState == .ready else { return }
 
-        assets = CatalogAudioLibraryUITestFixture.assets
-        let state: AudioCacheState = switch scenario {
-        case "downloaded", "offline", "selected-alarm", "storage-removal": .availableOffline
-        case "failed-download": .downloadFailed
-        default: .availableRemotely
-        }
-        metadataByID = Dictionary(uniqueKeysWithValues: assets.map { asset in
-            let itemState = scenario == "offline" && asset.delivery == .downloadable ? .notAvailable : state
-            return (
-                asset.id,
-                metadata(
-                    for: asset,
-                    state: itemState,
-                    failureReason: itemState == .downloadFailed ? "storage_full" : nil
+            assets = CatalogAudioLibraryUITestFixture.assets
+            let state: AudioCacheState = switch scenario {
+            case "downloaded", "offline", "selected-alarm", "storage-removal": .availableOffline
+            case "failed-download": .downloadFailed
+            default: .availableRemotely
+            }
+            metadataByID = Dictionary(uniqueKeysWithValues: assets.map { asset in
+                let itemState = scenario == "offline" && asset.delivery == .downloadable ? .notAvailable : state
+                return (
+                    asset.id,
+                    metadata(
+                        for: asset,
+                        state: itemState,
+                        failureReason: itemState == .downloadFailed ? "storage_full" : nil
+                    )
                 )
+            })
+            if scenario == "selected-alarm" {
+                selectedAlarmAssetID = assets.first(where: { $0.category == .morningAlarm })?.id
+            }
+        }
+
+        func simulateUITestDownload(_ asset: CatalogAudioAsset) async {
+            setMetadata(for: asset, state: .downloadQueued, progress: 0, failureReason: nil)
+            setMetadata(for: asset, state: .downloading, progress: 0.35, failureReason: nil)
+            if uiTestScenario == "download-progress" {
+                return
+            }
+            if uiTestScenario == "failed-download" {
+                try? await Task.sleep(for: .milliseconds(200))
+                setMetadata(for: asset, state: .downloadFailed, progress: 0, failureReason: "storage_full")
+                return
+            }
+            setMetadata(for: asset, state: .availableOffline, progress: 1, failureReason: nil)
+        }
+    }
+
+    private struct CatalogAudioLibraryUITestService: CatalogAudioLibraryServicing {
+        let scenario: String
+
+        func loadCatalog() async throws -> CatalogAudioManifest {
+            CatalogAudioManifest(
+                manifestVersion: 1,
+                minimumAppVersion: nil,
+                assets: CatalogAudioLibraryUITestFixture.assets
             )
-        })
-        if scenario == "selected-alarm" {
-            selectedAlarmAssetID = assets.first(where: { $0.category == .morningAlarm })?.id
         }
-    }
 
-    func simulateUITestDownload(_ asset: CatalogAudioAsset) async {
-        setMetadata(for: asset, state: .downloadQueued, progress: 0, failureReason: nil)
-        setMetadata(for: asset, state: .downloading, progress: 0.35, failureReason: nil)
-        if uiTestScenario == "download-progress" { return }
-        if uiTestScenario == "failed-download" {
-            try? await Task.sleep(for: .milliseconds(200))
-            setMetadata(for: asset, state: .downloadFailed, progress: 0, failureReason: "storage_full")
-            return
+        func state(for asset: CatalogAudioAsset, networkAvailable: Bool) async throws -> AudioCacheMetadata {
+            AudioCacheMetadata(
+                assetID: asset.id,
+                catalogVersion: asset.contentVersion,
+                state: networkAvailable ? .availableRemotely : .notAvailable,
+                relativeFileName: nil,
+                verifiedAt: nil,
+                byteCount: 0,
+                progress: 0,
+                failureReason: nil,
+                lastAccessedAt: nil
+            )
         }
-        setMetadata(for: asset, state: .availableOffline, progress: 1, failureReason: nil)
-    }
-}
 
-private struct CatalogAudioLibraryUITestService: CatalogAudioLibraryServicing {
-    let scenario: String
+        func previewURL(for _: CatalogAudioAsset) async throws -> URL {
+            URL(fileURLWithPath: "/dev/null")
+        }
 
-    func loadCatalog() async throws -> CatalogAudioManifest {
-        CatalogAudioManifest(
-            manifestVersion: 1,
-            minimumAppVersion: nil,
-            assets: CatalogAudioLibraryUITestFixture.assets
-        )
-    }
+        func playbackURL(for asset: CatalogAudioAsset, networkAvailable: Bool) async throws -> URL {
+            if scenario == "offline", !networkAvailable, asset.delivery == .downloadable {
+                throw CatalogAudioBoundaryError.offline
+            }
+            return URL(fileURLWithPath: "/dev/null")
+        }
 
-    func state(for asset: CatalogAudioAsset, networkAvailable: Bool) async throws -> AudioCacheMetadata {
-        AudioCacheMetadata(
-            assetID: asset.id,
-            catalogVersion: asset.contentVersion,
-            state: networkAvailable ? .availableRemotely : .notAvailable,
-            relativeFileName: nil,
-            verifiedAt: nil,
-            byteCount: 0,
-            progress: 0,
-            failureReason: nil,
-            lastAccessedAt: nil
-        )
-    }
-
-    func previewURL(for asset: CatalogAudioAsset) async throws -> URL {
-        URL(fileURLWithPath: "/dev/null")
-    }
-
-    func playbackURL(for asset: CatalogAudioAsset, networkAvailable: Bool) async throws -> URL {
-        if scenario == "offline", !networkAvailable, asset.delivery == .downloadable {
+        func download(
+            _: CatalogAudioAsset,
+            progress _: @escaping @Sendable (CatalogAudioDownloadProgress) async -> Void
+        ) async throws -> URL {
             throw CatalogAudioBoundaryError.offline
         }
-        return URL(fileURLWithPath: "/dev/null")
+
+        func deleteCachedAudio(_: CatalogAudioAsset) async throws {}
+
+        func preflightAlarm(_: CatalogAudioAsset) async throws -> URL {
+            guard scenario == "selected-alarm" else { throw CatalogAudioBoundaryError.alarmAssetNotLocal }
+            return URL(fileURLWithPath: "/dev/null")
+        }
     }
 
-    func download(
-        _ asset: CatalogAudioAsset,
-        progress: @escaping @Sendable (CatalogAudioDownloadProgress) async -> Void
-    ) async throws -> URL {
-        throw CatalogAudioBoundaryError.offline
+    private enum CatalogAudioLibraryUITestFixture {
+        static let assets: [CatalogAudioAsset] = [
+            make(
+                id: "ui-morning-alarm",
+                category: .morningAlarm,
+                title: "Gentle morning alarm",
+                description: "A local morning alarm candidate for UI state coverage.",
+                delivery: .downloadable
+            ),
+            make(
+                id: "ui-notification",
+                category: .notification,
+                title: "Soft notification",
+                description: "A bundled notification candidate for UI state coverage.",
+                delivery: .bundled
+            ),
+            make(
+                id: "ui-quick-unwind",
+                category: .quickUnwind,
+                title: "Quick Unwind",
+                description: "A short curated preview.",
+                delivery: .downloadable
+            ),
+            make(
+                id: "ui-second-sleep",
+                category: .secondSleep,
+                title: "Second Sleep",
+                description: "A curated session for a return to rest.",
+                delivery: .downloadable
+            ),
+            make(
+                id: "ui-slow-unwind",
+                category: .slowUnwind,
+                title: "Slow Unwind",
+                description: "A longer curated session.",
+                delivery: .downloadable
+            ),
+        ]
+
+        private static func make(
+            id: String,
+            category: CatalogAudioCategory,
+            title: String,
+            description: String,
+            delivery: CatalogAudioDelivery
+        ) -> CatalogAudioAsset {
+            CatalogAudioAsset(
+                id: id,
+                contentVersion: 1,
+                manifestVersion: 1,
+                category: category,
+                title: title,
+                shortDescription: description,
+                localeIdentifier: "en",
+                delivery: delivery,
+                status: .approved,
+                durationMilliseconds: category == .notification ? 2000 : 60000,
+                byteCount: 1_000_000,
+                mimeType: delivery == .bundled ? "audio/x-caf" : "audio/mp4",
+                codec: delivery == .bundled ? "pcm_s16be" : "aac-lc",
+                sampleRateHz: 48000,
+                channels: 1,
+                sha256: String(repeating: "a", count: 64),
+                previewPathID: delivery == .downloadable ? "preview/\(id)" : nil,
+                downloadPathID: delivery == .downloadable ? "download/\(id)" : nil,
+                offlineCacheAllowed: true,
+                bundledResourceName: delivery == .bundled ? "ui-notification.caf" : nil,
+                minimumAppVersion: nil,
+                minimumCatalogSchema: 1,
+                provenanceReference: "ui-test",
+                rightsReference: "ui-test",
+                approvalReference: "ui-test"
+            )
+        }
     }
-
-    func deleteCachedAudio(_ asset: CatalogAudioAsset) async throws {}
-
-    func preflightAlarm(_ asset: CatalogAudioAsset) async throws -> URL {
-        guard scenario == "selected-alarm" else { throw CatalogAudioBoundaryError.alarmAssetNotLocal }
-        return URL(fileURLWithPath: "/dev/null")
-    }
-}
-
-private enum CatalogAudioLibraryUITestFixture {
-    static let assets: [CatalogAudioAsset] = [
-        make(
-            id: "ui-morning-alarm",
-            category: .morningAlarm,
-            title: "Gentle morning alarm",
-            description: "A local morning alarm candidate for UI state coverage.",
-            delivery: .downloadable
-        ),
-        make(
-            id: "ui-notification",
-            category: .notification,
-            title: "Soft notification",
-            description: "A bundled notification candidate for UI state coverage.",
-            delivery: .bundled
-        ),
-        make(
-            id: "ui-quick-unwind",
-            category: .quickUnwind,
-            title: "Quick Unwind",
-            description: "A short curated preview.",
-            delivery: .downloadable
-        ),
-        make(
-            id: "ui-second-sleep",
-            category: .secondSleep,
-            title: "Second Sleep",
-            description: "A curated session for a return to rest.",
-            delivery: .downloadable
-        ),
-        make(
-            id: "ui-slow-unwind",
-            category: .slowUnwind,
-            title: "Slow Unwind",
-            description: "A longer curated session.",
-            delivery: .downloadable
-        ),
-    ]
-
-    private static func make(
-        id: String,
-        category: CatalogAudioCategory,
-        title: String,
-        description: String,
-        delivery: CatalogAudioDelivery
-    ) -> CatalogAudioAsset {
-        CatalogAudioAsset(
-            id: id,
-            contentVersion: 1,
-            manifestVersion: 1,
-            category: category,
-            title: title,
-            shortDescription: description,
-            localeIdentifier: "en",
-            delivery: delivery,
-            status: .approved,
-            durationMilliseconds: category == .notification ? 2_000 : 60_000,
-            byteCount: 1_000_000,
-            mimeType: delivery == .bundled ? "audio/x-caf" : "audio/mp4",
-            codec: delivery == .bundled ? "pcm_s16be" : "aac-lc",
-            sampleRateHz: 48_000,
-            channels: 1,
-            sha256: String(repeating: "a", count: 64),
-            previewPathID: delivery == .downloadable ? "preview/\(id)" : nil,
-            downloadPathID: delivery == .downloadable ? "download/\(id)" : nil,
-            offlineCacheAllowed: true,
-            bundledResourceName: delivery == .bundled ? "ui-notification.caf" : nil,
-            minimumAppVersion: nil,
-            minimumCatalogSchema: 1,
-            provenanceReference: "ui-test",
-            rightsReference: "ui-test",
-            approvalReference: "ui-test"
-        )
-    }
-}
 #endif
 
 // swiftlint:enable file_length

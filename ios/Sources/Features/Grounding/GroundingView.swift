@@ -80,7 +80,8 @@ struct GroundingView: View {
     @ViewBuilder
     private var partnerCallAction: some View {
         if let contact = model.partnerContact,
-           let phoneURL = contact.phoneURL {
+           let phoneURL = contact.phoneURL
+        {
             Button("Call \(contact.name ?? "Partner")", systemImage: "phone.fill") {
                 openURL(phoneURL)
             }

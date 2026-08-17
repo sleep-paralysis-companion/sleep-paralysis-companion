@@ -254,9 +254,9 @@ nonisolated enum CatalogAudioManifestValidator {
             guard asset.delivery == .bundled,
                   asset.mimeType.lowercased() == "audio/x-caf",
                   asset.codec.lowercased().hasPrefix("pcm"),
-                  [44_100, 48_000].contains(asset.sampleRateHz),
+                  [44100, 48000].contains(asset.sampleRateHz),
                   asset.channels == 1,
-                  asset.durationMilliseconds < 30_000
+                  asset.durationMilliseconds < 30000
             else {
                 throw CatalogAudioBoundaryError.invalidManifest("notification_delivery")
             }
@@ -265,7 +265,7 @@ nonisolated enum CatalogAudioManifestValidator {
         if asset.category == .morningAlarm {
             guard asset.mimeType.lowercased() == "audio/x-caf",
                   asset.codec.lowercased().hasPrefix("pcm"),
-                  [44_100, 48_000].contains(asset.sampleRateHz),
+                  [44100, 48000].contains(asset.sampleRateHz),
                   asset.channels == 1,
                   asset.systemSoundFileName != nil
             else {
@@ -284,7 +284,7 @@ nonisolated enum CatalogAudioManifestValidator {
     }
 
     private static func isSHA256(_ value: String) -> Bool {
-        value.count == 64 && value.allSatisfy { $0.isHexDigit }
+        value.count == 64 && value.allSatisfy(\.isHexDigit)
     }
 
     private static func validPathID(_ value: String?) -> Bool {

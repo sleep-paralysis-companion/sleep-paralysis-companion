@@ -9,14 +9,14 @@ nonisolated struct CatalogAudioRemoteConfiguration: Equatable, Sendable {
         guard let manifestString = bundle.object(
             forInfoDictionaryKey: "SPCAudioCatalogManifestURL"
         ) as? String,
-        let authorizationString = bundle.object(
-            forInfoDictionaryKey: "SPCAudioCatalogAuthorizationURL"
-        ) as? String,
-        let manifestURL = URL(string: manifestString),
-        let authorizationURL = URL(string: authorizationString),
-        let allowedHostsValue = bundle.object(
-            forInfoDictionaryKey: "SPCAudioCatalogAllowedHosts"
-        ) as? String
+            let authorizationString = bundle.object(
+                forInfoDictionaryKey: "SPCAudioCatalogAuthorizationURL"
+            ) as? String,
+            let manifestURL = URL(string: manifestString),
+            let authorizationURL = URL(string: authorizationString),
+            let allowedHostsValue = bundle.object(
+                forInfoDictionaryKey: "SPCAudioCatalogAllowedHosts"
+            ) as? String
         else {
             return nil
         }
@@ -91,24 +91,24 @@ nonisolated struct UnavailableCatalogAudioService: CatalogAudioLibraryServicing 
         )
     }
 
-    func previewURL(for asset: CatalogAudioAsset) async throws -> URL {
+    func previewURL(for _: CatalogAudioAsset) async throws -> URL {
         throw CatalogAudioBoundaryError.offline
     }
 
-    func playbackURL(for asset: CatalogAudioAsset, networkAvailable: Bool) async throws -> URL {
+    func playbackURL(for _: CatalogAudioAsset, networkAvailable _: Bool) async throws -> URL {
         throw CatalogAudioBoundaryError.offline
     }
 
     func download(
-        _ asset: CatalogAudioAsset,
-        progress: @escaping @Sendable (CatalogAudioDownloadProgress) async -> Void
+        _: CatalogAudioAsset,
+        progress _: @escaping @Sendable (CatalogAudioDownloadProgress) async -> Void
     ) async throws -> URL {
         throw CatalogAudioBoundaryError.offline
     }
 
-    func deleteCachedAudio(_ asset: CatalogAudioAsset) async throws {}
+    func deleteCachedAudio(_: CatalogAudioAsset) async throws {}
 
-    func preflightAlarm(_ asset: CatalogAudioAsset) async throws -> URL {
+    func preflightAlarm(_: CatalogAudioAsset) async throws -> URL {
         throw CatalogAudioBoundaryError.alarmAssetNotLocal
     }
 }

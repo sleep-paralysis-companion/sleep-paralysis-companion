@@ -54,8 +54,10 @@ struct AccountView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(isRetryingAccountDeletion
-                ? "The same signed deletion request will be retried. Local data is removed only after the server confirms completion."
-                : "A fresh provider sign-in is required. Local data is removed only after the server confirms account deletion.")
+                ? "The same signed deletion request will be retried. Local data is removed only " +
+                "after the server confirms completion."
+                : "A fresh provider sign-in is required. Local data is removed only after the " +
+                "server confirms account deletion.")
         }
     }
 }

@@ -61,7 +61,10 @@ struct MeProfileView: View {
             HStack {
                 Text("👩‍💻")
                     .font(.system(size: 42)); VStack(alignment: .leading) {
-                        Text(LegalSupport.founderName).font(.title2.bold()); Text("Founder").foregroundStyle(.white.opacity(0.58))
+                        Text(LegalSupport.founderName)
+                            .font(.title2.bold())
+                        Text("Founder")
+                            .foregroundStyle(.white.opacity(0.58))
                     }; Spacer(); Text("FOUNDER").foregroundStyle(Color(
                         red: 0.72,
                         green: 0.61,
@@ -173,8 +176,8 @@ struct DefaultSupportSettingsView: View {
                     "Add one phone number to enable an explicit call from the grounding screen. " +
                         "This stays on this device."
                 )
-                    .font(.callout)
-                    .foregroundStyle(.white.opacity(0.6))
+                .font(.callout)
+                .foregroundStyle(.white.opacity(0.6))
                 TextField("Name (optional)", text: $partnerName)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.name)

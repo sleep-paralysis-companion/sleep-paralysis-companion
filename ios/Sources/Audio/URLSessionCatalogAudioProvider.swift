@@ -131,14 +131,14 @@ nonisolated struct URLSessionCatalogAudioTransfer: CatalogAudioTransferring {
         FileManager.default.createFile(atPath: temporaryURL.path, contents: nil)
         let handle = try FileHandle(forWritingTo: temporaryURL)
         var buffer = Data()
-        buffer.reserveCapacity(65_536)
+        buffer.reserveCapacity(65536)
         var received: Int64 = 0
         do {
             for try await byte in bytes {
                 try Task.checkCancellation()
                 buffer.append(byte)
                 received += 1
-                if buffer.count >= 65_536 {
+                if buffer.count >= 65536 {
                     try handle.write(contentsOf: buffer)
                     buffer.removeAll(keepingCapacity: true)
                     await progress(

@@ -217,7 +217,7 @@ nonisolated enum SystemAudioAssets {
             let audioFile = try AVAudioFile(forReading: url)
             let format = audioFile.fileFormat
             guard format.channelCount == 1,
-                  [44_100.0, 48_000.0].contains(format.sampleRate),
+                  [44100.0, 48000.0].contains(format.sampleRate),
                   format.commonFormat == .pcmFormatInt16,
                   audioFile.length > 0
             else {

@@ -93,7 +93,7 @@ private actor WakeAlarmServiceGate {
             let existing = try AlarmManager.shared.alarms
             let ownedAlarms = existing.filter { alarm in
                 [effectivePreference.id.uuidString, effectivePreference.systemAlarmID]
-                    .compactMap { $0 }
+                    .compactMap(\.self)
                     .contains(alarm.id.uuidString)
             }
             if !sound.usedFallback,
@@ -154,7 +154,7 @@ private actor WakeAlarmServiceGate {
     ) throws {
         let ownedIDs = Set(
             [preference.id.uuidString, preference.systemAlarmID]
-                .compactMap { $0 }
+                .compactMap(\.self)
         )
         let current = try alarms ?? AlarmManager.shared.alarms
         for alarm in current where ownedIDs.contains(alarm.id.uuidString) {

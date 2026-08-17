@@ -519,7 +519,7 @@ actor CatalogAudioCacheCoordinator {
               asset.status == .approved,
               asset.mimeType.lowercased() == "audio/x-caf",
               asset.codec.lowercased().hasPrefix("pcm"),
-              [44_100, 48_000].contains(asset.sampleRateHz),
+              [44100, 48000].contains(asset.sampleRateHz),
               asset.channels == 1,
               asset.systemSoundFileName != nil
         else {
@@ -634,9 +634,9 @@ actor CatalogAudioCacheCoordinator {
         switch error {
         case .checksumMismatch:
             "checksum_failure"
-        case .byteCountMismatch(_, _):
+        case .byteCountMismatch:
             "byte_count_mismatch"
-        case .storageFull(_, _):
+        case .storageFull:
             "storage_full"
         case .offline:
             "offline"

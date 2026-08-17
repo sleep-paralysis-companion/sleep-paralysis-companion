@@ -8,7 +8,12 @@ export type AudioCatalogAsset = {
   id: string;
   content_version: number;
   manifest_version: number;
-  category: "morning_alarm" | "notification" | "quick_unwind" | "second_sleep" | "slow_unwind";
+  category:
+    | "morning_alarm"
+    | "notification"
+    | "quick_unwind"
+    | "second_sleep"
+    | "slow_unwind";
   title: string;
   short_description: string;
   locale_identifier: string;

@@ -990,7 +990,8 @@ final class AppModel {
             case .recentReauthenticationRequired:
                 return "A fresh Apple or Google sign-in is required before deletion. Local data was kept."
             case .localCleanupFailed:
-                return "The account was deleted remotely, but local cleanup did not finish. Retry to complete local cleanup."
+                return "The account was deleted remotely, but local cleanup did not finish. " +
+                    "Retry to complete local cleanup."
             case .remoteDeletionFailedRecoverable:
                 return "Account deletion could not finish. Local data was kept. Retry to resume the same request."
             case .remoteDeletionRejected:

@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1.0.14";
 import {
-  handleAudioAuthorization,
   type AudioAuthorizationRuntime,
+  handleAudioAuthorization,
 } from "./handler.ts";
 
 Deno.test("authorizes a preview only for an approved downloadable asset", async () => {
@@ -73,7 +73,7 @@ function fakeRuntime(
   calls: Array<{ path: string; expiresInSeconds: number }>,
 ): AudioAuthorizationRuntime {
   return {
-    createSignedURL: async (path, expiresInSeconds) => {
+    createSignedURL: (path, expiresInSeconds) => {
       calls.push({ path, expiresInSeconds });
       return {
         data: { signedUrl: "https://project.example/signed/preview.m4a" },

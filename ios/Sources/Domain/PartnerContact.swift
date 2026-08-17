@@ -27,7 +27,7 @@ nonisolated struct PartnerContact: Equatable, Sendable {
         for character in trimmedValue {
             if character.isWholeNumber {
                 normalized.append(character)
-            } else if character == "+" && normalized.isEmpty {
+            } else if character == "+", normalized.isEmpty {
                 normalized.append(character)
             } else if " -().".contains(character) {
                 continue

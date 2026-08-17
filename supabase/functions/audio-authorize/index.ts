@@ -1,7 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.101.0";
-import {
-  AUDIO_CATALOG_BUCKET,
-} from "../_shared/audio_catalog.ts";
+import { AUDIO_CATALOG_BUCKET } from "../_shared/audio_catalog.ts";
 import { handleAudioAuthorization } from "./handler.ts";
 
 const supabaseURL = Deno.env.get("SUPABASE_URL");

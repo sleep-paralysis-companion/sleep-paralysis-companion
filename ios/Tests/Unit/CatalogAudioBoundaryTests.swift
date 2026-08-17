@@ -218,11 +218,11 @@ final class CatalogAudioBoundaryTests: XCTestCase {
             localeIdentifier: "en",
             delivery: .downloadable,
             status: .approved,
-            durationMilliseconds: 1_000,
+            durationMilliseconds: 1000,
             byteCount: Int64(data.count),
             mimeType: "audio/mp4",
             codec: "aac-lc",
-            sampleRateHz: 44_100,
+            sampleRateHz: 44100,
             channels: 2,
             sha256: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined(),
             previewPathID: "previews/\(id).m4a",
@@ -274,9 +274,17 @@ private struct TestContext: Sendable {
 private actor TestAudioIndex: CatalogAudioCacheIndexing {
     private var values: [String: AudioCacheMetadata] = [:]
 
-    func metadata(assetID: String) async throws -> AudioCacheMetadata? { values[assetID] }
-    func save(_ metadata: AudioCacheMetadata) async throws { values[metadata.assetID] = metadata }
-    func remove(assetID: String) async throws { values[assetID] = nil }
+    func metadata(assetID: String) async throws -> AudioCacheMetadata? {
+        values[assetID]
+    }
+
+    func save(_ metadata: AudioCacheMetadata) async throws {
+        values[metadata.assetID] = metadata
+    }
+
+    func remove(assetID: String) async throws {
+        values[assetID] = nil
+    }
 }
 
 private actor TestAudioFiles: CatalogAudioFileStoring {
@@ -324,8 +332,13 @@ private actor TestAudioFiles: CatalogAudioFileStoring {
         return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
-    func write(_ data: Data, to url: URL) { bytes[url.path] = data }
-    func temporaryFileCount() -> Int { temporaryFiles.count }
+    func write(_ data: Data, to url: URL) {
+        bytes[url.path] = data
+    }
+
+    func temporaryFileCount() -> Int {
+        temporaryFiles.count
+    }
 
     private func destinationURL(for asset: CatalogAudioAsset) -> URL {
         URL(fileURLWithPath: "/tmp/\(asset.id)-v\(asset.contentVersion).m4a")
@@ -347,7 +360,9 @@ private actor TestAudioRemote: CatalogAudioRemoteProviding {
         return URL(string: "https://audio.example.test/\(purpose.rawValue)/\(asset.id)")!
     }
 
-    func authorizationCount() -> Int { count }
+    func authorizationCount() -> Int {
+        count
+    }
 }
 
 private actor TestAudioTransfer: CatalogAudioTransferring {
@@ -382,7 +397,9 @@ private actor TestAudioTransfer: CatalogAudioTransferring {
         if delayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: delayNanoseconds)
         }
-        if let error { throw error }
+        if let error {
+            throw error
+        }
         await files.write(data, to: temporaryURL)
         await progress(
             CatalogAudioDownloadProgress(
@@ -394,7 +411,9 @@ private actor TestAudioTransfer: CatalogAudioTransferring {
         return CatalogAudioDownloadedFile(temporaryURL: temporaryURL, byteCount: Int64(data.count))
     }
 
-    func downloadCount() -> Int { count }
+    func downloadCount() -> Int {
+        count
+    }
 }
 
 private nonisolated struct TestAudioCapacity: CatalogAudioStorageCapacityChecking {
@@ -406,6 +425,8 @@ private nonisolated struct TestAudioCapacity: CatalogAudioStorageCapacityCheckin
 
     func ensureCapacity(for asset: CatalogAudioAsset) async throws {
         _ = asset
-        if let error { throw error }
+        if let error {
+            throw error
+        }
     }
 }
