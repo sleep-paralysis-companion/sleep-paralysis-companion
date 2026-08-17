@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import Foundation
 
 @MainActor
@@ -6,7 +6,6 @@ final class CatalogAudioPlayer: NSObject {
     private let cache: CatalogAudioCacheCoordinator?
     private var player: AVPlayer?
     private var activeAssetID: String?
-    private var observers: [NSObjectProtocol] = []
 
     private(set) var state: CatalogAudioPlaybackState = .idle
 
@@ -18,7 +17,7 @@ final class CatalogAudioPlayer: NSObject {
     }
 
     deinit {
-        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        NotificationCenter.default.removeObserver(self)
     }
 
     func play(asset: CatalogAudioAsset, networkAvailable: Bool) async {
@@ -105,58 +104,58 @@ final class CatalogAudioPlayer: NSObject {
 
     private func observeAudioSession() {
         let center = NotificationCenter.default
-        observers.append(
-            center.addObserver(
-                forName: AVAudioSession.interruptionNotification,
-                object: AVAudioSession.sharedInstance(),
-                queue: .main
-            ) { [weak self] notification in
-                Task { @MainActor [weak self] in
-                    self?.handleInterruption(notification)
-                }
-            }
+        center.addObserver(
+            self,
+            selector: #selector(handleInterruptionNotification(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
         )
-        observers.append(
-            center.addObserver(
-                forName: AVAudioSession.routeChangeNotification,
-                object: AVAudioSession.sharedInstance(),
-                queue: .main
-            ) { [weak self] notification in
-                Task { @MainActor [weak self] in
-                    self?.handleRouteChange(notification)
-                }
-            }
+        center.addObserver(
+            self,
+            selector: #selector(handleRouteChangeNotification(_:)),
+            name: AVAudioSession.routeChangeNotification,
+            object: AVAudioSession.sharedInstance()
         )
     }
 
     private func observePlaybackFailures() {
         let center = NotificationCenter.default
-        observers.append(
-            center.addObserver(
-                forName: .AVPlayerItemFailedToPlayToEndTime,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.handlePlaybackFailure()
-                }
-            }
+        center.addObserver(
+            self,
+            selector: #selector(handlePlaybackFailureNotification(_:)),
+            name: .AVPlayerItemFailedToPlayToEndTime,
+            object: nil
         )
-        observers.append(
-            center.addObserver(
-                forName: .AVPlayerItemPlaybackStalled,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.handlePlaybackFailure()
-                }
-            }
+        center.addObserver(
+            self,
+            selector: #selector(handlePlaybackFailureNotification(_:)),
+            name: .AVPlayerItemPlaybackStalled,
+            object: nil
         )
     }
 
-    private func handleInterruption(_ notification: Notification) {
-        guard let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+    @objc private func handleInterruptionNotification(_ notification: Notification) {
+        let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+        Task { @MainActor [weak self] in
+            self?.handleInterruption(typeValue: typeValue)
+        }
+    }
+
+    @objc private func handleRouteChangeNotification(_ notification: Notification) {
+        let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+        Task { @MainActor [weak self] in
+            self?.handleRouteChange(reasonValue: reasonValue)
+        }
+    }
+
+    @objc private func handlePlaybackFailureNotification(_: Notification) {
+        Task { @MainActor [weak self] in
+            self?.handlePlaybackFailure()
+        }
+    }
+
+    private func handleInterruption(typeValue: UInt?) {
+        guard let typeValue,
               let type = AVAudioSession.InterruptionType(rawValue: typeValue),
               let activeAssetID
         else { return }
@@ -169,8 +168,8 @@ final class CatalogAudioPlayer: NSObject {
         // restart curated audio after a call, Siri, or another interruption.
     }
 
-    private func handleRouteChange(_ notification: Notification) {
-        guard let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+    private func handleRouteChange(reasonValue: UInt?) {
+        guard let reasonValue,
               let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue),
               reason == .oldDeviceUnavailable,
               let activeAssetID
