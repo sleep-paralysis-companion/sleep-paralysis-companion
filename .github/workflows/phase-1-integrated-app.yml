@@ -69,7 +69,23 @@ jobs:
           exit "$VERIFY_STATUS"
 
       - name: Capture the visual product journey
-        run: bash scripts/visual_journey.sh
+        run: |
+          set +e
+          mkdir -p ios/TestResults
+          bash scripts/visual_journey.sh 2>&1 | tee ios/TestResults/visual_journey.log
+          VISUAL_STATUS=${PIPESTATUS[0]}
+          if [[ "$VISUAL_STATUS" -ne 0 ]]; then
+            while IFS= read -r diagnostic; do
+              escaped="${diagnostic//'%'/'%25'}"
+              escaped="${escaped//$'\r'/'%0D'}"
+              escaped="${escaped//$'\n'/'%0A'}"
+              echo "::error title=Hosted visual journey diagnostic::$escaped"
+            done < <(
+              grep -E 'Test Case .* failed|UI Testing Failure|XCTAssert|Assertion failed|error:|Process completed with exit code' \
+                ios/TestResults/visual_journey.log | tail -n 30
+            )
+          fi
+          exit "$VISUAL_STATUS"
 
       - name: Write the visual-testing summary
         if: always()
