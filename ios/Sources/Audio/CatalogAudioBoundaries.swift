@@ -641,7 +641,7 @@ actor CatalogAudioCacheCoordinator {
         case .interrupted:
             return "interrupted"
         default:
-            "download_failed"
+            return "download_failed"
         }
     }
 

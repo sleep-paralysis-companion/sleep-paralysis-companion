@@ -1004,7 +1004,7 @@ private extension CatalogAudioBoundaryError {
         }
     }
 
-    private enum CatalogAudioLibraryUITestFixture {
+    private nonisolated enum CatalogAudioLibraryUITestFixture {
         static let assets: [CatalogAudioAsset] = [
             make(
                 id: "ui-morning-alarm",

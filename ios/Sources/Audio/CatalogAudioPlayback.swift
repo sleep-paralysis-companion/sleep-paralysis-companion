@@ -87,7 +87,7 @@ final class CatalogAudioPlayer: NSObject {
             try session.setCategory(
                 .playback,
                 mode: .spokenAudio,
-                options: [.allowBluetooth, .allowAirPlay]
+                options: [.allowBluetoothHFP, .allowAirPlay]
             )
             try session.setActive(true)
             let nextPlayer = AVPlayer(url: url)
