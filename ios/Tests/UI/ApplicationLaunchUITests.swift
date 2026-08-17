@@ -340,6 +340,11 @@ final class ApplicationLaunchUITests: XCTestCase {
             namespace: namespace,
             userID: userID
         ) { catalog in
+            let streamingStatus = catalog.staticTexts["Stream preview available"]
+            XCTAssertTrue(
+                waitForExistenceByScrolling(streamingStatus, in: catalog),
+                catalog.debugDescription
+            )
             let play = catalog.buttons["catalogAudio.play.quick_unwind"]
             XCTAssertTrue(waitForExistenceByScrolling(play, in: catalog), catalog.debugDescription)
             makeHittable(play, in: catalog)
