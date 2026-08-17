@@ -381,7 +381,10 @@ final class ApplicationLaunchUITests: XCTestCase {
             XCTAssertTrue(waitForExistenceByScrolling(download, in: catalog), catalog.debugDescription)
             makeHittable(download, in: catalog)
             download.tap()
-            XCTAssertTrue(catalog.otherElements["catalogAudio.progress.quick_unwind"].waitForExistence(timeout: 3))
+            let progress = catalog.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS 'Downloading'")
+            ).firstMatch
+            XCTAssertTrue(progress.waitForExistence(timeout: 3))
             capture("36-curated-audio-download-progress", app: catalog)
         }
     }
