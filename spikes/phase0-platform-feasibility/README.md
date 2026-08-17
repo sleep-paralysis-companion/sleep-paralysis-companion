@@ -23,14 +23,14 @@ action is `Open`. It makes no episode, safety, detection, or medical claim.
 
 ## Hosted build prerequisites
 
-1. Register bundle ID `com.satyamshree.spc.phase0spike`.
+1. Register bundle ID `app.sleepcompanion.spc.phase0spike`.
 2. Create an App Store Connect app record for the disposable spike.
 3. Under that record, configure these disposable products exactly:
-   - `com.satyamshree.spc.phase0spike.premium.monthly` - monthly
+   - `app.sleepcompanion.spc.phase0spike.premium.monthly` - monthly
      auto-renewable, US price USD 8.99, three-day introductory free trial;
-   - `com.satyamshree.spc.phase0spike.premium.annual` - annual
+   - `app.sleepcompanion.spc.phase0spike.premium.annual` - annual
      auto-renewable, US price USD 59.99, same subscription group and offer;
-   - `com.satyamshree.spc.phase0spike.premium.lifetime` - non-consumable,
+   - `app.sleepcompanion.spc.phase0spike.premium.lifetime` - non-consumable,
      US price USD 149.99;
    - Family Sharing off; Billing Grace Period off; RevenueCat must not add
      custom grace, and the app must cut premium access immediately when the

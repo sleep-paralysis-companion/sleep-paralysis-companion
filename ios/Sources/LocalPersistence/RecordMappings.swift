@@ -78,11 +78,28 @@ nonisolated extension AppSettingsRecord {
     }
 }
 
+nonisolated extension PartnerContactRecord {
+    init(_ value: PartnerContact, profileID: UUID, updatedAt: Date) {
+        self.profileID = profileID.uuidString
+        name = value.name
+        phoneNumber = value.phoneNumber
+        self.updatedAt = updatedAt.timeIntervalSince1970
+    }
+
+    func domainValue() throws -> PartnerContact {
+        guard let value = PartnerContact(name: name, phoneNumber: phoneNumber) else {
+            throw RecordMappingError.invalidStoredValue(table: Self.databaseTableName, field: "contact")
+        }
+        return value
+    }
+}
+
 nonisolated extension AlarmPreferenceRecord {
     init(_ value: AlarmPreference) {
         id = value.id.uuidString
         profileID = value.profileID.uuidString
         systemAlarmID = value.systemAlarmID
+        alarmSoundFileName = value.alarmSoundFileName
         localHour = value.localHour
         localMinute = value.localMinute
         weekdaysMask = value.weekdaysMask
@@ -107,6 +124,7 @@ nonisolated extension AlarmPreferenceRecord {
             id: identifier,
             profileID: owner,
             systemAlarmID: systemAlarmID,
+            alarmSoundFileName: alarmSoundFileName,
             localHour: localHour,
             localMinute: localMinute,
             weekdaysMask: weekdaysMask,

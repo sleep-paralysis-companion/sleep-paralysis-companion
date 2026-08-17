@@ -98,6 +98,31 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertEqual(checkIns, [Phase1BFixture.checkIn()])
     }
 
+    func testPartnerContactPersistsLocallyForTheAuthenticatedProfile() async throws {
+        let database = try LocalDatabase(path: temporaryDatabasePath())
+        var profile = Phase1BFixture.profile()
+        profile.ownership = .accountLinked
+        profile.accountUserID = Phase1BFixture.userID
+        profile.accountLinkState = .linked
+        try await database.createProfile(profile, settings: Phase1BFixture.settings())
+
+        let contact = try XCTUnwrap(PartnerContact(name: "Alex", phoneNumber: "+1 555 123 4567"))
+        try await database.savePartnerContact(
+            contact,
+            profileID: profile.id,
+            authenticatedUserID: Phase1BFixture.userID
+        )
+        let storedContact = try await database.partnerContact(profileID: profile.id)
+        XCTAssertEqual(storedContact, contact)
+
+        try await database.deletePartnerContact(
+            profileID: profile.id,
+            authenticatedUserID: Phase1BFixture.userID
+        )
+        let deletedContact = try await database.partnerContact(profileID: profile.id)
+        XCTAssertNil(deletedContact)
+    }
+
     func testTransactionalProfileAndSettingsCreationRollsBack() async throws {
         let database = try LocalDatabase(path: temporaryDatabasePath())
         var invalid = Phase1BFixture.settings()
@@ -116,6 +141,7 @@ final class LocalDatabaseTests: XCTestCase {
             id: Phase1BFixture.entityID,
             profileID: Phase1BFixture.profileID,
             systemAlarmID: nil,
+            alarmSoundFileName: "SPCWakeUpGentleLoop.caf",
             localHour: 22,
             localMinute: 30,
             weekdaysMask: 62,

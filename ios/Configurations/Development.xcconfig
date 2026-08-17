@@ -1,5 +1,5 @@
 #include "Base.xcconfig"
 
-SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc.dev
+SPC_BUNDLE_IDENTIFIER = app.sleepcompanion.spc.dev
 SPC_ENVIRONMENT = development
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG SPC_ENV_DEVELOPMENT

@@ -101,6 +101,11 @@ targets:
         PRODUCT_NAME: SleepParalysisCompanion
         SWIFT_APPROACHABLE_CONCURRENCY: YES
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+      configs:
+        Production:
+          CODE_SIGNING_ALLOWED: YES
+          CODE_SIGNING_REQUIRED: YES
+          PROVISIONING_PROFILE_SPECIFIER: "AppStore app.sleepcompanion.spc"
     dependencies:
       - package: GRDB
         product: GRDB
@@ -127,6 +132,11 @@ targets:
         INFOPLIST_FILE: Widget/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: "$(SPC_BUNDLE_IDENTIFIER).widget"
         SKIP_INSTALL: YES
+      configs:
+        Production:
+          CODE_SIGNING_ALLOWED: YES
+          CODE_SIGNING_REQUIRED: YES
+          PROVISIONING_PROFILE_SPECIFIER: "AppStore app.sleepcompanion.spc.widget"
 
   SPCUnitTests:
     type: bundle.unit-test

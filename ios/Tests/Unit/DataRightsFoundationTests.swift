@@ -53,7 +53,7 @@ actor ScriptedAccountDeletionGateway: AccountDeletionGateway {
         requestID: UUID,
         accessToken: String,
         retryToken: String?
-    ) async throws {
+    ) async throws -> String? {
         _ = accessToken
         requestIDs.append(requestID)
         retryTokens.append(retryToken)
@@ -63,6 +63,15 @@ actor ScriptedAccountDeletionGateway: AccountDeletionGateway {
                 retryToken: "ephemeral-retry-proof"
             )
         }
+        return nil
+    }
+}
+
+actor RecordingAccountDeletionSessionSignOut: AccountDeletionSessionSigningOut {
+    private(set) var count = 0
+
+    func signOut() async throws {
+        count += 1
     }
 }
 
@@ -267,6 +276,12 @@ final class DataRightsFoundationTests: XCTestCase {
         XCTAssertEqual(state, .reauthenticationRequired)
     }
 
+    func testAccountDeletionCompletionFeedbackConfirmsRemoteAndLocalCompletion() {
+        XCTAssertTrue(AccountDeletionFeedback.completed.contains("account was deleted"))
+        XCTAssertTrue(AccountDeletionFeedback.completed.contains("Local data was removed"))
+        XCTAssertTrue(AccountDeletionFeedback.completed.contains("signed out"))
+    }
+
     func testAccountDeletionRejectsReauthenticationFromDifferentProvider() async throws {
         let coordinator = try await accountDeletionCoordinator(
             gateway: ScriptedAccountDeletionGateway()
@@ -287,9 +302,33 @@ final class DataRightsFoundationTests: XCTestCase {
         }
     }
 
+    func testAccountDeletionRejectsReauthenticationFromDifferentAccount() async throws {
+        let coordinator = try await accountDeletionCoordinator(
+            gateway: ScriptedAccountDeletionGateway()
+        )
+        do {
+            try await coordinator.deleteAccount(
+                session: Phase1BFixture.session(),
+                reauthentication: RecentReauthentication(
+                    userID: Phase1BFixture.uuid("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+                    provider: .apple,
+                    authenticatedAt: Phase1BFixture.now
+                ),
+                removeLocalData: false
+            )
+            XCTFail("Expected account mismatch rejection.")
+        } catch let error as DeletionError {
+            XCTAssertEqual(error, .wrongAccount)
+        }
+    }
+
     func testInterruptedAccountDeletionRetriesWithSameRequestID() async throws {
         let gateway = ScriptedAccountDeletionGateway(failuresRemaining: 1)
-        let coordinator = try await accountDeletionCoordinator(gateway: gateway)
+        let signOut = RecordingAccountDeletionSessionSignOut()
+        let coordinator = try await accountDeletionCoordinator(
+            gateway: gateway,
+            sessionSignOut: signOut
+        )
         let reauthentication = RecentReauthentication(
             userID: Phase1BFixture.userID,
             provider: .apple,
@@ -315,6 +354,106 @@ final class DataRightsFoundationTests: XCTestCase {
         XCTAssertNil(retryTokens[0])
         XCTAssertEqual(retryTokens[1], "ephemeral-retry-proof")
         XCTAssertEqual(state, .completed)
+        let signOutCount = await signOut.count
+        XCTAssertEqual(signOutCount, 1)
+    }
+
+    func testRecoverableDeletionRetriesWithSameRequestIDAndRetryToken() async throws {
+        let gateway = ScriptedAccountDeletionGateway(failuresRemaining: 1)
+        let signOut = RecordingAccountDeletionSessionSignOut()
+        let coordinator = try await accountDeletionCoordinator(
+            gateway: gateway,
+            sessionSignOut: signOut
+        )
+        let validProof = RecentReauthentication(
+            userID: Phase1BFixture.userID,
+            provider: .apple,
+            authenticatedAt: Phase1BFixture.now
+        )
+
+        await XCTAssertThrowsErrorAsync {
+            try await coordinator.deleteAccount(
+                session: Phase1BFixture.session(),
+                reauthentication: validProof,
+                removeLocalData: false
+            )
+        }
+        try await coordinator.deleteAccount(
+            session: Phase1BFixture.session(),
+            reauthentication: RecentReauthentication(
+                userID: Phase1BFixture.userID,
+                provider: .apple,
+                authenticatedAt: Phase1BFixture.now.addingTimeInterval(-301)
+            ),
+            removeLocalData: false
+        )
+
+        let requestIDs = await gateway.requestIDs
+        let retryTokens = await gateway.retryTokens
+        XCTAssertEqual(requestIDs, [Phase1BFixture.key, Phase1BFixture.key])
+        XCTAssertNil(retryTokens[0])
+        XCTAssertEqual(retryTokens[1], "ephemeral-retry-proof")
+        let state = await coordinator.state
+        XCTAssertEqual(state, .completed)
+    }
+
+    func testAccountDeletionDoesNotCleanLocalDataBeforeRemoteSuccess() async throws {
+        let database = try LocalDatabase(path: temporaryDatabasePath())
+        try await database.createProfile(Phase1BFixture.profile(), settings: Phase1BFixture.settings())
+        let keychain = LockedKeychain()
+        let sessionStore = KeychainSessionStore(keychain: keychain)
+        try sessionStore.write(Phase1BFixture.session())
+        let alarms = RecordingAlarmRemoval()
+        let files = RecordingFileRemoval()
+        let local = LocalDataDeletionCoordinator(
+            database: database,
+            sessionStore: sessionStore,
+            alarms: alarms,
+            files: files
+        )
+        let gateway = ScriptedAccountDeletionGateway(failuresRemaining: 1)
+        let signOut = RecordingAccountDeletionSessionSignOut()
+        let coordinator = AccountDeletionCoordinator(
+            remote: gateway,
+            localDeletion: local,
+            sessionSignOut: signOut,
+            identifier: FixedIdentifierGenerator(value: Phase1BFixture.key),
+            clock: FixedClock(value: Phase1BFixture.now)
+        )
+        let reauthentication = RecentReauthentication(
+            userID: Phase1BFixture.userID,
+            provider: .apple,
+            authenticatedAt: Phase1BFixture.now
+        )
+
+        await XCTAssertThrowsErrorAsync {
+            try await coordinator.deleteAccount(
+                session: Phase1BFixture.session(),
+                reauthentication: reauthentication,
+                removeLocalData: true
+            )
+        }
+        let firstAlarmCount = await alarms.count
+        let firstFileCount = await files.count
+        let firstSignOutCount = await signOut.count
+        XCTAssertEqual(firstAlarmCount, 0)
+        XCTAssertEqual(firstFileCount, 0)
+        XCTAssertEqual(firstSignOutCount, 0)
+
+        try await coordinator.deleteAccount(
+            session: Phase1BFixture.session(),
+            reauthentication: reauthentication,
+            removeLocalData: true
+        )
+        let finalAlarmCount = await alarms.count
+        let finalFileCount = await files.count
+        let finalSignOutCount = await signOut.count
+        XCTAssertEqual(finalAlarmCount, 1)
+        XCTAssertEqual(finalFileCount, 1)
+        XCTAssertEqual(finalSignOutCount, 1)
+        XCTAssertNil(try sessionStore.read())
+        let profile = try await database.profile(id: Phase1BFixture.profileID)
+        XCTAssertNil(profile)
     }
 
     func testSignOutProtectsFormerAccountDataFromDifferentAccount() async throws {
@@ -377,7 +516,8 @@ final class DataRightsFoundationTests: XCTestCase {
     }
 
     private func accountDeletionCoordinator(
-        gateway: ScriptedAccountDeletionGateway
+        gateway: ScriptedAccountDeletionGateway,
+        sessionSignOut: RecordingAccountDeletionSessionSignOut = RecordingAccountDeletionSessionSignOut()
     ) async throws -> AccountDeletionCoordinator {
         let database = try LocalDatabase(path: temporaryDatabasePath())
         try await database.createProfile(Phase1BFixture.profile(), settings: Phase1BFixture.settings())
@@ -390,6 +530,7 @@ final class DataRightsFoundationTests: XCTestCase {
         return AccountDeletionCoordinator(
             remote: gateway,
             localDeletion: local,
+            sessionSignOut: sessionSignOut,
             identifier: FixedIdentifierGenerator(value: Phase1BFixture.key),
             clock: FixedClock(value: Phase1BFixture.now)
         )

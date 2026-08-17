@@ -260,6 +260,27 @@ final class AuthenticationFoundationTests: XCTestCase {
         XCTAssertEqual(result, .signedOut)
     }
 
+    func testSignOutWithoutProviderCredentialSkipsRevocationAndStillSignsOut() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        try store.write(Phase1BFixture.session())
+        let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
+        let coordinator = AuthenticationCoordinator(
+            challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 2)),
+            gateway: gateway,
+            sessionStore: store
+        )
+
+        let result = try await coordinator.signOut(providerRevocationCredential: nil)
+
+        XCTAssertEqual(result, .signedOut)
+        XCTAssertNil(try store.read())
+        let revokeCount = await gateway.revokeCount
+        let signOutCount = await gateway.signOutCount
+        XCTAssertEqual(revokeCount, 0)
+        XCTAssertEqual(signOutCount, 1)
+    }
+
     func testProviderRevocationFailureStillSignsOutAndPreservesGuestUsability() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)

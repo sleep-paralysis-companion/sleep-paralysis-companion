@@ -4,6 +4,16 @@
 # working directory name when running `supabase init`.
 project_id = "paralux"
 
+# Curated catalog metadata and signed URL issuance are intentionally callable
+# without an Auth JWT because the iOS catalog provider has no session-token
+# dependency. The signed URL endpoint still allow-lists approved catalog
+# assets and never exposes the service-role key.
+[functions.audio-manifest]
+verify_jwt = false
+
+[functions.audio-authorize]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.

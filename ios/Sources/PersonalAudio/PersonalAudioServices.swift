@@ -258,7 +258,7 @@ actor PersonalAudioFileStore {
     func protectedExportURL(for metadata: PersonalAudioClipMetadata) throws -> URL {
         let source = try existingURL(for: metadata)
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ParaluxAudioExports", isDirectory: true)
+            .appendingPathComponent("SleepParalysisCompanionAudioExports", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try protection.applyProtection(to: directory, kind: .sensitiveTemporaryExport)
         let url = directory.appendingPathComponent(
@@ -276,7 +276,7 @@ actor PersonalAudioFileStore {
 
     private func cleanupTemporaryExports() throws {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ParaluxAudioExports", isDirectory: true)
+            .appendingPathComponent("SleepParalysisCompanionAudioExports", isDirectory: true)
         if FileManager.default.fileExists(atPath: directory.path) {
             try FileManager.default.removeItem(at: directory)
         }

@@ -125,10 +125,10 @@ Deno.test("completed request replays only for the bound user", async () => {
     runtime,
   );
   assertEquals(result.status, 200);
-  assertEquals(await result.json(), {
-    status: "completed",
-    request_id: REQUEST_ID,
-  });
+  const body = await result.json();
+  assertEquals(body.status, "completed");
+  assertEquals(body.request_id, REQUEST_ID);
+  assertNotEquals(body.retry_token, undefined);
 });
 
 Deno.test("deletes verified user and records a content-free bound audit", async () => {

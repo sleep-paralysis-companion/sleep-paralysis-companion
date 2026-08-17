@@ -176,9 +176,18 @@ actor LocalDatabase {
             state: metadata.state.rawValue,
             relativeFileName: metadata.relativeFileName,
             verifiedAt: metadata.verifiedAt?.timeIntervalSince1970,
-            byteCount: metadata.byteCount
+            byteCount: metadata.byteCount,
+            progress: metadata.progress,
+            failureReason: metadata.failureReason,
+            lastAccessedAt: metadata.lastAccessedAt?.timeIntervalSince1970
         )
         try write { try record.save($0) }
+    }
+
+    func removeAudioCacheMetadata(assetID: String) throws {
+        try write {
+            _ = try AudioCacheRecord.deleteOne($0, key: assetID)
+        }
     }
 
     func audioCacheMetadata(assetID: String) throws -> AudioCacheMetadata? {
@@ -194,7 +203,10 @@ actor LocalDatabase {
                 state: state,
                 relativeFileName: record.relativeFileName,
                 verifiedAt: record.verifiedAt.map(Date.init(timeIntervalSince1970:)),
-                byteCount: record.byteCount
+                byteCount: record.byteCount,
+                progress: record.progress,
+                failureReason: record.failureReason,
+                lastAccessedAt: record.lastAccessedAt.map(Date.init(timeIntervalSince1970:))
             )
         }
     }

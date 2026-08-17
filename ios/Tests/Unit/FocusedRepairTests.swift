@@ -255,6 +255,7 @@ final class ReminderRepairTests: XCTestCase {
         let added = await scheduler.added
         XCTAssertEqual(removed, ["paralux.sleep.reminder.1"])
         XCTAssertEqual(added, SleepReminderPlanner.plans(for: schedule))
+        XCTAssertEqual(added.first?.identifier, "sleepcompanion.sleep.reminder.2")
     }
 
     func testDisabledReplacementRemovesOwnedRequestsAndAddsNothing() async throws {

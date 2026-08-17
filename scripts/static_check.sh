@@ -5,11 +5,22 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_ROOT="$REPOSITORY_ROOT/ios/Sources"
 RESOURCE_ROOT="$REPOSITORY_ROOT/ios/Resources"
 
-FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|HealthKit|AdSupport)|URLSession|try!|as!'
+FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|HealthKit|AdSupport)|try!|as!'
 FORBIDDEN_RESOURCE='NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription|UIBackgroundModes'
 
 if grep -R -n -E "$FORBIDDEN_SOURCE" "$SOURCE_ROOT"; then
   echo "Forbidden Phase 1B source pattern found." >&2
+  exit 1
+fi
+
+if grep -R -l -E '\bURLSession\b' "$SOURCE_ROOT" \
+  | grep -F -v -E '/Audio/'; then
+  echo "Networking may only be used by the provider-neutral audio boundary." >&2
+  exit 1
+fi
+
+if grep -R -n -E 'import[[:space:]]+AVFoundation' "$SOURCE_ROOT/Features"; then
+  echo "SwiftUI features may not import AVFoundation." >&2
   exit 1
 fi
 
@@ -27,7 +38,7 @@ if grep -R -l -E 'import[[:space:]]+Supabase' "$SOURCE_ROOT" \
 fi
 
 if grep -R -l -E '\bFileManager\b' "$SOURCE_ROOT" \
-  | grep -v -E '/App/AppModel\.swift$|/DataRights/|/PersonalAudio/|/PlatformInterfaces/(DataProtection|LocalStoreLocation)\.swift$'; then
+  | grep -v -E '/App/AppModel\.swift$|/Audio/|/DataRights/|/PersonalAudio/|/PlatformInterfaces/(DataProtection|LocalStoreLocation)\.swift$'; then
   echo "File access escaped the data-rights boundary." >&2
   exit 1
 fi
@@ -79,11 +90,11 @@ done < <(
     -type f -name '*.entitlements' -print
 )
 
-grep -Fx "SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc.dev" \
+grep -Fx "SPC_BUNDLE_IDENTIFIER = app.sleepcompanion.spc.dev" \
   "$REPOSITORY_ROOT/ios/Configurations/Development.xcconfig"
-grep -Fx "SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc.staging" \
+grep -Fx "SPC_BUNDLE_IDENTIFIER = app.sleepcompanion.spc.staging" \
   "$REPOSITORY_ROOT/ios/Configurations/Staging.xcconfig"
-grep -Fx "SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc" \
+grep -Fx "SPC_BUNDLE_IDENTIFIER = app.sleepcompanion.spc" \
   "$REPOSITORY_ROOT/ios/Configurations/Production.xcconfig"
 grep -Fx "IPHONEOS_DEPLOYMENT_TARGET = 26.0" \
   "$REPOSITORY_ROOT/ios/Configurations/Base.xcconfig"

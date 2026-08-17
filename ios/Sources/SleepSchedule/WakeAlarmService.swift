@@ -7,31 +7,52 @@ private nonisolated struct WakeAlarmMetadata: AlarmMetadata {
     let contentVersion: Int
 }
 
-private nonisolated enum WakeAlarmAudioAsset {
-    /// The approved asset will be added in a later pass. Until then, the AlarmKit path stays unavailable.
-    static let resourceName = "SPCWakeUpGentleLoop"
-    static let resourceExtension = "caf"
-
-    static var alertSoundName: String? {
-        guard Bundle.main.url(forResource: resourceName, withExtension: resourceExtension) != nil else {
-            return nil
-        }
-        return "\(resourceName).\(resourceExtension)"
-    }
-}
-
-nonisolated struct WakeAlarmService: Sendable {
+private actor WakeAlarmServiceGate {
     func reconcile(
         schedule: SleepSchedule,
         preference: AlarmPreference
     ) async -> (AlarmPreference, WakeAlarmSchedulingOutcome) {
         guard let plan = WakeAlarmPlanner.plan(for: schedule) else {
-            try? AlarmManager.shared.cancel(id: preference.id)
-            return (updated(preference, systemState: .notScheduled, result: .none, systemAlarmID: nil), .notRequested)
+            do {
+                try cancelOwnedAlarms(for: preference)
+                return (
+                    updated(
+                        preference,
+                        systemState: .notScheduled,
+                        result: .none,
+                        systemAlarmID: nil
+                    ),
+                    .notRequested
+                )
+            } catch {
+                return (
+                    updated(
+                        preference,
+                        systemState: .failed,
+                        result: .failed,
+                        systemAlarmID: preference.systemAlarmID
+                    ),
+                    .failed
+                )
+            }
         }
 
-        guard let soundName = WakeAlarmAudioAsset.alertSoundName else {
-            try? AlarmManager.shared.cancel(id: preference.id)
+        guard let sound = SystemAudioAssets.resolveAlarmSound(
+            requestedFileName: preference.alarmSoundFileName
+        ) else {
+            do {
+                try cancelOwnedAlarms(for: preference)
+            } catch {
+                return (
+                    updated(
+                        preference,
+                        systemState: .failed,
+                        result: .failed,
+                        systemAlarmID: preference.systemAlarmID
+                    ),
+                    .failed
+                )
+            }
             return (
                 updated(
                     preference,
@@ -41,6 +62,11 @@ nonisolated struct WakeAlarmService: Sendable {
                 ),
                 .audioAssetUnavailable
             )
+        }
+
+        var effectivePreference = preference
+        if sound.usedFallback {
+            effectivePreference.alarmSoundFileName = sound.fileName
         }
 
         do {
@@ -53,25 +79,86 @@ nonisolated struct WakeAlarmService: Sendable {
                 false
             }
             guard authorized else {
-                return (updated(preference, systemState: .denied, result: .denied, systemAlarmID: nil), .denied)
+                return (
+                    updated(
+                        effectivePreference,
+                        systemState: .denied,
+                        result: .denied,
+                        systemAlarmID: effectivePreference.systemAlarmID
+                    ),
+                    .denied
+                )
             }
 
-            try? AlarmManager.shared.cancel(id: preference.id)
+            let existing = try AlarmManager.shared.alarms
+            let ownedAlarms = existing.filter { alarm in
+                [effectivePreference.id.uuidString, effectivePreference.systemAlarmID]
+                    .compactMap { $0 }
+                    .contains(alarm.id.uuidString)
+            }
+            if !sound.usedFallback,
+               effectivePreference.systemState == .scheduled,
+               let systemAlarmID = effectivePreference.systemAlarmID,
+               ownedAlarms.count == 1,
+               ownedAlarms.contains(where: { $0.id.uuidString == systemAlarmID })
+            {
+                return (effectivePreference, .scheduled)
+            }
+
+            try cancelOwnedAlarms(for: effectivePreference, alarms: existing)
             let alarm = try await AlarmManager.shared.schedule(
-                id: preference.id,
-                configuration: configuration(for: plan, soundName: soundName)
+                id: effectivePreference.id,
+                configuration: configuration(for: plan, soundName: sound.fileName)
             )
+            let verified = try AlarmManager.shared.alarms.contains {
+                $0.id.uuidString == alarm.id.uuidString
+            }
+            guard verified else {
+                try? AlarmManager.shared.cancel(id: alarm.id)
+                return (
+                    updated(
+                        effectivePreference,
+                        systemState: .failed,
+                        result: .failed,
+                        systemAlarmID: nil
+                    ),
+                    .failed
+                )
+            }
+
             return (
                 updated(
-                    preference,
+                    effectivePreference,
                     systemState: .scheduled,
                     result: .success,
                     systemAlarmID: alarm.id.uuidString
                 ),
-                .scheduled
+                sound.usedFallback ? .fallbackScheduled : .scheduled
             )
         } catch {
-            return (updated(preference, systemState: .failed, result: .failed, systemAlarmID: nil), .failed)
+            return (
+                updated(
+                    effectivePreference,
+                    systemState: .failed,
+                    result: .failed,
+                    systemAlarmID: nil
+                ),
+                .failed
+            )
+        }
+    }
+
+    private func cancelOwnedAlarms(
+        for preference: AlarmPreference,
+        alarms: [Alarm]? = nil
+    ) throws {
+        let ownedIDs = Set(
+            [preference.id.uuidString, preference.systemAlarmID]
+                .compactMap { $0 }
+        )
+        let current = try alarms ?? AlarmManager.shared.alarms
+        for alarm in current where ownedIDs.contains(alarm.id.uuidString) {
+            try AlarmManager.shared.cancel(id: alarm.id)
         }
     }
 
@@ -133,5 +220,20 @@ nonisolated struct WakeAlarmService: Sendable {
         case 6: .friday
         default: .saturday
         }
+    }
+}
+
+nonisolated struct WakeAlarmService: Sendable {
+    private let gate: WakeAlarmServiceGate
+
+    init() {
+        self.gate = WakeAlarmServiceGate()
+    }
+
+    func reconcile(
+        schedule: SleepSchedule,
+        preference: AlarmPreference
+    ) async -> (AlarmPreference, WakeAlarmSchedulingOutcome) {
+        await gate.reconcile(schedule: schedule, preference: preference)
     }
 }

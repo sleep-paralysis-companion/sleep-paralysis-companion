@@ -84,6 +84,7 @@ nonisolated struct AlarmPreference: Equatable, Codable, Sendable {
     let id: UUID
     let profileID: UUID
     var systemAlarmID: String?
+    var alarmSoundFileName: String? = nil
     var localHour: Int
     var localMinute: Int
     var weekdaysMask: Int
@@ -109,11 +110,22 @@ nonisolated struct AudioCatalogItem: Equatable, Codable, Sendable {
 }
 
 nonisolated enum AudioCacheState: String, Codable, CaseIterable, Sendable {
+    case notAvailable = "not_available"
+    case availableRemotely = "available_remotely"
+    case streaming
+    case downloadQueued = "download_queued"
     case notCached
     case downloading
+    case downloadFailed = "download_failed"
+    case availableOffline = "available_offline"
+    case updateAvailable = "update_available"
+    case playing
+    case paused
+    case interrupted
     case verified
     case invalid
     case revoked
+    case revokedUnavailable = "revoked_unavailable"
 }
 
 nonisolated struct AudioCacheMetadata: Equatable, Codable, Sendable {
@@ -123,6 +135,9 @@ nonisolated struct AudioCacheMetadata: Equatable, Codable, Sendable {
     var relativeFileName: String?
     var verifiedAt: Date?
     var byteCount: Int64
+    var progress: Double = 0
+    var failureReason: String? = nil
+    var lastAccessedAt: Date? = nil
 }
 
 nonisolated enum EpisodeOccurrence: String, Codable, CaseIterable, Sendable {

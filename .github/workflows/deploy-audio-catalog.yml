@@ -1,0 +1,49 @@
+name: Deploy audio catalog backend
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-audio-catalog
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy private audio catalog functions and schema
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_ID: nfzvlvukbeapcnlmyecf
+    steps:
+      - name: Check out the release candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate deployment secrets
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "Missing SUPABASE_ACCESS_TOKEN" >&2; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "Missing SUPABASE_DB_PASSWORD" >&2; exit 1; }
+
+      - name: Install the pinned Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.101.0
+
+      - name: Link the production Supabase project
+        run: supabase link --project-ref "$PROJECT_ID"
+
+      - name: Apply migrations
+        run: supabase db push
+
+      - name: Deploy the manifest function
+        run: supabase functions deploy audio-manifest --project-ref "$PROJECT_ID"
+
+      - name: Deploy the signed-URL function
+        run: supabase functions deploy audio-authorize --project-ref "$PROJECT_ID"

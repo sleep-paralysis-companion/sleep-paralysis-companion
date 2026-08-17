@@ -16,65 +16,108 @@ struct AppTabShellView: View {
                     MorningCheckInFlowView(model: model)
                 }
             }
-            .tabItem {
-                Label("Sleep", systemImage: "moon.stars.fill")
-            }
             .tag(AppTab.sleep)
 
-            HistoryView(model: model)
-                .tabItem {
-                    Label("Journal", systemImage: "book.closed")
-                }
-                .tag(AppTab.journal)
+            ComingSoonView(
+                title: "Journal",
+                message: "Your private journal is coming soon.",
+                systemImage: "book.closed"
+            )
+            .tag(AppTab.journal)
 
             HomeView(model: model)
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
                 .tag(AppTab.home)
 
-            CheckInReportView(model: model)
-                .tabItem {
-                    Label("Report", systemImage: "chart.line.uptrend.xyaxis")
-                }
-                .tag(AppTab.report)
+            ComingSoonView(
+                title: "Activity",
+                message: "Activity tracking is coming soon.",
+                systemImage: "chart.line.uptrend.xyaxis"
+            )
+            .tag(AppTab.activity)
 
             SettingsView(model: model)
-                .tabItem {
-                    Label("Me", systemImage: "person.crop.circle")
-                }
                 .tag(AppTab.me)
         }
-        .toolbarBackground(Color(red: 0.02, green: 0.006, blue: 0.11), for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
-        .toolbarColorScheme(.dark, for: .tabBar)
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            AppTabBar(selection: Binding(
+                get: { model.selectedTab },
+                set: { model.selectTab($0) }
+            ))
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+        }
         .accessibilityIdentifier("app.tab.shell")
     }
 }
 
-private struct CheckInReportView: View {
-    @Bindable var model: AppModel
+private struct AppTabBar: View {
+    @Binding var selection: AppTab
 
     var body: some View {
-        NightScreen {
-            VStack(alignment: .leading, spacing: AppSpacing.spacious) {
-                Text("Report")
-                    .font(AppTypographyRole.hero)
-                Text("Your private check-in history stays descriptive.")
-                    .foregroundStyle(.white.opacity(0.72))
-                NightCard {
-                    Text("Check-ins logged")
-                        .font(.headline)
-                    Text("\(model.checkIns.count)")
-                        .font(.system(size: 52, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color(red: 0.66, green: 0.49, blue: 1))
-                    Text("This is not a clinical score, prediction, or diagnosis.")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.62))
+        HStack(spacing: 4) {
+            ForEach(AppTab.allCases, id: \.self) { tab in
+                Button {
+                    selection = tab
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: tab.systemImage)
+                            .font(.system(size: 22, weight: .medium))
+                        Text(tab.title)
+                            .font(.system(size: 12, weight: .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                    }
+                    .foregroundStyle(
+                        selection == tab
+                            ? HomeScreenPalette.accent
+                            : HomeScreenPalette.textSecondary.opacity(0.72)
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background {
+                        if selection == tab {
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .fill(HomeScreenPalette.cardBorder.opacity(0.75))
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(selection == tab ? .isSelected : [])
             }
         }
-        .navigationTitle("Report")
-        .navigationBarTitleDisplayMode(.inline)
+        .padding(5)
+        .frame(maxWidth: 380, minHeight: 72)
+        .background(HomeScreenPalette.cardSecondary)
+        .clipShape(Capsule())
+        .overlay {
+            Capsule()
+                .stroke(HomeScreenPalette.cardBorder, lineWidth: 1.2)
+        }
+    }
+}
+
+private extension AppTab {
+    var title: String {
+        switch self {
+        case .sleep: "Sleep"
+        case .journal: "Journal"
+        case .home: "Home"
+        case .activity: "Activity"
+        case .me: "Me"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .sleep: "moon.stars.fill"
+        case .journal: "book.closed"
+        case .home: "house"
+        case .activity: "chart.line.uptrend.xyaxis"
+        case .me: "person.crop.circle"
+        }
     }
 }

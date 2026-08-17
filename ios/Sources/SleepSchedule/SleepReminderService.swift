@@ -9,7 +9,13 @@ nonisolated struct SleepReminderPlan: Equatable, Sendable {
 }
 
 nonisolated enum SleepReminderPlanner {
-    static let identifierPrefix = "paralux.sleep.reminder."
+    static let identifierPrefix = "sleepcompanion.sleep.reminder."
+    private static let legacyIdentifierPrefixes = ["paralux.sleep.reminder."]
+
+    static func owns(identifier: String) -> Bool {
+        identifier.hasPrefix(identifierPrefix)
+            || legacyIdentifierPrefixes.contains { identifier.hasPrefix($0) }
+    }
 
     static func plans(for schedule: SleepSchedule) -> [SleepReminderPlan] {
         guard schedule.isValid, schedule.isEnabled else { return [] }
@@ -78,7 +84,7 @@ actor SystemReminderNotificationScheduler: ReminderNotificationScheduling {
         let content = UNMutableNotificationContent()
         content.title = "Wind down for sleep"
         content.body = "Your sleep reminder is ready. Open Sleep Paralysis Companion when you want to prepare."
-        content.sound = .default
+        content.sound = SystemAudioAssets.notificationSound()
         try await center.add(
             UNNotificationRequest(
                 identifier: plan.identifier,
@@ -141,7 +147,7 @@ actor SleepReminderService: AppCreatedAlarmRemoving {
 
     func removeAllAppCreatedAlarms() async throws {
         let identifiers = await scheduler.pendingIdentifiers().filter {
-            $0.hasPrefix(SleepReminderPlanner.identifierPrefix)
+            SleepReminderPlanner.owns(identifier: $0)
         }
         await scheduler.remove(identifiers: identifiers)
     }

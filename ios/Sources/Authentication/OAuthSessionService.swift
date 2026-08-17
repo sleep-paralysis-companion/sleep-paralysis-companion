@@ -2,12 +2,11 @@ import AuthenticationServices
 import Foundation
 import Supabase
 
-nonisolated protocol OAuthSessionServicing: Sendable {
+nonisolated protocol OAuthSessionServicing: AccountDeletionSessionSigningOut {
     var isConfigured: Bool { get }
     func restore() async throws -> AuthenticationSessionMaterial?
     func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial
-    func signOut() async throws
-    func deleteRemoteAccount() async throws
+    func reauthenticateForDeletion() async throws -> ReauthenticatedSession
 }
 
 actor UnavailableOAuthSessionService: OAuthSessionServicing {
@@ -23,7 +22,7 @@ actor UnavailableOAuthSessionService: OAuthSessionServicing {
     }
 
     func signOut() async throws {}
-    func deleteRemoteAccount() async throws {
+    func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
         throw Phase1ActionError.configurationRequired
     }
 }
@@ -48,8 +47,16 @@ actor UnavailableOAuthSessionService: OAuthSessionServicing {
 
         func signOut() async throws {}
 
-        func deleteRemoteAccount() async throws {
-            throw Phase1ActionError.configurationRequired
+        func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
+            let material = session()
+            return ReauthenticatedSession(
+                session: material,
+                proof: RecentReauthentication(
+                    userID: material.userID,
+                    provider: material.provider,
+                    authenticatedAt: Date()
+                )
+            )
         }
 
         private func session() -> AuthenticationSessionMaterial {
@@ -90,13 +97,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
 
     func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
         do {
-            let session: Session = switch provider {
-            case .apple:
-                try await client.auth.signInWithOAuth(provider: .apple)
-            case .google:
-                try await client.auth.signInWithOAuth(provider: .google)
-            }
-            let material = Self.material(from: session, provider: provider)
+            let material = try await authenticate(provider: provider)
             try sessionStore.write(material)
             return material
         } catch is CancellationError {
@@ -115,22 +116,51 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         try sessionStore.delete()
     }
 
-    func deleteRemoteAccount() async throws {
+    func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
         guard let stored = try sessionStore.read() else {
             throw AuthenticationError.expired
         }
-        let refreshed = try await signIn(provider: stored.provider)
-        guard refreshed.userID == stored.userID else {
-            try? await client.auth.signOut()
-            throw AuthenticationError.wrongAccount
+        do {
+            let refreshed = try await authenticate(provider: stored.provider)
+            guard refreshed.userID == stored.userID,
+                  refreshed.provider == stored.provider
+            else {
+                try? await client.auth.signOut()
+                try? sessionStore.write(stored)
+                throw AuthenticationError.wrongAccount
+            }
+            try sessionStore.write(refreshed)
+            return ReauthenticatedSession(
+                session: refreshed,
+                proof: RecentReauthentication(
+                    userID: refreshed.userID,
+                    provider: refreshed.provider,
+                    authenticatedAt: Date()
+                )
+            )
+        } catch is CancellationError {
+            throw AuthenticationError.cancelled
+        } catch let error as AuthenticationError {
+            throw error
+        } catch let error as ASWebAuthenticationSessionError
+            where error.code == .canceledLogin
+        {
+            throw AuthenticationError.cancelled
+        } catch {
+            throw AuthenticationError.externalProviderUnavailable
         }
-        let gateway = SupabaseAccountDeletionGateway(client: client)
-        try await gateway.deleteAccount(
-            requestID: UUID(),
-            accessToken: refreshed.accessToken,
-            retryToken: nil
-        )
-        try sessionStore.delete()
+    }
+
+    private func authenticate(
+        provider: AuthenticationProvider
+    ) async throws -> AuthenticationSessionMaterial {
+        let session: Session = switch provider {
+        case .apple:
+            try await client.auth.signInWithOAuth(provider: .apple)
+        case .google:
+            try await client.auth.signInWithOAuth(provider: .google)
+        }
+        return Self.material(from: session, provider: provider)
     }
 
     private nonisolated static func material(

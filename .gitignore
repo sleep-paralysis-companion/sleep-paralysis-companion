@@ -16,6 +16,7 @@ xcuserdata/
 ios/.generated/
 ios/TestResults/
 ios/Resources/Provided audio/
+Audio Assets/
 ios/*.xcodeproj/
 supabase/TestResults/
 

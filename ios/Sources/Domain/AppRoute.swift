@@ -4,7 +4,7 @@ nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
     case sleep
     case journal
     case home
-    case report
+    case activity
     case me
 
     init(from decoder: any Decoder) throws {
@@ -12,6 +12,8 @@ nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
         switch rawValue {
         case "history":
             self = .journal
+        case "report":
+            self = .activity
         case "settings":
             self = .me
         default:
@@ -34,6 +36,7 @@ nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
 nonisolated enum AppRoute: String, CaseIterable, Codable, Hashable, Sendable {
     case grounding
     case audioLibrary
+    case curatedAudioLibrary
     case sleepSchedule
     case morningCheckIn
     case checkInDetail
@@ -123,6 +126,7 @@ nonisolated struct DeepLinkResolver: Sendable {
         return switch url.host?.lowercased() {
         case "grounding", "episode": .grounding
         case "audio": .audioLibrary
+        case "catalog", "curated-audio": .curatedAudioLibrary
         case "schedule": .sleepSchedule
         case "checkin": .morningCheckIn
         case "privacy": .dataPrivacy

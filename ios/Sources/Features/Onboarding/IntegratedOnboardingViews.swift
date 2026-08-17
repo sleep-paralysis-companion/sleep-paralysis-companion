@@ -104,6 +104,7 @@ private struct OnboardingProgress: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Page \(current + 1) of \(count)")
+        .animation(.easeInOut(duration: 0.25), value: current)
     }
 }
 
@@ -154,7 +155,7 @@ struct SplashView: View {
         OnboardingScreen {
             VStack(spacing: 0) {
                 Spacer(minLength: 88)
-                OnboardingArtwork(size: 104, symbol: nil)
+                MoonMark(size: 104 * 1.55)
                 Text("Understand your\nnights. Own your\nsleep.")
                     .font(.title.weight(.bold))
                     .multilineTextAlignment(.center)
@@ -248,10 +249,8 @@ struct FeatureIntroductionView: View {
                     .padding(.top, 42)
                 FeatureIntroductionCard(content: content)
                     .padding(.top, 42)
-                if page != FeatureIntroductionPage.postEpisodeSupport.rawValue {
-                    OnboardingProgress(current: page, count: FeatureIntroductionPage.allCases.count)
-                        .padding(.top, 36)
-                }
+                OnboardingProgress(current: page, count: FeatureIntroductionPage.allCases.count)
+                    .padding(.top, 36)
                 Spacer(minLength: 42)
                 FeatureIntroductionCommunity()
                 FeatureIntroductionPrimaryAction(action: continueAction)
@@ -311,10 +310,8 @@ private struct FeatureIntroductionReferenceLayout: View {
                 .frame(width: 350, height: 124)
                 .position(x: 215, y: 586)
 
-            if page != FeatureIntroductionPage.postEpisodeSupport.rawValue {
-                OnboardingProgress(current: page, count: FeatureIntroductionPage.allCases.count)
-                    .position(x: 215, y: 683)
-            }
+            OnboardingProgress(current: page, count: FeatureIntroductionPage.allCases.count)
+                .position(x: 215, y: 683)
 
             FeatureIntroductionCommunity()
                 .position(x: 215, y: 731)
@@ -588,24 +585,9 @@ private struct FeatureIntroductionCard: View {
 
 private struct FeatureIntroductionCommunity: View {
     var body: some View {
-        HStack(spacing: 0) {
-            HStack(spacing: -7) {
-                avatar("A", color: Color(red: 0.33, green: 0.10, blue: 0.65))
-                avatar("M", color: Color(red: 0.08, green: 0.29, blue: 0.74))
-                avatar("J", color: Color(red: 0.00, green: 0.32, blue: 0.48))
-            }
-        }
-        .frame(width: 246, height: 30, alignment: .leading)
-    }
-
-    private func avatar(_ initial: String, color: Color) -> some View {
-        Text(initial)
-            .font(.system(size: 14, weight: .medium))
-            .foregroundStyle(.white)
-            .frame(width: 27, height: 27)
-            .background(color)
-            .clipShape(RoundedRectangle(cornerRadius: 9))
-            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.white.opacity(0.12)))
+        Color.clear
+            .frame(width: 246, height: 30)
+            .accessibilityHidden(true)
     }
 }
 

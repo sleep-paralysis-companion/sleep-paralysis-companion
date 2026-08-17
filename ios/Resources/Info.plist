@@ -26,6 +26,12 @@
 	<string>$(SPC_APP_GROUP_IDENTIFIER)</string>
 	<key>SPCProductionAPIHosts</key>
 	<string>$(SPC_PRODUCTION_API_HOSTS)</string>
+	<key>SPCAudioCatalogManifestURL</key>
+	<string>$(SPC_AUDIO_CATALOG_MANIFEST_URL)</string>
+	<key>SPCAudioCatalogAuthorizationURL</key>
+	<string>$(SPC_AUDIO_CATALOG_AUTHORIZATION_URL)</string>
+	<key>SPCAudioCatalogAllowedHosts</key>
+	<string>$(SPC_AUDIO_CATALOG_ALLOWED_HOSTS)</string>
 	<key>SPCPublicAPIBaseURL</key>
 	<string>$(SPC_PUBLIC_API_BASE_URL)</string>
 	<key>SPCSupabaseURL</key>

@@ -31,12 +31,22 @@ nonisolated struct AppSettingsRecord: Codable, FetchableRecord, PersistableRecor
     var revision: Int64
 }
 
+nonisolated struct PartnerContactRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
+    static let databaseTableName = "partner_contacts"
+
+    var profileID: String
+    var name: String?
+    var phoneNumber: String
+    var updatedAt: Double
+}
+
 nonisolated struct AlarmPreferenceRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
     static let databaseTableName = "alarm_preferences"
 
     var id: String
     var profileID: String
     var systemAlarmID: String?
+    var alarmSoundFileName: String?
     var localHour: Int
     var localMinute: Int
     var weekdaysMask: Int
@@ -64,7 +74,7 @@ nonisolated struct AudioCatalogRecord: Codable, FetchableRecord, PersistableReco
 }
 
 nonisolated struct AudioCacheRecord: Codable, FetchableRecord, PersistableRecord, Sendable {
-    static let databaseTableName = "audio_cache"
+    static let databaseTableName = "audio_cache_v2"
 
     var assetID: String
     var catalogVersion: Int
@@ -72,6 +82,9 @@ nonisolated struct AudioCacheRecord: Codable, FetchableRecord, PersistableRecord
     var relativeFileName: String?
     var verifiedAt: Double?
     var byteCount: Int64
+    var progress: Double
+    var failureReason: String?
+    var lastAccessedAt: Double?
 }
 
 nonisolated struct SubmittedCheckInRecord: Codable, FetchableRecord, PersistableRecord, Sendable {

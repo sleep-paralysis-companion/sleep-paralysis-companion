@@ -4,35 +4,37 @@ struct HelpLegalView: View {
     var body: some View {
         List {
             Section("Product boundary") {
-                Text(
-                    "Sleep Paralysis Companion is a nonmedical wellness companion. " +
-                        "It does not diagnose, detect, monitor, predict, " +
-                        "prevent, or treat sleep paralysis and is not an emergency service."
-                )
-                Text(
-                    "Every episode action and check-in is started by you. " +
-                        "The app never automatically infers an episode."
-                )
+                Text(HelpLegalCopy.productBoundary)
+                Text(HelpLegalCopy.manualEpisodeBoundary)
             }
             Section("Using Sleep Paralysis Companion") {
                 Label(
                     "Choose “I just had an episode” for manual visual grounding.",
                     systemImage: "moon.stars"
                 )
-                Label("Personal audio remains on this device.", systemImage: "waveform")
-                Label("Notification reminders are ordinary reminders, not guaranteed alarms.", systemImage: "bell")
+                Label(HelpLegalCopy.personalAudioBoundary, systemImage: "waveform")
+                Label(HelpLegalCopy.notificationBoundary, systemImage: "bell")
             }
             Section("Legal and support") {
-                Text(
-                    "Final public privacy, terms, and support URLs are not configured in this checkout. " +
-                        "Release must remain blocked until approved live pages are supplied."
-                )
+                Link(destination: LegalSupport.privacyURL) {
+                    Label("Privacy", systemImage: "hand.raised")
+                }
+                .accessibilityIdentifier("helpLegal.privacy")
+                Link(destination: LegalSupport.termsURL) {
+                    Label("Terms", systemImage: "doc.text")
+                }
+                .accessibilityIdentifier("helpLegal.terms")
+                Link(destination: LegalSupport.supportURL) {
+                    Label("Support", systemImage: "questionmark.circle")
+                }
+                .accessibilityIdentifier("helpLegal.support")
+                Link(destination: LegalSupport.accountDeletionURL) {
+                    Label("Delete Account", systemImage: "person.crop.circle.badge.minus")
+                }
+                .accessibilityIdentifier("helpLegal.deleteAccount")
             }
             Section("If you need urgent help") {
-                Text(
-                    "Use the emergency and support resources available in your location. " +
-                        "Sleep Paralysis Companion does not contact emergency services."
-                )
+                Text(HelpLegalCopy.emergencyBoundary)
             }
         }
         .navigationTitle("Help and legal")

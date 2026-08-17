@@ -34,7 +34,7 @@ actor SupabaseAccountDeletionGateway: AccountDeletionGateway {
         requestID: UUID,
         accessToken: String,
         retryToken: String?
-    ) async throws {
+    ) async throws -> String? {
         do {
             let response: AccountDeletionFunctionResponse = try await client.functions.invoke(
                 "delete-account",
@@ -51,14 +51,15 @@ actor SupabaseAccountDeletionGateway: AccountDeletionGateway {
             else {
                 throw AccountDeletionGatewayError.rejected
             }
+            return response.retryToken
         } catch let FunctionsError.httpError(code, data) {
             let payload = try? JSONDecoder().decode(
                 AccountDeletionFunctionResponse.self,
                 from: data
             )
-            if code == 503 {
+            if [408, 429, 500, 502, 503, 504].contains(code) {
                 throw AccountDeletionGatewayError.recoverable(
-                    retryToken: payload?.retryToken
+                    retryToken: payload?.retryToken ?? retryToken
                 )
             }
             throw AccountDeletionGatewayError.rejected

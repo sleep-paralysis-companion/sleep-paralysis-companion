@@ -61,7 +61,7 @@ struct MeProfileView: View {
             HStack {
                 Text("👩‍💻")
                     .font(.system(size: 42)); VStack(alignment: .leading) {
-                        Text("Shraddha").font(.title2.bold()); Text("Founder").foregroundStyle(.white.opacity(0.58))
+                        Text(LegalSupport.founderName).font(.title2.bold()); Text("Founder").foregroundStyle(.white.opacity(0.58))
                     }; Spacer(); Text("FOUNDER").foregroundStyle(Color(
                         red: 0.72,
                         green: 0.61,
@@ -73,11 +73,14 @@ struct MeProfileView: View {
                     "and answer any questions directly."
             )
             .font(.title3).foregroundStyle(.white.opacity(0.68))
-            Button { openURL(URL(string: "mailto:companionsp2026@gmail.com")!) } label: {
-                Text("Connect to the founder").font(.title3.bold()).frame(maxWidth: .infinity).padding(
-                    .vertical,
-                    16
-                ).background(
+            Button { openURL(LegalSupport.supportEmailURL) } label: {
+                VStack(spacing: 4) {
+                    Text("Connect to the founder").font(.title3.bold())
+                    Text(LegalSupport.supportEmail).font(.footnote)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
                     LinearGradient(
                         colors: [.purple.opacity(0.65), .blue.opacity(0.65)],
                         startPoint: .leading,
@@ -98,10 +101,13 @@ struct MeProfileView: View {
                 model.manageNotifications()
             }
             row("🔒", "Privacy & Data") { model.open(.dataPrivacy) }
+            row("❔", "Help and Legal") { model.open(.helpLegal) }
             Text("PREFERENCES").font(.headline).foregroundStyle(.white.opacity(0.5)).padding(.top, 26).padding(
                 .bottom,
                 10
             )
+            row("🎧", "Audio library") { model.open(.curatedAudioLibrary) }
+            row("🎙️", "Personal audio") { model.open(.audioLibrary) }
             row("⚙️", "Default Settings") { model.open(.defaultSettings) }
         }
     }
@@ -151,16 +157,37 @@ struct DefaultSupportSettingsView: View {
     @Bindable var model: AppModel
     @State private var sleep: DefaultEpisodeSupport = .quickSleep
     @State private var post: DefaultEpisodeSupport = .calmingAudio
+    @State private var partnerName = ""
+    @State private var partnerPhoneNumber = ""
     var body: some View {
         NightScreen {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Default settings")
-                    .font(.title2.bold()); Text("Choose what happens automatically during sleep and after an episode.")
-                    .foregroundStyle(.white.opacity(0.6)); Text("Sleep Alarm Preference")
+                    .font(.title2.bold()); Text(
+                        "Choose your sleep defaults and the support option you want to record after an episode."
+                    )
+                    .foregroundStyle(.white.opacity(0.6)); Text("Support partner")
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.top, 12)
+                Text(
+                    "Add one phone number to enable an explicit call from the grounding screen. " +
+                        "This stays on this device."
+                )
+                    .font(.callout)
+                    .foregroundStyle(.white.opacity(0.6))
+                TextField("Name (optional)", text: $partnerName)
+                    .textFieldStyle(.roundedBorder)
+                    .textContentType(.name)
+                TextField("Phone number", text: $partnerPhoneNumber)
+                    .textFieldStyle(.roundedBorder)
+                    .textContentType(.telephoneNumber)
+                    .keyboardType(.phonePad)
+                    .accessibilityIdentifier("settings.partnerPhoneNumber")
+                Text("Sleep Alarm Preference")
                     .foregroundStyle(.white.opacity(0.7))
                     .padding(
                         .top,
-                        12
+                        8
                     ); option(
                         "☾",
                         "Quick Sleep",
@@ -179,7 +206,7 @@ struct DefaultSupportSettingsView: View {
                     ); option(
                         "☎",
                         "Call Partner",
-                        "Immediately contact your chosen support partner.",
+                        "Make an explicit call from the grounding screen.",
                         .callPartner,
                         $post
                     ); option(
@@ -194,15 +221,19 @@ struct DefaultSupportSettingsView: View {
                         "Play a recorded voice message from your partner.",
                         .partnerVoice,
                         $post
-                    ); Button("Save Preferences") { model.saveDefaultSupport(
+                    ); Button("Save Preferences") { model.savePartnerCallSettings(
                         sleep: sleep,
-                        postEpisode: post
+                        postEpisode: post,
+                        partnerName: partnerName,
+                        partnerPhoneNumber: partnerPhoneNumber
                     ) }.buttonStyle(.borderedProminent).frame(maxWidth: .infinity).padding(.top, 12)
             }
         }
         .onAppear {
             sleep = model.settings?.defaultSleepSupport ?? .quickSleep; post = model.settings?
                 .defaultPostEpisodeSupport ?? .calmingAudio
+            partnerName = model.partnerContact?.name ?? ""
+            partnerPhoneNumber = model.partnerContact?.phoneNumber ?? ""
         }
     }
 

@@ -121,7 +121,11 @@ export async function handleDeleteAccount(
       row.outcome === "completed"
     )
   ) {
-    return response(200, { status: "completed", request_id: body.request_id });
+    return response(200, {
+      status: "completed",
+      request_id: body.request_id,
+      retry_token: retryToken,
+    });
   }
 
   if (existingRows.length === 0) {
@@ -196,7 +200,11 @@ export async function handleDeleteAccount(
     return recoverableResponse(body.request_id, retryToken);
   }
 
-  return response(200, { status: "completed", request_id: body.request_id });
+  return response(200, {
+    status: "completed",
+    request_id: body.request_id,
+    retry_token: retryToken,
+  });
 }
 
 function hasRecentProviderReauthentication(

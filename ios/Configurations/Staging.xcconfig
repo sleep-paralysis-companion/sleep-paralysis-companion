@@ -1,5 +1,8 @@
 #include "Base.xcconfig"
 
-SPC_BUNDLE_IDENTIFIER = com.satyamshree.spc.staging
+SPC_BUNDLE_IDENTIFIER = app.sleepcompanion.spc.staging
 SPC_ENVIRONMENT = staging
 SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) SPC_ENV_STAGING
+SPC_AUDIO_CATALOG_MANIFEST_URL = https:/$()/nfzvlvukbeapcnlmyecf.supabase.co/functions/v1/audio-manifest
+SPC_AUDIO_CATALOG_AUTHORIZATION_URL = https:/$()/nfzvlvukbeapcnlmyecf.supabase.co/functions/v1/audio-authorize
+SPC_AUDIO_CATALOG_ALLOWED_HOSTS = nfzvlvukbeapcnlmyecf.supabase.co

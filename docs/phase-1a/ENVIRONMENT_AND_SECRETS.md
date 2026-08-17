@@ -4,12 +4,12 @@
 
 | Environment | Bundle ID | Configuration | Scheme |
 |---|---|---|---|
-| Development | `com.satyamshree.spc.dev` | `Development` | `SPC-Development` |
-| Staging | `com.satyamshree.spc.staging` | `Staging` | `SPC-Staging` |
-| Production | `com.satyamshree.spc` | `Production` | `SPC-Production` |
+| Development | `app.sleepcompanion.spc.dev` | `Development` | `SPC-Development` |
+| Staging | `app.sleepcompanion.spc.staging` | `Staging` | `SPC-Staging` |
+| Production | `app.sleepcompanion.spc` | `Production` | `SPC-Production` |
 
 The Phase 0 spike remains separate at
-`com.satyamshree.spc.phase0spike`.
+`app.sleepcompanion.spc.phase0spike`.
 
 No environment has a backend URL or credential in Phase 1A. An absent public
 endpoint resolves to a disabled external resource. A nonproduction endpoint

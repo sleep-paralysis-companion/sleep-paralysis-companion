@@ -4,9 +4,9 @@ import SwiftUI
 @MainActor
 final class StoreKitProbeModel: ObservableObject {
     static let productIDs = [
-        "com.satyamshree.spc.phase0spike.premium.monthly",
-        "com.satyamshree.spc.phase0spike.premium.annual",
-        "com.satyamshree.spc.phase0spike.premium.lifetime"
+        "app.sleepcompanion.spc.phase0spike.premium.monthly",
+        "app.sleepcompanion.spc.phase0spike.premium.annual",
+        "app.sleepcompanion.spc.phase0spike.premium.lifetime"
     ]
 
     @Published var products: [Product] = []
@@ -113,4 +113,3 @@ final class StoreKitProbeModel: ObservableObject {
         )
     }
 }
-

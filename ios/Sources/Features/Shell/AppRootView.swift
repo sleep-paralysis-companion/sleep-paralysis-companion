@@ -136,6 +136,10 @@ private struct AppRouteDestinationView: View {
             GroundingView(model: model)
         case .audioLibrary:
             PersonalAudioSetupView(model: model)
+        case .curatedAudioLibrary:
+            CatalogAudioLibraryView(service: model.catalogAudioService) {
+                model.open(.audioLibrary)
+            }
         case .sleepSchedule:
             SleepScheduleView(model: model)
         case .morningCheckIn:

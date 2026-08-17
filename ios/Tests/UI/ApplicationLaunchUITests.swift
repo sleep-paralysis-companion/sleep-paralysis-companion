@@ -158,6 +158,8 @@ final class ApplicationLaunchUITests: XCTestCase {
 
     @MainActor
     func testVisualShowcaseJourney() {
+        let namespace = UUID().uuidString
+        let userID = UUID().uuidString
         var app = freshApplication()
         app.launch()
 
@@ -182,7 +184,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         capture("05-authentication-configuration-boundary", app: app)
         app.terminate()
 
-        app = authenticatedApplication()
+        app = authenticatedApplication(namespace: namespace, userID: userID)
         app.launch()
 
         XCTAssertTrue(app.staticTexts["How often do you experience Sleep Paralysis?"].waitForExistence(timeout: 8))
@@ -240,13 +242,144 @@ final class ApplicationLaunchUITests: XCTestCase {
         returnHome.tap()
 
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
-        app.tabBars.buttons["Journal"].tap()
-        XCTAssertTrue(app.staticTexts["No episode reported"].waitForExistence(timeout: 8))
-        capture("15-history", app: app)
+        app.buttons["Sleep"].tap()
+        capture("15-sleep-tab", app: app)
 
-        app.tabBars.buttons["Me"].tap()
+        app.buttons["Activity"].tap()
+        XCTAssertTrue(app.staticTexts["Activity is coming soon"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Activity tracking is coming soon."].exists)
+        capture("16-activity-tab", app: app)
+
+        app.buttons["Home"].tap()
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
+        capture("17-home-tab", app: app)
+
+        app.buttons["Journal"].tap()
+        XCTAssertTrue(app.staticTexts["Journal is coming soon"].waitForExistence(timeout: 8))
+        capture("18-journal-coming-soon", app: app)
+
+        app.buttons["Me"].tap()
         XCTAssertTrue(app.buttons["Manage subscription"].waitForExistence(timeout: 8))
-        capture("16-settings", app: app)
+        capture("19-me-settings", app: app)
+        app.terminate()
+
+        captureRoute(
+            "edit-questionnaire",
+            name: "20-edit-questionnaire",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["Questionnaire answers"] }
+        )
+        captureRoute(
+            "edit-profile",
+            name: "21-edit-profile",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.staticTexts["Edit Profile"] }
+        )
+        captureRoute(
+            "accessibility",
+            name: "22-accessibility",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["Accessibility"] }
+        )
+        captureRoute(
+            "data-privacy",
+            name: "23-data-and-privacy",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["Data and privacy"] }
+        )
+        captureRoute(
+            "help-legal",
+            name: "24-help-and-legal",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["Help and legal"] }
+        )
+        captureRoute(
+            "account",
+            name: "25-account",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["Account"] }
+        )
+        captureRoute(
+            "default-settings",
+            name: "26-default-settings",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.staticTexts["Default settings"] }
+        )
+        captureRoute(
+            "sleep-schedule",
+            name: "27-sleep-schedule-settings",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.staticTexts["What time do you want to sleep?"] }
+        )
+        captureRoute(
+            "audio-library",
+            name: "28-personal-audio-library",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.staticTexts["Record a loved\none’s voice"] }
+        )
+        captureRoute(
+            "check-in-detail",
+            name: "29-check-in-detail",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["History detail"] }
+        )
+
+        captureCatalogRoute(
+            scenario: "streaming-preview",
+            name: "30-curated-audio-streaming",
+            namespace: namespace,
+            userID: userID
+        ) { catalog in
+            let play = catalog.buttons["catalogAudio.play.quick_unwind"]
+            XCTAssertTrue(play.waitForExistence(timeout: 8), catalog.debugDescription)
+            makeHittable(play, in: catalog)
+            play.tap()
+            XCTAssertTrue(catalog.staticTexts["Playing preview"].waitForExistence(timeout: 3))
+            capture("31-curated-audio-playing", app: catalog)
+            let pause = catalog.buttons["catalogAudio.pause.quick_unwind"]
+            XCTAssertTrue(pause.exists)
+            pause.tap()
+            XCTAssertTrue(catalog.staticTexts["Preview paused"].waitForExistence(timeout: 3))
+            capture("32-curated-audio-paused", app: catalog)
+        }
+
+        captureCatalogRoute(
+            scenario: "downloaded",
+            name: "33-curated-audio-offline",
+            namespace: namespace,
+            userID: userID
+        ) { catalog in
+            let alarm = catalog.buttons["catalogAudio.selectAlarm.morning_alarm"]
+            XCTAssertTrue(alarm.waitForExistence(timeout: 8), catalog.debugDescription)
+            makeHittable(alarm, in: catalog)
+            alarm.tap()
+            XCTAssertTrue(catalog.staticTexts["Morning Alarm"].exists)
+            capture("34-curated-audio-alarm-selection", app: catalog)
+        }
+
+        captureCatalogRoute(
+            scenario: "download-progress",
+            name: "35-curated-audio-download",
+            namespace: namespace,
+            userID: userID
+        ) { catalog in
+            let download = catalog.buttons["catalogAudio.download.quick_unwind"]
+            XCTAssertTrue(download.waitForExistence(timeout: 8), catalog.debugDescription)
+            makeHittable(download, in: catalog)
+            download.tap()
+            XCTAssertTrue(catalog.otherElements["catalogAudio.progress.quick_unwind"].waitForExistence(timeout: 3))
+            capture("36-curated-audio-download-progress", app: catalog)
+        }
     }
 
     @MainActor
@@ -295,12 +428,60 @@ final class ApplicationLaunchUITests: XCTestCase {
     @MainActor
     private func authenticatedApplication(
         namespace: String = UUID().uuidString,
-        userID: String = UUID().uuidString
+        userID: String = UUID().uuidString,
+        showcaseRoute: String? = nil,
+        catalogScenario: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["SPC_LOCAL_STORE_NAMESPACE"] = namespace
         app.launchEnvironment["SPC_UI_TEST_AUTHENTICATED_USER_ID"] = userID
+        if let showcaseRoute {
+            app.launchEnvironment["SPC_UI_TEST_SHOWCASE_ROUTE"] = showcaseRoute
+        }
+        if let catalogScenario {
+            app.launchEnvironment["SPC_UI_TEST_CATALOG_SCENARIO"] = catalogScenario
+        }
         return app
+    }
+
+    @MainActor
+    private func captureRoute(
+        _ route: String,
+        name: String,
+        namespace: String,
+        userID: String,
+        expected: (XCUIApplication) -> XCUIElement
+    ) {
+        let app = authenticatedApplication(
+            namespace: namespace,
+            userID: userID,
+            showcaseRoute: route
+        )
+        app.launch()
+        XCTAssertTrue(expected(app).waitForExistence(timeout: 8), app.debugDescription)
+        capture(name, app: app)
+        app.terminate()
+    }
+
+    @MainActor
+    private func captureCatalogRoute(
+        scenario: String,
+        name: String,
+        namespace: String,
+        userID: String,
+        interaction: (XCUIApplication) -> Void
+    ) {
+        let app = authenticatedApplication(
+            namespace: namespace,
+            userID: userID,
+            showcaseRoute: "curated-audio-library",
+            catalogScenario: scenario
+        )
+        app.launch()
+        XCTAssertTrue(app.otherElements["catalogAudioLibrary"].waitForExistence(timeout: 8), app.debugDescription)
+        capture(name, app: app)
+        interaction(app)
+        app.terminate()
     }
 
     @MainActor

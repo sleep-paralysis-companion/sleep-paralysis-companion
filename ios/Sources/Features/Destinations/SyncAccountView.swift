@@ -5,6 +5,13 @@ struct AccountView: View {
     @State private var confirmSignOut = false
     @State private var confirmAccountDeletion = false
 
+    private var isRetryingAccountDeletion: Bool {
+        if case .failedRecoverable = model.accountDeletionState {
+            return true
+        }
+        return false
+    }
+
     var body: some View {
         List {
             Section("Signed-in account") {
@@ -16,7 +23,7 @@ struct AccountView: View {
                     confirmSignOut = true
                 }
                 Button(
-                    "Delete Supabase account",
+                    isRetryingAccountDeletion ? "Retry account deletion" : "Delete Supabase account",
                     systemImage: "person.crop.circle.badge.minus",
                     role: .destructive
                 ) {
@@ -37,16 +44,18 @@ struct AccountView: View {
         } message: {
             Text("Protected local data remains on this device and requires the same account to reopen.")
         }
-        .confirmationDialog("Delete the Supabase account?", isPresented: $confirmAccountDeletion) {
-            Button("Reauthenticate and delete account", role: .destructive) {
+        .confirmationDialog(
+            isRetryingAccountDeletion ? "Retry account deletion?" : "Delete the Supabase account?",
+            isPresented: $confirmAccountDeletion
+        ) {
+            Button("Reauthenticate and continue", role: .destructive) {
                 model.deleteRemoteAccount()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(
-                "A fresh provider sign-in is required. " +
-                    "Local data is removed only after the server confirms account deletion."
-            )
+            Text(isRetryingAccountDeletion
+                ? "The same signed deletion request will be retried. Local data is removed only after the server confirms completion."
+                : "A fresh provider sign-in is required. Local data is removed only after the server confirms account deletion.")
         }
     }
 }

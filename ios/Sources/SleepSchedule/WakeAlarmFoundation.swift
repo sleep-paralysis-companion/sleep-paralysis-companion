@@ -40,6 +40,7 @@ nonisolated enum WakeAlarmSchedulingOutcome: Equatable, Sendable {
     case notRequested
     case audioAssetUnavailable
     case scheduled
+    case fallbackScheduled
     case denied
     case failed
 
@@ -48,9 +49,11 @@ nonisolated enum WakeAlarmSchedulingOutcome: Equatable, Sendable {
         case .notRequested:
             "Wake-up audio is off"
         case .audioAssetUnavailable:
-            "Wake-up audio will be available when its bundled sound is added"
+            "Wake-up audio was not scheduled because no compatible local sound is available"
         case .scheduled:
             "Wake-up audio alarm is scheduled"
+        case .fallbackScheduled:
+            "Wake-up audio alarm is scheduled with the bundled fallback sound"
         case .denied:
             "Wake-up audio alarm permission is denied"
         case .failed:

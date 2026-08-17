@@ -9,6 +9,7 @@ nonisolated struct Phase1ResumeSnapshot: Sendable {
     let schedule: SleepSchedule
     let checkIns: [SubmittedCheckIn]
     let settings: AppSettings
+    let partnerContact: PartnerContact?
 }
 
 actor IntegratedPhase1Store {
@@ -97,6 +98,25 @@ actor IntegratedPhase1Store {
         )
     }
 
+    func makeCatalogAudioService(
+        configuration: CatalogAudioRemoteConfiguration
+    ) throws -> CatalogAudioService {
+        let database = try databaseInstance()
+        let remote = try configuration.makeRemoteProvider()
+        let cache = CatalogAudioCacheCoordinator(
+            remote: remote,
+            index: LocalDatabaseCatalogAudioCacheIndex(database: database),
+            files: CatalogAudioFileStore(),
+            transfer: configuration.makeTransfer(),
+            capacity: SystemCatalogAudioStorageCapacityChecker()
+        )
+        return CatalogAudioService(
+            remote: remote,
+            catalogIndex: LocalDatabaseCatalogAudioMetadataIndex(database: database),
+            cache: cache
+        )
+    }
+
     func saveSchedule(
         _ schedule: SleepSchedule,
         profileID: UUID,
@@ -113,6 +133,7 @@ actor IntegratedPhase1Store {
             id: alarmID,
             profileID: profileID,
             systemAlarmID: nil,
+            alarmSoundFileName: AlarmSoundSelectionStore.selectedAlarmSoundFileName(),
             localHour: wakePlan?.hour ?? schedule.wakeHour,
             localMinute: wakePlan?.minute ?? schedule.wakeMinute,
             weekdaysMask: wakePlan.map { weekdaysMask(for: $0) } ?? schedule.weekdaysMask,
@@ -139,6 +160,10 @@ actor IntegratedPhase1Store {
         )
         await synchronizePending(profileID: profileID, userID: userID)
         return preference
+    }
+
+    func alarmPreference(profileID: UUID) async throws -> AlarmPreference? {
+        try await databaseInstance().alarms(profileID: profileID).first
     }
 
     func saveWakeAlarmPreference(
@@ -197,6 +222,29 @@ actor IntegratedPhase1Store {
             revision: settings.revision
         )
         await synchronizePending(profileID: settings.profileID, userID: userID)
+    }
+
+    func partnerContact(profileID: UUID) async throws -> PartnerContact? {
+        try await databaseInstance().partnerContact(profileID: profileID)
+    }
+
+    func savePartnerContact(
+        _ contact: PartnerContact,
+        profileID: UUID,
+        userID: UUID
+    ) async throws {
+        try await databaseInstance().savePartnerContact(
+            contact,
+            profileID: profileID,
+            authenticatedUserID: userID
+        )
+    }
+
+    func deletePartnerContact(profileID: UUID, userID: UUID) async throws {
+        try await databaseInstance().deletePartnerContact(
+            profileID: profileID,
+            authenticatedUserID: userID
+        )
     }
 
     func deleteCheckIn(_ value: SubmittedCheckIn, userID: UUID) async throws {
@@ -280,6 +328,7 @@ actor IntegratedPhase1Store {
         )
         let schedule = try await preferences.read(userID: userID) ?? .defaultValue
         let checkIns = try await database.checkIns(profileID: profile.id)
+        let partnerContact = try await database.partnerContact(profileID: profile.id)
         guard let settings = try await database.settings(profileID: profile.id) else {
             throw LocalDatabaseError.corruptOrUnreadable
         }
@@ -291,7 +340,8 @@ actor IntegratedPhase1Store {
             audioDefault: audioDefault,
             schedule: schedule,
             checkIns: checkIns,
-            settings: settings
+            settings: settings,
+            partnerContact: partnerContact
         )
     }
 
@@ -410,7 +460,7 @@ actor IntegratedPhase1Store {
 
 actor AccountBoundPreferencesStore {
     private let keychain: any KeychainClient
-    private let service = "com.satyamshree.spc.phase1.preferences"
+    private let service = "app.sleepcompanion.spc.phase1.preferences"
 
     init(keychain: any KeychainClient = SystemKeychainClient()) {
         self.keychain = keychain

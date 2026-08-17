@@ -60,6 +60,55 @@ extension AppModel {
         }
     }
 
+    func savePartnerCallSettings(
+        sleep: DefaultEpisodeSupport,
+        postEpisode: DefaultEpisodeSupport,
+        partnerName: String,
+        partnerPhoneNumber: String
+    ) {
+        guard let userID, let profileID, var settings else { return }
+        let trimmedPhoneNumber = partnerPhoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = partnerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let contact: PartnerContact?
+
+        if trimmedPhoneNumber.isEmpty {
+            guard trimmedName.isEmpty else {
+                feedbackMessage = "Add a phone number before saving the partner name."
+                return
+            }
+            contact = nil
+        } else {
+            guard let validatedContact = PartnerContact(name: trimmedName, phoneNumber: trimmedPhoneNumber) else {
+                feedbackMessage = "Enter a valid phone number with 7 to 15 digits."
+                return
+            }
+            contact = validatedContact
+        }
+
+        settings.defaultSleepSupport = sleep
+        settings.defaultPostEpisodeSupport = postEpisode
+        settings.updatedAt = Date()
+        settings.revision += 1
+        let updatedSettings = settings
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                if let contact {
+                    try await store.savePartnerContact(contact, profileID: profileID, userID: userID)
+                } else {
+                    try await store.deletePartnerContact(profileID: profileID, userID: userID)
+                }
+                try await store.saveSettings(updatedSettings, userID: userID)
+                self.partnerContact = contact
+                self.settings = updatedSettings
+                feedbackMessage = "Preferences saved."
+            } catch {
+                feedbackMessage = "Your partner call settings were not saved."
+            }
+        }
+    }
+
     func manageNotifications() {
         Task { @MainActor [weak self] in
             guard let self else { return }

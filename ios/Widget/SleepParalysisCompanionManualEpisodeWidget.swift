@@ -62,6 +62,7 @@ struct SleepParalysisCompanionManualEpisodeWidgetView: View {
 }
 
 struct SleepParalysisCompanionManualEpisodeWidget: Widget {
+    // Stable WidgetKit kind retained so existing widget placements continue to resolve.
     let kind = "ParaluxManualEpisodeWidget"
 
     var body: some WidgetConfiguration {

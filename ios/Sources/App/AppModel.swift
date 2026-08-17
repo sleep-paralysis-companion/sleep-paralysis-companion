@@ -21,11 +21,14 @@ final class AppModel {
     private(set) var personalClips: [PersonalAudioClipMetadata] = []
     private(set) var recoveryAudioDefault: LocalRecoveryAudioDefault?
     private(set) var sleepSchedule = SleepSchedule.defaultValue
+    private(set) var accountDeletionState = AccountDeletionState.idle
     var reminderAuthorization = ReminderAuthorizationState.notDetermined
     private(set) var wakeAlarmOutcome = WakeAlarmSchedulingOutcome.notRequested
     private(set) var checkIns: [SubmittedCheckIn] = []
+    private(set) var partnerContact: PartnerContact?
     private(set) var playbackState = GroundingPlaybackState.idle
     private(set) var isRecording = false
+    private(set) var catalogAudioService: any CatalogAudioLibraryServicing
     private(set) var exportURL: URL?
     private(set) var audioExportURL: URL?
     private(set) var selectedCheckInID: UUID?
@@ -38,8 +41,12 @@ final class AppModel {
 
     let store: IntegratedPhase1Store
     let authentication: any OAuthSessionServicing
+    private let accountDeletionGateway: (any AccountDeletionGateway)?
+    private let accountDeletionIdentifier: any IdentifierGenerating
+    private let accountDeletionClock: any Phase1BClock
     private let audioFiles: PersonalAudioFileStore
     private let audioController: RecoveryAudioController
+    private let catalogAudioConfiguration: CatalogAudioRemoteConfiguration?
     let reminders: SleepReminderService
     private let wakeAlarms: WakeAlarmService
     private let logger: any PrivacySafeLogging
@@ -47,6 +54,8 @@ final class AppModel {
     private let deepLinkResolver: DeepLinkResolver
 
     @ObservationIgnored private var session: AuthenticationSessionMaterial?
+    @ObservationIgnored private var accountDeletionCoordinator: AccountDeletionCoordinator?
+    @ObservationIgnored private var pendingAccountDeletionSession: ReauthenticatedSession?
     @ObservationIgnored private var activationTask: Task<Void, Never>?
     @ObservationIgnored private var recordingLimitTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRecordingClipID: UUID?
@@ -56,10 +65,14 @@ final class AppModel {
         accessPolicy: AccessPolicy,
         store: IntegratedPhase1Store,
         authentication: any OAuthSessionServicing,
+        accountDeletionGateway: (any AccountDeletionGateway)? = nil,
+        accountDeletionIdentifier: any IdentifierGenerating = SystemIdentifierGenerator(),
+        accountDeletionClock: any Phase1BClock = SystemPhase1BClock(),
         audioFiles: PersonalAudioFileStore = PersonalAudioFileStore(),
         audioController: RecoveryAudioController = RecoveryAudioController(),
         reminders: SleepReminderService = SleepReminderService(),
         wakeAlarms: WakeAlarmService = WakeAlarmService(),
+        catalogAudioConfiguration: CatalogAudioRemoteConfiguration? = nil,
         logger: any PrivacySafeLogging,
         restorationCodec: RouteRestorationCodec = RouteRestorationCodec(),
         deepLinkResolver: DeepLinkResolver = DeepLinkResolver()
@@ -68,8 +81,13 @@ final class AppModel {
         self.accessPolicy = accessPolicy
         self.store = store
         self.authentication = authentication
+        self.accountDeletionGateway = accountDeletionGateway
+        self.accountDeletionIdentifier = accountDeletionIdentifier
+        self.accountDeletionClock = accountDeletionClock
         self.audioFiles = audioFiles
         self.audioController = audioController
+        self.catalogAudioConfiguration = catalogAudioConfiguration
+        self.catalogAudioService = UnavailableCatalogAudioService()
         self.reminders = reminders
         self.wakeAlarms = wakeAlarms
         self.logger = logger
@@ -82,6 +100,16 @@ final class AppModel {
 
     func activate(restoredState: String = "") {
         activationTask?.cancel()
+
+        #if DEBUG
+            if ProcessInfo.processInfo.environment["SPC_UI_TEST_OPEN_AUDIO_LIBRARY"] == "1" {
+                launchDestination = .home
+                selectedTab = .me
+                path = [.curatedAudioLibrary]
+                return
+            }
+        #endif
+
         launchDestination = .loading
         activationTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -89,6 +117,7 @@ final class AppModel {
                 in: structuredExportDirectory,
                 maximumEntries: 64
             )
+            await configureCatalogAudioServiceIfAvailable()
             reminderAuthorization = await reminders.authorizationState()
             do {
                 guard let restored = try await authentication.restore() else {
@@ -98,6 +127,9 @@ final class AppModel {
                     return
                 }
                 try await resume(session: restored, restoredState: restoredState)
+                #if DEBUG
+                    applyUITestShowcaseRouteIfRequested()
+                #endif
             } catch AuthenticationError.expired {
                 session = nil
                 authenticationState = .sessionExpired
@@ -107,6 +139,83 @@ final class AppModel {
                 feedbackMessage = "Your protected local data could not be opened. Nothing was replaced."
                 launchDestination = .recoverableError
             }
+        }
+    }
+
+    #if DEBUG
+        private func applyUITestShowcaseRouteIfRequested() {
+            guard let requestedRoute = ProcessInfo.processInfo.environment["SPC_UI_TEST_SHOWCASE_ROUTE"],
+                  launchDestination == .home
+            else { return }
+
+            isMorningCheckInPresented = false
+            path = []
+
+            switch requestedRoute {
+            case "sleep":
+                selectedTab = .sleep
+            case "journal":
+                selectedTab = .journal
+            case "home":
+                selectedTab = .home
+            case "activity":
+                selectedTab = .activity
+            case "me":
+                selectedTab = .me
+            case "grounding":
+                selectedTab = .home
+                path = [.grounding]
+            case "audio-library":
+                selectedTab = .home
+                path = [.audioLibrary]
+            case "curated-audio-library":
+                selectedTab = .me
+                path = [.curatedAudioLibrary]
+            case "sleep-schedule":
+                selectedTab = .home
+                path = [.sleepSchedule]
+            case "morning-check-in":
+                selectedTab = .sleep
+                isMorningCheckInPresented = true
+            case "check-in-detail":
+                selectedTab = .journal
+                selectedCheckInID = checkIns.first?.id
+                path = [.checkInDetail]
+            case "edit-questionnaire":
+                selectedTab = .me
+                path = [.editQuestionnaire]
+            case "accessibility":
+                selectedTab = .me
+                path = [.accessibility]
+            case "data-privacy":
+                selectedTab = .me
+                path = [.dataPrivacy]
+            case "help-legal":
+                selectedTab = .me
+                path = [.helpLegal]
+            case "account":
+                selectedTab = .me
+                path = [.account]
+            case "edit-profile":
+                selectedTab = .me
+                path = [.editProfile]
+            case "default-settings":
+                selectedTab = .me
+                path = [.defaultSettings]
+            default:
+                break
+            }
+        }
+    #endif
+
+    private func configureCatalogAudioServiceIfAvailable() async {
+        guard let catalogAudioConfiguration else { return }
+        do {
+            catalogAudioService = try await store.makeCatalogAudioService(
+                configuration: catalogAudioConfiguration
+            )
+        } catch {
+            catalogAudioService = UnavailableCatalogAudioService()
         }
     }
 
@@ -134,6 +243,7 @@ final class AppModel {
             return
         }
         authenticationState = .processing(provider)
+        accountDeletionState = .idle
         feedbackMessage = nil
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -633,18 +743,72 @@ final class AppModel {
 
     func deleteRemoteAccount() {
         guard let profileID, let userID else { return }
+        guard let accountDeletionGateway else {
+            feedbackMessage = "Account deletion is unavailable until the secure service is configured."
+            return
+        }
+
+        let coordinator: AccountDeletionCoordinator
+        if let existing = accountDeletionCoordinator {
+            coordinator = existing
+        } else {
+            let localDeletion = AppAccountLocalDataRemover(
+                store: store,
+                reminders: reminders,
+                audioFiles: audioFiles,
+                profileID: profileID,
+                userID: userID
+            )
+            coordinator = AccountDeletionCoordinator(
+                remote: accountDeletionGateway,
+                localDeletion: localDeletion,
+                sessionSignOut: authentication,
+                identifier: accountDeletionIdentifier,
+                clock: accountDeletionClock
+            )
+            accountDeletionCoordinator = coordinator
+        }
+
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                try await authentication.deleteRemoteAccount()
-                try await reminders.removeAllAppCreatedAlarms()
-                try await audioFiles.deleteAll(profileID: profileID)
-                await cleanupAllStructuredExports()
-                try await store.deleteAllLocalData(userID: userID)
+                let reauthenticated: ReauthenticatedSession
+                switch await coordinator.state {
+                case .failedRecoverable, .reauthenticationRequired:
+                    if let pendingAccountDeletionSession {
+                        reauthenticated = pendingAccountDeletionSession
+                    } else {
+                        let fresh = try await authentication.reauthenticateForDeletion()
+                        pendingAccountDeletionSession = fresh
+                        reauthenticated = fresh
+                    }
+                default:
+                    let fresh = try await authentication.reauthenticateForDeletion()
+                    pendingAccountDeletionSession = fresh
+                    reauthenticated = fresh
+                }
+                try await coordinator.deleteAccount(
+                    session: reauthenticated.session,
+                    reauthentication: reauthenticated.proof,
+                    removeLocalData: true
+                )
+                accountDeletionState = .completed
                 clearSessionState()
                 launchDestination = .splash
+                feedbackMessage = AccountDeletionFeedback.completed
+            } catch let error as AuthenticationError {
+                accountDeletionState = await coordinator.state
+                feedbackMessage = deletionFeedback(for: error)
+            } catch let error as DeletionError {
+                if case .remoteDeletionRejected = error {
+                    accountDeletionCoordinator = nil
+                    pendingAccountDeletionSession = nil
+                }
+                accountDeletionState = await coordinator.state
+                feedbackMessage = deletionFeedback(for: error)
             } catch {
-                feedbackMessage = "Account deletion did not complete. Local data was kept."
+                accountDeletionState = await coordinator.state
+                feedbackMessage = AccountDeletionFeedback.recoverable
             }
         }
     }
@@ -708,8 +872,28 @@ final class AppModel {
         personalClips = snapshot.clips
         recoveryAudioDefault = snapshot.audioDefault
         sleepSchedule = snapshot.schedule
-        wakeAlarmOutcome = snapshot.schedule.wakeAlarmIsRequested ? .audioAssetUnavailable : .notRequested
+        do {
+            if let persistedAlarm = try await store.alarmPreference(profileID: snapshot.profile.id) {
+                let reconciled = await wakeAlarms.reconcile(
+                    schedule: snapshot.schedule,
+                    preference: persistedAlarm
+                )
+                wakeAlarmOutcome = reconciled.1
+                if reconciled.0 != persistedAlarm {
+                    try? await store.saveWakeAlarmPreference(
+                        reconciled.0,
+                        profileID: snapshot.profile.id,
+                        userID: session.userID
+                    )
+                }
+            } else {
+                wakeAlarmOutcome = .notRequested
+            }
+        } catch {
+            wakeAlarmOutcome = .failed
+        }
         checkIns = snapshot.checkIns.sorted { $0.reportedForLocalDate > $1.reportedForLocalDate }
+        partnerContact = snapshot.partnerContact
         profile = snapshot.profile
         settings = snapshot.settings
         feedbackMessage = nil
@@ -768,6 +952,8 @@ final class AppModel {
     private func clearSessionState() {
         cancelRecording(reason: nil)
         session = nil
+        accountDeletionCoordinator = nil
+        pendingAccountDeletionSession = nil
         userID = nil
         profileID = nil
         profile = nil
@@ -777,6 +963,7 @@ final class AppModel {
         personalClips = []
         recoveryAudioDefault = nil
         checkIns = []
+        partnerContact = nil
         audioExportURL = nil
         exportURL = nil
         audioController.stopPlayback()
@@ -785,13 +972,78 @@ final class AppModel {
         resetNavigation()
     }
 
+    private func deletionFeedback(for error: Error) -> String {
+        if let error = error as? AuthenticationError {
+            switch error {
+            case .wrongAccount:
+                return "The provider account did not match this protected account. Local data was kept."
+            case .cancelled:
+                return "Provider reauthentication was cancelled. Local data was kept."
+            default:
+                break
+            }
+        }
+        if let error = error as? DeletionError {
+            switch error {
+            case .wrongAccount:
+                return "The provider account did not match this protected account. Local data was kept."
+            case .recentReauthenticationRequired:
+                return "A fresh Apple or Google sign-in is required before deletion. Local data was kept."
+            case .localCleanupFailed:
+                return "The account was deleted remotely, but local cleanup did not finish. Retry to complete local cleanup."
+            case .remoteDeletionFailedRecoverable:
+                return "Account deletion could not finish. Local data was kept. Retry to resume the same request."
+            case .remoteDeletionRejected:
+                return "The server rejected this deletion request. Local data was kept. Reauthenticate and try again."
+            }
+        }
+        return "Account deletion did not complete. Local data was kept. You can retry the same request."
+    }
+
     private var structuredExportDirectory: URL {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("ParaluxStructuredExports", isDirectory: true)
+            .appendingPathComponent("SleepParalysisCompanionStructuredExports", isDirectory: true)
     }
 
     private func cleanupAllStructuredExports() async {
         cleanupStructuredExport()
         try? FileManager.default.removeItem(at: structuredExportDirectory)
+    }
+}
+
+private actor AppAccountLocalDataRemover: LocalAccountDataRemoving {
+    private let store: IntegratedPhase1Store
+    private let reminders: SleepReminderService
+    private let audioFiles: PersonalAudioFileStore
+    private let profileID: UUID
+    private let userID: UUID
+
+    init(
+        store: IntegratedPhase1Store,
+        reminders: SleepReminderService,
+        audioFiles: PersonalAudioFileStore,
+        profileID: UUID,
+        userID: UUID
+    ) {
+        self.store = store
+        self.reminders = reminders
+        self.audioFiles = audioFiles
+        self.profileID = profileID
+        self.userID = userID
+    }
+
+    func deleteAllLocalData() async throws {
+        do {
+            try await reminders.removeAllAppCreatedAlarms()
+            try await audioFiles.deleteAll(profileID: profileID)
+            let structuredExports = FileManager.default.temporaryDirectory
+                .appendingPathComponent("SleepParalysisCompanionStructuredExports", isDirectory: true)
+            if FileManager.default.fileExists(atPath: structuredExports.path) {
+                try FileManager.default.removeItem(at: structuredExports)
+            }
+            try await store.deleteAllLocalData(userID: userID)
+        } catch {
+            throw DeletionError.localCleanupFailed
+        }
     }
 }

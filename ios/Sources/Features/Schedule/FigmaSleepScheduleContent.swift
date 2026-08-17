@@ -351,8 +351,18 @@ private struct WakeReminderConfigurationView: View {
                 if alarmOutcome == .audioAssetUnavailable {
                     Section {
                         Text(
-                            "Your chosen time will be saved. The gentle audio asset is being added "
-                                + "before this alarm can be activated."
+                            "Your chosen time was saved, but the wake-up alarm was not scheduled "
+                                + "because its local sound is unavailable or invalid."
+                        )
+                        .font(.footnote)
+                    }
+                }
+
+                if alarmOutcome == .fallbackScheduled {
+                    Section {
+                        Text(
+                            "The selected wake-up sound was unavailable, so the bundled local "
+                                + "fallback was scheduled instead."
                         )
                         .font(.footnote)
                     }

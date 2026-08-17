@@ -4,15 +4,17 @@ import Foundation
 enum AppCompositionRoot {
     static func makeModel() -> AppModel {
         let environment = AppEnvironment.compiled
-        let logger = ApplePrivacySafeLogger(subsystem: "com.satyamshree.spc")
+        let catalogAudioConfiguration = CatalogAudioRemoteConfiguration.load(from: .main)
+        let logger = ApplePrivacySafeLogger(subsystem: "app.sleepcompanion.spc")
         let namespace = ProcessInfo.processInfo.environment["SPC_LOCAL_STORE_NAMESPACE"] ?? "primary"
         let keychain = KeychainSessionStore(
             keychain: SystemKeychainClient(),
-            service: "com.satyamshree.spc.authentication",
+            service: "app.sleepcompanion.spc.authentication",
             account: "supabase-session"
         )
 
         let authentication: any OAuthSessionServicing
+        let accountDeletionGateway: (any AccountDeletionGateway)?
         let remote: (any RemoteMutationGateway)?
         let disablesAuthentication = ProcessInfo.processInfo.environment[
             "SPC_DISABLE_AUTH_CONFIGURATION"
@@ -22,6 +24,7 @@ enum AppCompositionRoot {
                 .flatMap(UUID.init(uuidString:))
             if let userID = uiTestUserID {
                 authentication = UITestOAuthSessionService(userID: userID)
+                accountDeletionGateway = nil
                 remote = nil
             } else {
                 if !disablesAuthentication,
@@ -32,12 +35,14 @@ enum AppCompositionRoot {
                         client: client,
                         sessionStore: keychain
                     )
+                    accountDeletionGateway = SupabaseAccountDeletionGateway(client: client)
                     remote = SupabaseRemoteMutationGateway(
                         client: client,
                         identifier: SystemIdentifierGenerator()
                     )
                 } else {
                     authentication = UnavailableOAuthSessionService()
+                    accountDeletionGateway = nil
                     remote = nil
                     logger.record(.configurationUnavailable, category: .configuration)
                 }
@@ -51,12 +56,14 @@ enum AppCompositionRoot {
                     client: client,
                     sessionStore: keychain
                 )
+                accountDeletionGateway = SupabaseAccountDeletionGateway(client: client)
                 remote = SupabaseRemoteMutationGateway(
                     client: client,
                     identifier: SystemIdentifierGenerator()
                 )
             } else {
                 authentication = UnavailableOAuthSessionService()
+                accountDeletionGateway = nil
                 remote = nil
                 logger.record(.configurationUnavailable, category: .configuration)
             }
@@ -89,6 +96,8 @@ enum AppCompositionRoot {
             accessPolicy: AccessPolicy(),
             store: store,
             authentication: authentication,
+            accountDeletionGateway: accountDeletionGateway,
+            catalogAudioConfiguration: catalogAudioConfiguration,
             logger: logger
         )
     }

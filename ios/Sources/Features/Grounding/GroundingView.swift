@@ -3,6 +3,7 @@ import SwiftUI
 struct GroundingView: View {
     @Bindable var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NightScreen {
@@ -62,6 +63,7 @@ struct GroundingView: View {
                     model.open(.morningCheckIn)
                 }
                 .buttonStyle(AppSecondaryButtonStyle())
+                partnerCallAction
                 Text(
                     "No episode record is created by opening this screen. " +
                         "A history entry exists only after you explicitly submit a check-in."
@@ -73,6 +75,25 @@ struct GroundingView: View {
         }
         .navigationTitle("Grounding")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private var partnerCallAction: some View {
+        if let contact = model.partnerContact,
+           let phoneURL = contact.phoneURL {
+            Button("Call \(contact.name ?? "Partner")", systemImage: "phone.fill") {
+                openURL(phoneURL)
+            }
+            .buttonStyle(AppSecondaryButtonStyle())
+            .accessibilityIdentifier("grounding.callPartner")
+            .accessibilityHint("Opens the iPhone Phone app with the saved partner number.")
+        } else {
+            Button("Set up Partner Call", systemImage: "phone.badge.plus") {
+                model.open(.defaultSettings)
+            }
+            .buttonStyle(AppSecondaryButtonStyle())
+            .accessibilityIdentifier("grounding.setupPartnerCall")
+        }
     }
 
     private var playbackTitle: String {

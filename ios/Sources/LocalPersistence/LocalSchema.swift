@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 
 nonisolated enum LocalSchema {
-    static let currentVersion = 6
+    static let currentVersion = 9
 
     static func migrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
@@ -12,6 +12,9 @@ nonisolated enum LocalSchema {
         registerPersonaAudioRepair(on: &migrator)
         registerMorningCheckInFlow(on: &migrator)
         registerMeProfile(on: &migrator)
+        registerPartnerCall(on: &migrator)
+        registerAudioCacheRepair(on: &migrator)
+        registerAlarmSoundSelection(on: &migrator)
         return migrator
     }
 
@@ -473,6 +476,68 @@ nonisolated enum LocalSchema {
             ALTER TABLE app_settings ADD COLUMN defaultPostEpisodeSupport TEXT NOT NULL DEFAULT 'calmingAudio'
                 CHECK (defaultPostEpisodeSupport IN ('callPartner', 'calmingAudio', 'partnerVoice'));
             UPDATE spc_schema_metadata SET schema_version = 6 WHERE singleton = 1;
+            """)
+        }
+    }
+
+    private static func registerPartnerCall(on migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v7_partner_call_contact") { database in
+            try database.execute(sql: """
+            CREATE TABLE partner_contacts (
+                profileID TEXT PRIMARY KEY NOT NULL
+                    REFERENCES local_profiles(id) ON DELETE CASCADE,
+                name TEXT
+                    CHECK (name IS NULL OR length(trim(name)) BETWEEN 1 AND 80),
+                phoneNumber TEXT NOT NULL
+                    CHECK (length(phoneNumber) BETWEEN 7 AND 16),
+                updatedAt REAL NOT NULL
+            );
+            UPDATE spc_schema_metadata SET schema_version = 7 WHERE singleton = 1;
+            """)
+        }
+    }
+
+    private static func registerAudioCacheRepair(on migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v8_audio_cache_lifecycle") { database in
+            try database.execute(sql: """
+            CREATE TABLE audio_cache_v2 (
+                assetID TEXT PRIMARY KEY NOT NULL REFERENCES audio_catalog(id) ON DELETE CASCADE,
+                catalogVersion INTEGER NOT NULL CHECK (catalogVersion > 0),
+                state TEXT NOT NULL CHECK (
+                    state IN (
+                        'not_available', 'available_remotely', 'streaming',
+                        'download_queued', 'notCached', 'downloading', 'download_failed',
+                        'available_offline', 'update_available', 'playing', 'paused',
+                        'interrupted', 'verified', 'invalid', 'revoked', 'revoked_unavailable'
+                    )
+                ),
+                relativeFileName TEXT,
+                verifiedAt REAL,
+                byteCount INTEGER NOT NULL CHECK (byteCount >= 0),
+                progress REAL NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 1),
+                failureReason TEXT,
+                lastAccessedAt REAL
+            );
+
+            INSERT INTO audio_cache_v2 (
+                assetID, catalogVersion, state, relativeFileName, verifiedAt, byteCount
+            )
+            SELECT assetID, catalogVersion, state, relativeFileName, verifiedAt, byteCount
+            FROM audio_cache;
+
+            DROP TABLE audio_cache;
+            """)
+            try database.execute(
+                sql: "UPDATE spc_schema_metadata SET schema_version = 8 WHERE singleton = 1"
+            )
+        }
+    }
+
+    private static func registerAlarmSoundSelection(on migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v9_alarm_sound_selection") { database in
+            try database.execute(sql: """
+            ALTER TABLE alarm_preferences ADD COLUMN alarmSoundFileName TEXT;
+            UPDATE spc_schema_metadata SET schema_version = 9 WHERE singleton = 1;
             """)
         }
     }

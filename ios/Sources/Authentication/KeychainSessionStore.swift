@@ -64,7 +64,7 @@ nonisolated struct KeychainSessionStore: SessionSecretStore {
 
     init(
         keychain: any KeychainClient,
-        service: String = "com.satyamshree.spc.auth",
+        service: String = "app.sleepcompanion.spc.auth",
         account: String = "supabase-session"
     ) {
         self.keychain = keychain

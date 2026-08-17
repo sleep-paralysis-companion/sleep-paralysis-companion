@@ -74,7 +74,7 @@ cat >"$ARTIFACT_ROOT/README.md" <<EOF
 - Journey result: \`$TEST_STATUS\`
 - Video result: \`$VIDEO_STATUS\`
 - Screenshot export result: \`$EXPORT_STATUS\`
-- Named screenshot checkpoints: \`$SCREENSHOT_COUNT\`
+- Named screenshot checkpoints: \`$SCREENSHOT_COUNT\` (minimum required: 36)
 
 The presentation uses the Debug-only UI-test authentication seam after showing
 the real unconfigured-provider boundary. It does not prove production OAuth,
@@ -91,8 +91,8 @@ EOF
   exit 1
 }
 [[ "$EXPORT_STATUS" -eq 0 ]] || exit "$EXPORT_STATUS"
-[[ "$SCREENSHOT_COUNT" -ge 16 ]] || {
-  echo "Expected at least 16 visual checkpoints, found $SCREENSHOT_COUNT." >&2
+[[ "$SCREENSHOT_COUNT" -ge 36 ]] || {
+  echo "Expected at least 36 visual checkpoints, found $SCREENSHOT_COUNT." >&2
   exit 1
 }
 

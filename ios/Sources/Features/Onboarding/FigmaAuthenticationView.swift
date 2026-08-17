@@ -30,8 +30,7 @@ struct FigmaAuthenticationView: View {
                     isProcessing: isProcessing,
                     createAccount: createAccount,
                     choose: chooseProvider,
-                    switchMode: switchMode,
-                    showPolicyNotice: showPolicyNotice
+                    switchMode: switchMode
                 )
                 .frame(width: AuthenticationReferenceLayout.width, height: AuthenticationReferenceLayout.height)
                 .scaleEffect(scale, anchor: .topLeading)
@@ -97,10 +96,6 @@ struct FigmaAuthenticationView: View {
         fullNameIsFocused = false
         localMessage = nil
     }
-
-    private func showPolicyNotice() {
-        localMessage = "Terms and Privacy Policy links will be added with the approved public URLs."
-    }
 }
 
 private enum AuthenticationEntryMode: Equatable {
@@ -120,7 +115,6 @@ private struct AuthenticationReferenceLayout: View {
     let createAccount: () -> Void
     let choose: (AuthenticationProvider) -> Void
     let switchMode: () -> Void
-    let showPolicyNotice: () -> Void
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -285,12 +279,14 @@ private struct AuthenticationReferenceLayout: View {
         HStack(spacing: 4) {
             Text("By signing up you agree to our")
                 .foregroundStyle(AuthenticationPalette.secondaryText)
-            Button("Terms", action: showPolicyNotice)
+            Link("Terms", destination: LegalSupport.termsURL)
                 .foregroundStyle(AuthenticationPalette.link)
+                .accessibilityIdentifier("authentication.terms")
             Text("and")
                 .foregroundStyle(AuthenticationPalette.secondaryText)
-            Button("Privacy Policy", action: showPolicyNotice)
+            Link("Privacy Policy", destination: LegalSupport.privacyURL)
                 .foregroundStyle(AuthenticationPalette.link)
+                .accessibilityIdentifier("authentication.privacy")
         }
         .font(.system(size: 13, weight: .regular))
         .buttonStyle(.plain)
