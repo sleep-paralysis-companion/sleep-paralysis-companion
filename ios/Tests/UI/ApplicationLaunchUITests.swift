@@ -478,7 +478,7 @@ final class ApplicationLaunchUITests: XCTestCase {
             catalogScenario: scenario
         )
         app.launch()
-        XCTAssertTrue(app.otherElements["catalogAudioLibrary"].waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["Curated audio"].waitForExistence(timeout: 8), app.debugDescription)
         capture(name, app: app)
         interaction(app)
         app.terminate()
