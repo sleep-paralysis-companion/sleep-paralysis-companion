@@ -419,7 +419,7 @@ private actor TestAudioTransferCore {
     }
 }
 
-private nonisolated struct TestAudioTransfer: CatalogAudioTransferring {
+private final class TestAudioTransfer: CatalogAudioTransferring, Sendable {
     private let core: TestAudioTransferCore
 
     init(
