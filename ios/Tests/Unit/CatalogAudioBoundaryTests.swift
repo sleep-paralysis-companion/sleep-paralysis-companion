@@ -368,12 +368,24 @@ private actor TestAudioRemote: CatalogAudioRemoteProviding {
     }
 }
 
-private actor TestAudioTransfer: CatalogAudioTransferring {
+private actor TestAudioTransferState {
+    private var count = 0
+
+    func incrementDownloadCount() {
+        count += 1
+    }
+
+    func downloadCount() -> Int {
+        count
+    }
+}
+
+private struct TestAudioTransfer: CatalogAudioTransferring {
     private let files: TestAudioFiles
     private let data: Data
     private let error: CatalogAudioBoundaryError?
     private let delayNanoseconds: UInt64
-    private var count = 0
+    private let state: TestAudioTransferState
 
     init(
         files: TestAudioFiles,
@@ -385,6 +397,7 @@ private actor TestAudioTransfer: CatalogAudioTransferring {
         self.data = data
         self.error = error
         self.delayNanoseconds = delayNanoseconds
+        state = TestAudioTransferState()
     }
 
     func download(
@@ -396,7 +409,7 @@ private actor TestAudioTransfer: CatalogAudioTransferring {
     ) async throws -> CatalogAudioDownloadedFile {
         _ = url
         _ = expectedByteCount
-        count += 1
+        await state.incrementDownloadCount()
         if delayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: delayNanoseconds)
         }
@@ -414,8 +427,8 @@ private actor TestAudioTransfer: CatalogAudioTransferring {
         return CatalogAudioDownloadedFile(temporaryURL: temporaryURL, byteCount: Int64(data.count))
     }
 
-    func downloadCount() -> Int {
-        count
+    func downloadCount() async -> Int {
+        await state.downloadCount()
     }
 }
 
