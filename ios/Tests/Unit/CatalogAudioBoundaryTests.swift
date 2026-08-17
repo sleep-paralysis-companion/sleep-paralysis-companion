@@ -380,7 +380,7 @@ private actor TestAudioTransferState {
     }
 }
 
-private struct TestAudioTransfer: CatalogAudioTransferring {
+private nonisolated struct TestAudioTransfer: CatalogAudioTransferring {
     private let files: TestAudioFiles
     private let data: Data
     private let error: CatalogAudioBoundaryError?
