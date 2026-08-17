@@ -153,7 +153,7 @@ nonisolated struct URLSessionCatalogAudioTransfer: CatalogAudioTransferring {
             if !buffer.isEmpty {
                 try handle.write(contentsOf: buffer)
             }
-            handle.close()
+            try handle.close()
             await progress(
                 CatalogAudioDownloadProgress(
                     assetID: assetID,
@@ -166,11 +166,11 @@ nonisolated struct URLSessionCatalogAudioTransfer: CatalogAudioTransferring {
                 byteCount: received
             )
         } catch is CancellationError {
-            handle.close()
+            try? handle.close()
             try? FileManager.default.removeItem(at: temporaryURL)
             throw CatalogAudioBoundaryError.interrupted
         } catch {
-            handle.close()
+            try? handle.close()
             try? FileManager.default.removeItem(at: temporaryURL)
             throw error
         }
