@@ -487,7 +487,7 @@ final class ApplicationLaunchUITests: XCTestCase {
     @MainActor
     private func makeHittable(_ element: XCUIElement, in app: XCUIApplication) {
         for _ in 0 ..< 8 where !element.isHittable {
-            app.swipeUp()
+            swipeUp(in: app)
         }
         XCTAssertTrue(element.isHittable)
     }
@@ -503,9 +503,19 @@ final class ApplicationLaunchUITests: XCTestCase {
             if element.waitForExistence(timeout: 1) {
                 return true
             }
-            app.swipeUp()
+            swipeUp(in: app)
         }
         return element.exists
+    }
+
+    @MainActor
+    private func swipeUp(in app: XCUIApplication) {
+        let scrollView = app.scrollViews.firstMatch
+        if scrollView.exists {
+            scrollView.swipeUp()
+        } else {
+            app.swipeUp()
+        }
     }
 
     @MainActor
