@@ -221,7 +221,8 @@ actor CatalogAudioFileStore: CatalogAudioFileStoring {
     }
 }
 
-nonisolated struct SystemCatalogAudioStorageCapacityChecker: CatalogAudioStorageCapacityChecking {
+/// FileManager is documented as thread-safe for concurrent file-system operations.
+nonisolated struct SystemCatalogAudioStorageCapacityChecker: CatalogAudioStorageCapacityChecking, @unchecked Sendable {
     private let fileManager: FileManager
     private let installationMargin: Int64
 
