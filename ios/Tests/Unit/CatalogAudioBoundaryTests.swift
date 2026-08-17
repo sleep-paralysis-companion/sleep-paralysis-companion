@@ -368,24 +368,12 @@ private actor TestAudioRemote: CatalogAudioRemoteProviding {
     }
 }
 
-private actor TestAudioTransferState {
-    private var count = 0
-
-    func incrementDownloadCount() {
-        count += 1
-    }
-
-    func downloadCount() -> Int {
-        count
-    }
-}
-
-private nonisolated struct TestAudioTransfer: CatalogAudioTransferring {
+private actor TestAudioTransfer: CatalogAudioTransferring {
     private let files: TestAudioFiles
     private let data: Data
     private let error: CatalogAudioBoundaryError?
     private let delayNanoseconds: UInt64
-    private let state: TestAudioTransferState
+    private var count = 0
 
     init(
         files: TestAudioFiles,
@@ -397,10 +385,25 @@ private nonisolated struct TestAudioTransfer: CatalogAudioTransferring {
         self.data = data
         self.error = error
         self.delayNanoseconds = delayNanoseconds
-        state = TestAudioTransferState()
     }
 
-    func download(
+    nonisolated func download(
+        from url: URL,
+        to temporaryURL: URL,
+        assetID: String,
+        expectedByteCount: Int64,
+        progress: @escaping @Sendable (CatalogAudioDownloadProgress) async -> Void
+    ) async throws -> CatalogAudioDownloadedFile {
+        try await downloadOnActor(
+            from: url,
+            to: temporaryURL,
+            assetID: assetID,
+            expectedByteCount: expectedByteCount,
+            progress: progress
+        )
+    }
+
+    private func downloadOnActor(
         from url: URL,
         to temporaryURL: URL,
         assetID: String,
@@ -409,7 +412,7 @@ private nonisolated struct TestAudioTransfer: CatalogAudioTransferring {
     ) async throws -> CatalogAudioDownloadedFile {
         _ = url
         _ = expectedByteCount
-        await state.incrementDownloadCount()
+        count += 1
         if delayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: delayNanoseconds)
         }
@@ -427,8 +430,8 @@ private nonisolated struct TestAudioTransfer: CatalogAudioTransferring {
         return CatalogAudioDownloadedFile(temporaryURL: temporaryURL, byteCount: Int64(data.count))
     }
 
-    func downloadCount() async -> Int {
-        await state.downloadCount()
+    func downloadCount() -> Int {
+        count
     }
 }
 
