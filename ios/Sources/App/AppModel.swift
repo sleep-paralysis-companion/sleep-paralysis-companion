@@ -3,8 +3,12 @@ import Observation
 import SwiftUI
 import UIKit
 
+// AppModel is the single observable integration boundary for the active app shell.
+// swiftlint:disable file_length
+
 @MainActor
 @Observable
+// swiftlint:disable:next type_body_length
 final class AppModel {
     private(set) var launchDestination = LaunchDestination.loading
     var path: [AppRoute] = []
@@ -143,6 +147,7 @@ final class AppModel {
     }
 
     #if DEBUG
+        // swiftlint:disable:next cyclomatic_complexity
         private func applyUITestShowcaseRouteIfRequested() {
             guard let requestedRoute = ProcessInfo.processInfo.environment["SPC_UI_TEST_SHOWCASE_ROUTE"],
                   launchDestination == .home
@@ -741,6 +746,7 @@ final class AppModel {
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     func deleteRemoteAccount() {
         guard let profileID, let userID else { return }
         guard let accountDeletionGateway else {

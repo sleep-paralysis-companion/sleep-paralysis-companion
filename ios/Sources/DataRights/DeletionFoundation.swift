@@ -165,6 +165,8 @@ actor AccountDeletionCoordinator {
         self.clock = clock
     }
 
+    // The deletion coordinator preserves explicit retry and cleanup states.
+    // swiftlint:disable cyclomatic_complexity
     func deleteAccount(
         session: AuthenticationSessionMaterial,
         reauthentication: RecentReauthentication,
@@ -225,4 +227,5 @@ actor AccountDeletionCoordinator {
             throw DeletionError.remoteDeletionFailedRecoverable
         }
     }
+    // swiftlint:enable cyclomatic_complexity
 }

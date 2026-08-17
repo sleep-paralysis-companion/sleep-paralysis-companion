@@ -680,9 +680,10 @@ private struct CatalogAudioAssetCard: View {
 
     private var actionButtons: some View {
         VStack(spacing: AppSpacing.compact) {
-            Button(action: { Task { await model.togglePlayback(asset) } }) {
-                Label(playbackTitle, systemImage: playbackIcon)
-            }
+            Button(
+                action: { Task { await model.togglePlayback(asset) } },
+                label: { Label(playbackTitle, systemImage: playbackIcon) }
+            )
             .buttonStyle(AppSecondaryButtonStyle())
             .accessibilityIdentifier(
                 model.isPlaying(asset)
@@ -692,32 +693,36 @@ private struct CatalogAudioAssetCard: View {
             .disabled(!canPlay)
 
             if canDownload {
-                Button(action: { Task { await model.download(asset) } }) {
-                    Label("Download for offline", systemImage: "arrow.down.circle")
-                }
+                Button(
+                    action: { Task { await model.download(asset) } },
+                    label: { Label("Download for offline", systemImage: "arrow.down.circle") }
+                )
                 .buttonStyle(AppPrimaryButtonStyle())
                 .accessibilityIdentifier("catalogAudio.download.\(asset.category.rawValue)")
             } else if isDownloaded {
-                Button(action: { Task { await model.removeDownload(asset) } }) {
-                    Label("Remove offline download", systemImage: "trash")
-                }
+                Button(
+                    action: { Task { await model.removeDownload(asset) } },
+                    label: { Label("Remove offline download", systemImage: "trash") }
+                )
                 .buttonStyle(AppSecondaryButtonStyle())
                 .accessibilityIdentifier("catalogAudio.remove.\(asset.category.rawValue)")
             }
 
             if asset.category == .morningAlarm {
-                Button(action: { Task { await model.selectAlarm(asset) } }) {
-                    Label(alarmButtonTitle, systemImage: "alarm")
-                }
+                Button(
+                    action: { Task { await model.selectAlarm(asset) } },
+                    label: { Label(alarmButtonTitle, systemImage: "alarm") }
+                )
                 .buttonStyle(AppSecondaryButtonStyle())
                 .accessibilityIdentifier("catalogAudio.selectAlarm.\(asset.category.rawValue)")
                 .disabled(!canSetAlarm)
             }
 
             if asset.category == .notification {
-                Button(action: { Task { await model.selectNotification(asset) } }) {
-                    Label(notificationButtonTitle, systemImage: "bell")
-                }
+                Button(
+                    action: { Task { await model.selectNotification(asset) } },
+                    label: { Label(notificationButtonTitle, systemImage: "bell") }
+                )
                 .buttonStyle(AppSecondaryButtonStyle())
                 .accessibilityIdentifier("catalogAudio.selectNotification.\(asset.category.rawValue)")
                 .disabled(!canSetNotification)

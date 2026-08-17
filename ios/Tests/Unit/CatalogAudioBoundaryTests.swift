@@ -357,7 +357,10 @@ private actor TestAudioRemote: CatalogAudioRemoteProviding {
         purpose: CatalogAudioURLPurpose
     ) async throws -> URL {
         count += 1
-        return URL(string: "https://audio.example.test/\(purpose.rawValue)/\(asset.id)")!
+        guard let url = URL(string: "https://audio.example.test/\(purpose.rawValue)/\(asset.id)") else {
+            throw URLError(.badURL)
+        }
+        return url
     }
 
     func authorizationCount() -> Int {

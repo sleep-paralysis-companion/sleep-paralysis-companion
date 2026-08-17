@@ -8,6 +8,8 @@ private nonisolated struct WakeAlarmMetadata: AlarmMetadata {
 }
 
 private actor WakeAlarmServiceGate {
+    // Alarm reconciliation intentionally handles several independent failure states.
+    // swiftlint:disable cyclomatic_complexity
     func reconcile(
         schedule: SleepSchedule,
         preference: AlarmPreference
@@ -147,6 +149,8 @@ private actor WakeAlarmServiceGate {
             )
         }
     }
+
+    // swiftlint:enable cyclomatic_complexity
 
     private func cancelOwnedAlarms(
         for preference: AlarmPreference,

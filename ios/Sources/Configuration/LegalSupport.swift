@@ -4,11 +4,18 @@ nonisolated enum LegalSupport {
     static let founderName = "Preshit Rakshe"
     static let supportEmail = "founder@sleepparalysis.app"
 
-    static let privacyURL = URL(string: "https://sleepparalysis.app/privacy")!
-    static let termsURL = URL(string: "https://sleepparalysis.app/terms")!
-    static let supportURL = URL(string: "https://sleepparalysis.app/support")!
-    static let accountDeletionURL = URL(string: "https://sleepparalysis.app/delete-account")!
-    static let supportEmailURL = URL(string: "mailto:\(supportEmail)")!
+    static let privacyURL = requiredURL("https://sleepparalysis.app/privacy")
+    static let termsURL = requiredURL("https://sleepparalysis.app/terms")
+    static let supportURL = requiredURL("https://sleepparalysis.app/support")
+    static let accountDeletionURL = requiredURL("https://sleepparalysis.app/delete-account")
+    static let supportEmailURL = requiredURL("mailto:\(supportEmail)")
+
+    private static func requiredURL(_ value: String) -> URL {
+        guard let url = URL(string: value) else {
+            preconditionFailure("Invalid legal URL: \(value)")
+        }
+        return url
+    }
 }
 
 nonisolated enum HelpLegalCopy {

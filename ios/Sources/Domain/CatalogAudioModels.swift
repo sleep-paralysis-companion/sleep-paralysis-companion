@@ -1,5 +1,8 @@
 import Foundation
 
+// The state machine and manifest validator enumerate independent delivery rules.
+// swiftlint:disable cyclomatic_complexity
+
 nonisolated enum CatalogAudioCategory: String, Codable, CaseIterable, Sendable {
     case morningAlarm = "morning_alarm"
     case notification
@@ -293,3 +296,5 @@ nonisolated enum CatalogAudioManifestValidator {
         return !value.hasPrefix("/") && !value.contains("\\") && !components.contains { $0 == ".." }
     }
 }
+
+// swiftlint:enable cyclomatic_complexity

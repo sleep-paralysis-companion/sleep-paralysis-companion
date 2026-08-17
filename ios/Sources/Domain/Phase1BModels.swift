@@ -84,7 +84,7 @@ nonisolated struct AlarmPreference: Equatable, Codable, Sendable {
     let id: UUID
     let profileID: UUID
     var systemAlarmID: String?
-    var alarmSoundFileName: String? = nil
+    var alarmSoundFileName: String?
     var localHour: Int
     var localMinute: Int
     var weekdaysMask: Int
@@ -136,8 +136,8 @@ nonisolated struct AudioCacheMetadata: Equatable, Codable, Sendable {
     var verifiedAt: Date?
     var byteCount: Int64
     var progress: Double = 0
-    var failureReason: String? = nil
-    var lastAccessedAt: Date? = nil
+    var failureReason: String?
+    var lastAccessedAt: Date?
 }
 
 nonisolated enum EpisodeOccurrence: String, Codable, CaseIterable, Sendable {
