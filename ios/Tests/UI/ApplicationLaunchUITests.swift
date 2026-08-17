@@ -479,9 +479,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         let app = authenticatedApplication(
             namespace: namespace,
             userID: userID,
-            showcaseRoute: "curated-audio-library",
             catalogScenario: scenario
         )
+        app.launchEnvironment["SPC_UI_TEST_OPEN_AUDIO_LIBRARY"] = "1"
         app.launch()
         XCTAssertTrue(app.staticTexts["Curated audio"].waitForExistence(timeout: 8), app.debugDescription)
         capture(name, app: app)
