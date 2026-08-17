@@ -53,7 +53,20 @@ jobs:
         run: bash scripts/phase_1c_contract_check.sh
 
       - name: Build and run all iOS tests
-        run: bash scripts/verify_ci.sh
+        run: |
+          set +e
+          mkdir -p ios/TestResults
+          bash scripts/verify_ci.sh 2>&1 | tee ios/TestResults/verify_ci.log
+          VERIFY_STATUS=${PIPESTATUS[0]}
+          if [[ "$VERIFY_STATUS" -ne 0 ]]; then
+            while IFS= read -r diagnostic; do
+              escaped="${diagnostic//'%'/'%25'}"
+              escaped="${escaped//$'\r'/'%0D'}"
+              escaped="${escaped//$'\n'/'%0A'}"
+              echo "::error title=Hosted iOS diagnostic::$escaped"
+            done < <(grep -E 'error:' ios/TestResults/verify_ci.log | tail -n 50)
+          fi
+          exit "$VERIFY_STATUS"
 
       - name: Capture the visual product journey
         run: bash scripts/visual_journey.sh
@@ -85,6 +98,7 @@ jobs:
           retention-days: 30
           path: |
             scripts/versions.env
+            ios/TestResults/verify_ci.log
             ios/TestResults/*.xcresult
             ios/SleepParalysisCompanion.xcodeproj/project.pbxproj
             ios/SleepParalysisCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
