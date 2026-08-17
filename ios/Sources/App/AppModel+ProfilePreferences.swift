@@ -100,7 +100,7 @@ extension AppModel {
                     try await store.deletePartnerContact(profileID: profileID, userID: userID)
                 }
                 try await store.saveSettings(updatedSettings, userID: userID)
-                self.partnerContact = contact
+                self.updatePartnerContact(contact)
                 self.settings = updatedSettings
                 feedbackMessage = "Preferences saved."
             } catch {

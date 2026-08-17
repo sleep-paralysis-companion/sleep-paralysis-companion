@@ -39,6 +39,10 @@ final class AppModel {
     var profile: LocalProfile?
     var settings: AppSettings?
 
+    func updatePartnerContact(_ contact: PartnerContact?) {
+        partnerContact = contact
+    }
+
     let environment: AppEnvironment
     let accessPolicy: AccessPolicy
     let providedAudio = ProvidedRecoveryAudio.approvedCatalog

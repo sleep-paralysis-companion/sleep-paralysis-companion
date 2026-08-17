@@ -189,7 +189,7 @@ actor CatalogAudioFileStore: CatalogAudioFileStoring {
         while let chunk = try handle.read(upToCount: 1_048_576), !chunk.isEmpty {
             hasher.update(data: chunk)
         }
-        handle.close()
+        try handle.close()
         let digest = hasher.finalize()
         return digest.map { String(format: "%02x", $0) }.joined()
     }
@@ -308,11 +308,11 @@ actor CatalogAudioCacheCoordinator {
                     let value = replacing(
                         existing,
                         state: .downloadFailed,
-                        clearRelativeFileName: true,
-                        clearVerifiedAt: true,
                         byteCount: 0,
                         progress: 0,
-                        failureReason: "checksum_failure"
+                        failureReason: "checksum_failure",
+                        clearRelativeFileName: true,
+                        clearVerifiedAt: true
                     )
                     try await index.save(value)
                     if !networkAvailable {
@@ -446,8 +446,8 @@ actor CatalogAudioCacheCoordinator {
                 byteCount: asset.byteCount,
                 progress: 1,
                 failureReason: nil,
-                clearFailureReason: true,
-                lastAccessedAt: Date()
+                lastAccessedAt: Date(),
+                clearFailureReason: true
             )
             try await index.save(complete)
             return localURL
@@ -485,11 +485,11 @@ actor CatalogAudioCacheCoordinator {
             replacing(
                 current ?? metadata(for: asset, state: .notAvailable),
                 state: .notAvailable,
-                clearRelativeFileName: true,
-                clearVerifiedAt: true,
                 byteCount: 0,
                 progress: 0,
                 failureReason: nil,
+                clearRelativeFileName: true,
+                clearVerifiedAt: true,
                 clearFailureReason: true,
                 clearLastAccessedAt: true
             )
@@ -629,17 +629,17 @@ actor CatalogAudioCacheCoordinator {
         }
         switch error {
         case .checksumMismatch:
-            "checksum_failure"
+            return "checksum_failure"
         case .byteCountMismatch:
-            "byte_count_mismatch"
+            return "byte_count_mismatch"
         case .storageFull:
-            "storage_full"
+            return "storage_full"
         case .offline:
-            "offline"
+            return "offline"
         case .duplicateDownload:
-            "duplicate_download"
+            return "duplicate_download"
         case .interrupted:
-            "interrupted"
+            return "interrupted"
         default:
             "download_failed"
         }
