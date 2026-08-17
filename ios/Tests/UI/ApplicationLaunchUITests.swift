@@ -361,7 +361,8 @@ final class ApplicationLaunchUITests: XCTestCase {
             namespace: namespace,
             userID: userID
         ) { catalog in
-            let alarm = catalog.buttons["catalogAudio.selectAlarm.morning_alarm"]
+            let alarm = catalog.buttons.matching(NSPredicate(format: "label == 'Set as alarm'"))
+                .firstMatch
             XCTAssertTrue(waitForExistenceByScrolling(alarm, in: catalog), catalog.debugDescription)
             makeHittable(alarm, in: catalog)
             alarm.tap()
@@ -375,7 +376,8 @@ final class ApplicationLaunchUITests: XCTestCase {
             namespace: namespace,
             userID: userID
         ) { catalog in
-            let download = catalog.buttons["catalogAudio.download.quick_unwind"]
+            let download = catalog.buttons.matching(NSPredicate(format: "label == 'Download for offline'"))
+                .firstMatch
             XCTAssertTrue(waitForExistenceByScrolling(download, in: catalog), catalog.debugDescription)
             makeHittable(download, in: catalog)
             download.tap()
