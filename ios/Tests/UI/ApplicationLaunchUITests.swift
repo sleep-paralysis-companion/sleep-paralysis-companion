@@ -341,7 +341,7 @@ final class ApplicationLaunchUITests: XCTestCase {
             userID: userID
         ) { catalog in
             let play = catalog.buttons["catalogAudio.play.quick_unwind"]
-            XCTAssertTrue(play.waitForExistence(timeout: 8), catalog.debugDescription)
+            XCTAssertTrue(waitForExistenceByScrolling(play, in: catalog), catalog.debugDescription)
             makeHittable(play, in: catalog)
             play.tap()
             XCTAssertTrue(catalog.staticTexts["Playing preview"].waitForExistence(timeout: 3))
@@ -360,7 +360,7 @@ final class ApplicationLaunchUITests: XCTestCase {
             userID: userID
         ) { catalog in
             let alarm = catalog.buttons["catalogAudio.selectAlarm.morning_alarm"]
-            XCTAssertTrue(alarm.waitForExistence(timeout: 8), catalog.debugDescription)
+            XCTAssertTrue(waitForExistenceByScrolling(alarm, in: catalog), catalog.debugDescription)
             makeHittable(alarm, in: catalog)
             alarm.tap()
             XCTAssertTrue(catalog.staticTexts["Morning Alarm"].exists)
@@ -374,7 +374,7 @@ final class ApplicationLaunchUITests: XCTestCase {
             userID: userID
         ) { catalog in
             let download = catalog.buttons["catalogAudio.download.quick_unwind"]
-            XCTAssertTrue(download.waitForExistence(timeout: 8), catalog.debugDescription)
+            XCTAssertTrue(waitForExistenceByScrolling(download, in: catalog), catalog.debugDescription)
             makeHittable(download, in: catalog)
             download.tap()
             XCTAssertTrue(catalog.otherElements["catalogAudio.progress.quick_unwind"].waitForExistence(timeout: 3))
@@ -490,6 +490,22 @@ final class ApplicationLaunchUITests: XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(element.isHittable)
+    }
+
+    @MainActor
+    private func waitForExistenceByScrolling(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        timeout: TimeInterval = 8
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if element.waitForExistence(timeout: 1) {
+                return true
+            }
+            app.swipeUp()
+        }
+        return element.exists
     }
 
     @MainActor
