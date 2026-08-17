@@ -419,7 +419,7 @@ private actor TestAudioTransferCore {
     }
 }
 
-private final class TestAudioTransfer: CatalogAudioTransferring, Sendable {
+private nonisolated final class TestAudioTransfer: CatalogAudioTransferring, Sendable {
     private let core: TestAudioTransferCore
 
     init(
