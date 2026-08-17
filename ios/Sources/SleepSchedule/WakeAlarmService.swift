@@ -7,7 +7,8 @@ private nonisolated struct WakeAlarmMetadata: AlarmMetadata {
     let contentVersion: Int
 }
 
-private actor WakeAlarmServiceGate {
+@MainActor
+private final class WakeAlarmServiceGate {
     // Alarm reconciliation intentionally handles several independent failure states.
     // swiftlint:disable cyclomatic_complexity
     func reconcile(
