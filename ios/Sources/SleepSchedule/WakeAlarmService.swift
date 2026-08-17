@@ -1,5 +1,5 @@
 import ActivityKit
-import AlarmKit
+@preconcurrency import AlarmKit
 import Foundation
 import SwiftUI
 
