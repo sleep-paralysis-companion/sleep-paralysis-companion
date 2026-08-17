@@ -368,7 +368,7 @@ private actor TestAudioRemote: CatalogAudioRemoteProviding {
     }
 }
 
-private actor TestAudioTransfer: CatalogAudioTransferring {
+private actor TestAudioTransferCore {
     private let files: TestAudioFiles
     private let data: Data
     private let error: CatalogAudioBoundaryError?
@@ -387,23 +387,7 @@ private actor TestAudioTransfer: CatalogAudioTransferring {
         self.delayNanoseconds = delayNanoseconds
     }
 
-    nonisolated func download(
-        from url: URL,
-        to temporaryURL: URL,
-        assetID: String,
-        expectedByteCount: Int64,
-        progress: @escaping @Sendable (CatalogAudioDownloadProgress) async -> Void
-    ) async throws -> CatalogAudioDownloadedFile {
-        try await downloadOnActor(
-            from: url,
-            to: temporaryURL,
-            assetID: assetID,
-            expectedByteCount: expectedByteCount,
-            progress: progress
-        )
-    }
-
-    private func downloadOnActor(
+    func download(
         from url: URL,
         to temporaryURL: URL,
         assetID: String,
@@ -432,6 +416,44 @@ private actor TestAudioTransfer: CatalogAudioTransferring {
 
     func downloadCount() -> Int {
         count
+    }
+}
+
+private nonisolated struct TestAudioTransfer: CatalogAudioTransferring {
+    private let core: TestAudioTransferCore
+
+    init(
+        files: TestAudioFiles,
+        data: Data,
+        error: CatalogAudioBoundaryError?,
+        delayNanoseconds: UInt64
+    ) {
+        core = TestAudioTransferCore(
+            files: files,
+            data: data,
+            error: error,
+            delayNanoseconds: delayNanoseconds
+        )
+    }
+
+    nonisolated func download(
+        from url: URL,
+        to temporaryURL: URL,
+        assetID: String,
+        expectedByteCount: Int64,
+        progress: @escaping @Sendable (CatalogAudioDownloadProgress) async -> Void
+    ) async throws -> CatalogAudioDownloadedFile {
+        try await core.download(
+            from: url,
+            to: temporaryURL,
+            assetID: assetID,
+            expectedByteCount: expectedByteCount,
+            progress: progress
+        )
+    }
+
+    func downloadCount() async -> Int {
+        await core.downloadCount()
     }
 }
 
