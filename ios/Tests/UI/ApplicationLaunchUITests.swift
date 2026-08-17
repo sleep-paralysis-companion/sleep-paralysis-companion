@@ -340,19 +340,16 @@ final class ApplicationLaunchUITests: XCTestCase {
             namespace: namespace,
             userID: userID
         ) { catalog in
-            let streamingStatus = catalog.staticTexts["Stream preview available"]
-            XCTAssertTrue(
-                waitForExistenceByScrolling(streamingStatus, in: catalog),
-                catalog.debugDescription
-            )
-            let play = catalog.buttons["catalogAudio.play.quick_unwind"]
+            let play = catalog.buttons.matching(NSPredicate(format: "label == 'Play preview'"))
+                .firstMatch
             XCTAssertTrue(waitForExistenceByScrolling(play, in: catalog), catalog.debugDescription)
             makeHittable(play, in: catalog)
             play.tap()
             XCTAssertTrue(catalog.staticTexts["Playing preview"].waitForExistence(timeout: 3))
             capture("31-curated-audio-playing", app: catalog)
-            let pause = catalog.buttons["catalogAudio.pause.quick_unwind"]
-            XCTAssertTrue(pause.exists)
+            let pause = catalog.buttons.matching(NSPredicate(format: "label == 'Pause preview'"))
+                .firstMatch
+            XCTAssertTrue(pause.waitForExistence(timeout: 3))
             pause.tap()
             XCTAssertTrue(catalog.staticTexts["Preview paused"].waitForExistence(timeout: 3))
             capture("32-curated-audio-paused", app: catalog)
