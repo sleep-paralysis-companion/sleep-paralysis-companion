@@ -6,7 +6,7 @@ SOURCE_ROOT="$REPOSITORY_ROOT/ios/Sources"
 RESOURCE_ROOT="$REPOSITORY_ROOT/ios/Resources"
 
 FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|HealthKit|AdSupport)|try!|as!'
-FORBIDDEN_RESOURCE='NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription|UIBackgroundModes'
+FORBIDDEN_RESOURCE='NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription'
 
 if grep -R -n -E "$FORBIDDEN_SOURCE" "$SOURCE_ROOT"; then
   echo "Forbidden Phase 1B source pattern found." >&2
@@ -47,6 +47,17 @@ if grep -R -n -E "$FORBIDDEN_RESOURCE" "$RESOURCE_ROOT"; then
   echo "Forbidden entitlement or permission key found." >&2
   exit 1
 fi
+
+python3 - "$RESOURCE_ROOT/Info.plist" <<'PY'
+import plistlib
+import sys
+
+with open(sys.argv[1], "rb") as source:
+    values = plistlib.load(source)
+
+if values.get("UIBackgroundModes") != ["audio"]:
+    raise SystemExit("Only the audio background mode is allowed for locked-device grounding playback.")
+PY
 
 if grep -R -n -E \
   'ProviderGrantCredential|appleAuthorizationCode|googleOAuthAccessToken|provider-revocation-proof' \

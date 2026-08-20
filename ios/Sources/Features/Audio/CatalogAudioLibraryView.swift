@@ -525,7 +525,7 @@ struct CatalogAudioLibraryView: View {
                 Text(title)
                     .font(AppTypographyRole.supporting.weight(.semibold))
                 Text(detail)
-                    .font(.footnote)
+                    .font(AppTypographyRole.footnote)
                     .foregroundStyle(.white.opacity(0.66))
             }
         } icon: {
@@ -636,7 +636,7 @@ private struct CatalogAudioAssetCard: View {
                     .foregroundStyle(.white.opacity(0.72))
 
                 Text(assetMetadata)
-                    .font(.footnote)
+                    .font(AppTypographyRole.footnote)
                     .foregroundStyle(.white.opacity(0.66))
                     .accessibilityIdentifier("catalogAudio.metadata.\(asset.id)")
 
@@ -671,7 +671,7 @@ private struct CatalogAudioAssetCard: View {
             }
             if let failureReason {
                 Text(failureReason)
-                    .font(.footnote)
+                    .font(AppTypographyRole.footnote)
                     .foregroundStyle(.white.opacity(0.66))
             }
         }

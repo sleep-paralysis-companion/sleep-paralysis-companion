@@ -139,7 +139,7 @@ private struct AuthenticationReferenceLayout: View {
             )
 
             TextField("Full Name", text: $fullName)
-                .font(.system(size: 17, weight: .regular))
+                .font(AppFont.inter(size: 17, relativeTo: .body))
                 .foregroundStyle(.white)
                 .tint(AuthenticationPalette.actionEnd)
                 .focused(fullNameIsFocused)
@@ -179,7 +179,7 @@ private struct AuthenticationReferenceLayout: View {
 
             Button(action: createAccount) {
                 Text("Create account")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .buttonStyle(.plain)
@@ -206,7 +206,7 @@ private struct AuthenticationReferenceLayout: View {
                     Text("Log in")
                         .foregroundStyle(AuthenticationPalette.link)
                 }
-                .font(.system(size: 15, weight: .regular))
+                .font(AppFont.inter(size: 15, relativeTo: .subheadline))
             }
             .buttonStyle(.plain)
             .position(x: 215, y: 834)
@@ -241,10 +241,10 @@ private struct AuthenticationReferenceLayout: View {
 
             VStack(spacing: 25) {
                 Text("Don't have an account ?")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppFont.inter(size: 16, relativeTo: .body, weight: .semibold))
                     .foregroundStyle(AuthenticationPalette.secondaryText)
                 Button("Sign up", action: switchMode)
-                    .font(.system(size: 16, weight: .regular))
+                    .font(AppFont.inter(size: 16, relativeTo: .body))
                     .foregroundStyle(AuthenticationPalette.link)
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("authentication.goToCreateAccount")
@@ -264,11 +264,11 @@ private struct AuthenticationReferenceLayout: View {
     private func heading(_ title: String, subtitle: String, verticalPosition: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 15) {
             Text(title)
-                .font(.system(size: 29, weight: .bold))
+                .font(AppFont.latoBold(size: 29, relativeTo: .title))
                 .tracking(-0.55)
                 .accessibilityAddTraits(.isHeader)
             Text(subtitle)
-                .font(.system(size: 17, weight: .semibold))
+            .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                 .foregroundStyle(AuthenticationPalette.secondaryText)
         }
         .frame(width: 348, alignment: .leading)
@@ -288,7 +288,7 @@ private struct AuthenticationReferenceLayout: View {
                 .foregroundStyle(AuthenticationPalette.link)
                 .accessibilityIdentifier("authentication.privacy")
         }
-        .font(.system(size: 13, weight: .regular))
+        .font(AppFont.inter(size: 13, relativeTo: .footnote))
         .buttonStyle(.plain)
         .frame(width: 350)
         .lineLimit(1)
@@ -308,7 +308,7 @@ private struct AuthenticationProviderButton: View {
                 providerMark
                     .frame(width: 26, height: 26)
                 Text(provider == .google ? "Google" : "Apple")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
             }
             .foregroundStyle(AuthenticationPalette.secondaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -350,7 +350,7 @@ private struct AuthenticationInlineMessage: View {
 
     var body: some View {
         Text(message)
-            .font(.system(size: 12, weight: .regular))
+            .font(AppFont.inter(size: 12, relativeTo: .caption))
             .foregroundStyle(AuthenticationPalette.secondaryText)
             .multilineTextAlignment(.center)
             .frame(width: 340)

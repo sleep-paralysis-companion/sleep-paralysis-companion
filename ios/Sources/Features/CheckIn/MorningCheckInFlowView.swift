@@ -35,7 +35,7 @@ struct MorningCheckInFlowView: View {
     private var questionCard: some View {
         VStack(alignment: .leading, spacing: 28) {
             Text(step.questionTitle)
-                .font(.system(size: 31, weight: .semibold, design: .rounded))
+                .font(AppFont.latoSemiBold(size: 31, relativeTo: .title))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
 
@@ -81,7 +81,7 @@ struct MorningCheckInFlowView: View {
             }
 
             Button(skipButtonTitle, action: skipCurrentQuestion)
-                .font(.callout.weight(.semibold))
+                .font(AppTypographyRole.control)
                 .foregroundStyle(Color(red: 0.66, green: 0.62, blue: 0.86))
                 .frame(maxWidth: .infinity)
                 .padding(.top, -4)
@@ -109,7 +109,7 @@ struct MorningCheckInFlowView: View {
                 Text(emoji)
                     .font(.system(size: 56))
                 Text(title)
-                    .font(.title3.weight(.medium))
+                    .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
             }
             .frame(maxWidth: .infinity, minHeight: 202)
             .background(Color(red: 0.08, green: 0.10, blue: 0.25))
@@ -134,7 +134,7 @@ struct MorningCheckInFlowView: View {
                             .background(Color(red: 0.11, green: 0.12, blue: 0.31))
                             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                         Text(answer.title)
-                            .font(.system(size: 24, weight: .medium, design: .rounded))
+                        .font(AppFont.inter(size: 24, relativeTo: .title2, weight: .medium))
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 0)
                     }
@@ -157,21 +157,21 @@ struct MorningCheckInFlowView: View {
                 .padding(.top, 6)
             VStack(spacing: 20) {
                 Text(affirmation.title)
-                    .font(.system(size: 31, weight: .semibold, design: .rounded))
+                    .font(AppFont.latoSemiBold(size: 31, relativeTo: .title))
                     .multilineTextAlignment(.center)
                 Text(affirmation.detail)
-                    .font(.title3)
+                    .font(AppFont.inter(size: 20, relativeTo: .title3))
                     .foregroundStyle(Color(red: 0.65, green: 0.62, blue: 0.84))
                     .multilineTextAlignment(.center)
                 Text(affirmation.supportingDetail)
-                    .font(.title3)
+                    .font(AppFont.inter(size: 20, relativeTo: .title3))
                     .foregroundStyle(Color(red: 0.65, green: 0.62, blue: 0.84))
                     .multilineTextAlignment(.center)
             }
             Button("Return To Home") {
                 model.completeMorningCheckIn()
             }
-            .font(.title3.weight(.semibold))
+            .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .semibold))
             .frame(maxWidth: .infinity, minHeight: 62)
             .background(
                 LinearGradient(
@@ -320,12 +320,12 @@ private struct MorningCheckInHeader: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(headerDate)
-                        .font(.title3.weight(.medium))
+                        .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
                         .foregroundStyle(Color(red: 0.57, green: 0.54, blue: 0.78))
                     Text("Good morning,\nthere 🌤️")
-                        .font(.system(size: 38, weight: .semibold, design: .rounded))
+                        .font(AppFont.latoSemiBold(size: 38, relativeTo: .largeTitle))
                     Text("Let's check in with your night.")
-                        .font(.title3)
+                        .font(AppFont.inter(size: 20, relativeTo: .title3))
                         .foregroundStyle(Color(red: 0.64, green: 0.61, blue: 0.82))
                 }
                 Spacer(minLength: 12)
@@ -341,7 +341,7 @@ private struct MorningCheckInHeader: View {
 
             if let progressTitle = step.progressTitle {
                 Text(progressTitle)
-                    .font(.title3.weight(.medium))
+                    .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
                     .foregroundStyle(Color(red: 0.57, green: 0.54, blue: 0.78))
                 HStack(spacing: 0) {
                     ForEach(0 ..< 4, id: \.self) { index in

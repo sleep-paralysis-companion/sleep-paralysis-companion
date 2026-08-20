@@ -25,9 +25,9 @@ struct HistoryView: View {
                                         .foregroundStyle(value.occurrence == .yes ? Color.indigo : Color.cyan)
                                     VStack(alignment: .leading) {
                                         Text(value.occurrence == .yes ? "Episode reported" : "No episode reported")
-                                            .font(.headline)
+                                            .font(AppTypographyRole.control)
                                         Text(value.reportedForLocalDate)
-                                            .font(.caption)
+                                            .font(AppTypographyRole.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                     Spacer()

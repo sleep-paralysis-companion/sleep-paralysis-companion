@@ -11,7 +11,7 @@ struct AppTabShellView: View {
             )
         ) {
             ZStack {
-                HomeView(model: model)
+                HomeView(model: model, showsSleepSessionAction: true)
                 if model.isMorningCheckInPresented {
                     MorningCheckInFlowView(model: model)
                 }
@@ -49,6 +49,18 @@ struct AppTabShellView: View {
             .padding(.bottom, 8)
         }
         .accessibilityIdentifier("app.tab.shell")
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { model.isSleepSessionPresented },
+                set: { presented in
+                    if !presented {
+                        model.minimizeSleepSession()
+                    }
+                }
+            )
+        ) {
+            SleepSessionView(model: model)
+        }
     }
 }
 

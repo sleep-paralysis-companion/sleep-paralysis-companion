@@ -17,14 +17,52 @@ enum AppColorRole {
 }
 
 enum AppTypographyRole {
-    static let hero = Font.largeTitle.weight(.bold)
-    static let screenTitle = Font.title.weight(.bold)
-    static let sectionTitle = Font.title2.weight(.semibold)
-    static let cardTitle = Font.title3.weight(.semibold)
-    static let body = Font.body
-    static let supporting = Font.callout
-    static let control = Font.headline
-    static let label = Font.caption.weight(.semibold)
+    static let hero = AppFont.latoBold(size: 40, relativeTo: .largeTitle)
+    static let screenTitle = AppFont.latoBold(size: 28, relativeTo: .title)
+    static let sectionTitle = AppFont.latoBold(size: 24, relativeTo: .title2)
+    static let cardTitle = AppFont.latoSemiBold(size: 20, relativeTo: .title3)
+    static let subsectionTitle = AppFont.latoSemiBold(size: 18, relativeTo: .headline)
+    static let body = AppFont.inter(size: 16, relativeTo: .body)
+    static let supporting = AppFont.inter(size: 16, relativeTo: .callout)
+    static let control = AppFont.interSemiBold(size: 16, relativeTo: .headline)
+    static let label = AppFont.interMedium(size: 12, relativeTo: .caption)
+    static let footnote = AppFont.inter(size: 13, relativeTo: .footnote)
+    static let caption = AppFont.inter(size: 11, relativeTo: .caption)
+}
+
+enum AppFont {
+    private static let interFamily = "Inter"
+    private static let latoBoldFamily = "Lato-Bold"
+    private static let latoRegularFamily = "Lato-Regular"
+    private static let latoSemiBoldFamily = "Lato-SemiBold"
+
+    static func inter(
+        size: CGFloat,
+        relativeTo style: Font.TextStyle,
+        weight: Font.Weight = .regular
+    ) -> Font {
+        Font.custom(interFamily, size: size, relativeTo: style).weight(weight)
+    }
+
+    static func interMedium(size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
+        inter(size: size, relativeTo: style, weight: .medium)
+    }
+
+    static func interSemiBold(size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
+        inter(size: size, relativeTo: style, weight: .semibold)
+    }
+
+    static func latoBold(size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
+        Font.custom(latoBoldFamily, size: size, relativeTo: style)
+    }
+
+    static func latoRegular(size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
+        Font.custom(latoRegularFamily, size: size, relativeTo: style)
+    }
+
+    static func latoSemiBold(size: CGFloat, relativeTo style: Font.TextStyle) -> Font {
+        Font.custom(latoSemiBoldFamily, size: size, relativeTo: style)
+    }
 }
 
 nonisolated enum AppSpacing {

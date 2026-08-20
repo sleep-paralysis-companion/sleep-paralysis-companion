@@ -121,7 +121,7 @@ private struct OnboardingPrimaryAction: View {
                     .fontWeight(.semibold)
             }
         }
-        .font(.headline)
+        .font(AppTypographyRole.control)
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity, minHeight: AppSpacing.minimumControl)
         .background(
@@ -157,13 +157,13 @@ struct SplashView: View {
                 Spacer(minLength: 88)
                 MoonMark(size: 104 * 1.55)
                 Text("Understand your\nnights. Own your\nsleep.")
-                    .font(.title.weight(.bold))
+                    .font(AppTypographyRole.screenTitle)
                     .multilineTextAlignment(.center)
                     .accessibilityLabel("Understand your nights. Own your sleep.")
                     .accessibilityAddTraits(.isHeader)
                     .padding(.top, 28)
                 Text("A few quick questions help us build your personal sleep paralysis setup.")
-                    .font(.callout.weight(.semibold))
+                    .font(AppTypographyRole.control)
                     .foregroundStyle(OnboardingStyle.secondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.top, 20)
@@ -240,7 +240,7 @@ struct FeatureIntroductionView: View {
             VStack(spacing: 0) {
                 Spacer(minLength: 70)
                 Text(content.title)
-                    .font(.title.weight(.bold))
+                    .font(AppTypographyRole.screenTitle)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityAddTraits(.isHeader)
@@ -256,7 +256,7 @@ struct FeatureIntroductionView: View {
                 FeatureIntroductionPrimaryAction(action: continueAction)
                     .padding(.top, 30)
                 Button("Skip", action: skipAction)
-                    .font(.headline)
+                    .font(AppTypographyRole.control)
                     .foregroundStyle(OnboardingStyle.secondaryText)
                     .padding(.top, 22)
                     .accessibilityIdentifier("feature.skip")
@@ -293,7 +293,7 @@ private struct FeatureIntroductionReferenceLayout: View {
     private var canvas: some View {
         ZStack {
             Text(content.title)
-                .font(.system(size: 28, weight: .bold))
+                .font(AppFont.latoBold(size: 28, relativeTo: .title))
                 .tracking(-0.45)
                 .lineSpacing(2)
                 .multilineTextAlignment(.leading)
@@ -321,7 +321,7 @@ private struct FeatureIntroductionReferenceLayout: View {
                 .position(x: 215, y: 807)
 
             Button("Skip", action: skipAction)
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppTypographyRole.control)
                 .foregroundStyle(Color(red: 0.59, green: 0.56, blue: 0.72))
                 .position(x: 215, y: 862)
                 .accessibilityIdentifier("feature.skip")
@@ -485,9 +485,9 @@ private struct FeatureIntroductionArtwork: View {
                 .offset(x: 17, y: 46)
             VStack(alignment: .leading, spacing: 4) {
                 Text("You're safe.")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(AppFont.latoBold(size: 16, relativeTo: .body))
                 Text("Take a moment to\nreorient.")
-                    .font(.system(size: 14, weight: .regular))
+                    .font(AppFont.inter(size: 14, relativeTo: .footnote))
                     .foregroundStyle(Color.white.opacity(0.81))
                     .lineSpacing(1)
                 HStack(spacing: 7) {
@@ -564,10 +564,10 @@ private struct FeatureIntroductionCard: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 8) {
                 Text(content.cardTitle)
-                    .font(.system(size: 17, weight: .bold))
+                    .font(AppFont.latoBold(size: 17, relativeTo: .headline))
                     .foregroundStyle(.white)
                 Text(content.detail)
-                    .font(.system(size: 15, weight: .regular))
+                    .font(AppFont.inter(size: 15, relativeTo: .subheadline))
                     .foregroundStyle(Color(red: 0.68, green: 0.62, blue: 0.88))
                     .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -598,10 +598,10 @@ private struct FeatureIntroductionPrimaryAction: View {
         Button(action: action) {
             HStack(spacing: 22) {
                 Text("Build my sleep profile")
+                    .font(AppFont.latoBold(size: 17, relativeTo: .headline))
                 Image(systemName: "arrow.right")
                     .font(.system(size: 24, weight: .regular))
             }
-            .font(.system(size: 17, weight: .bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -628,11 +628,11 @@ struct AuthenticationView: View {
                 Spacer(minLength: 56)
                 OnboardingArtwork(size: 94, symbol: nil)
                 Text(state == .sessionExpired ? "Sign in again" : "Welcome to Sleep Paralysis Companion")
-                    .font(.title.weight(.bold))
+                    .font(AppTypographyRole.screenTitle)
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
                 Text(authenticationDetail)
-                    .font(.callout)
+                    .font(AppTypographyRole.supporting)
                     .foregroundStyle(OnboardingStyle.secondaryText)
                     .multilineTextAlignment(.center)
                 if let feedback {
@@ -641,7 +641,7 @@ struct AuthenticationView: View {
                 if !isConfigured {
                     NightCard {
                         Label("Provider configuration required", systemImage: "wrench.and.screwdriver")
-                            .font(.headline)
+                            .font(AppTypographyRole.control)
                         Text(
                             "Add the project publishable key and Apple and Google provider credentials " +
                                 "before sign-in can run."
@@ -696,11 +696,11 @@ struct QuestionnaireView: View {
                         QuestionnaireTopProgress(current: questionNumber - 1)
                             .padding(.top, 34)
                         Text("Question \(questionNumber) of 3")
-                            .font(.callout.weight(.semibold))
+                            .font(AppTypographyRole.control)
                             .foregroundStyle(OnboardingStyle.secondaryText)
                             .padding(.top, 26)
                         Text(title)
-                            .font(.title2.weight(.bold))
+                            .font(AppTypographyRole.sectionTitle)
                             .accessibilityAddTraits(.isHeader)
                             .padding(.top, 30)
                         VStack(spacing: AppSpacing.standard) {
@@ -794,7 +794,7 @@ struct QuestionnaireView: View {
                     }
                     .accessibilityHidden(true)
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(AppFont.inter(size: 17, relativeTo: .body, weight: .semibold))
                     .foregroundStyle(selected ? .white : OnboardingStyle.secondaryText)
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
@@ -851,13 +851,13 @@ private struct QuestionnaireReferenceLayout: View {
                 .position(x: 215, y: 94)
 
             Text("Question \(questionNumber) of 3")
-                .font(.system(size: 17, weight: .bold))
+                .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                 .foregroundStyle(OnboardingStyle.secondaryText)
                 .frame(width: 360, alignment: .leading)
                 .position(x: 215, y: 149)
 
             Text(title)
-                .font(.system(size: 26, weight: .bold))
+                .font(AppFont.latoBold(size: 26, relativeTo: .title))
                 .tracking(-0.45)
                 .lineSpacing(3)
                 .multilineTextAlignment(.leading)
@@ -999,7 +999,7 @@ private struct QuestionnaireReferenceOption: View {
                     .accessibilityHidden(true)
 
                 Text(option.title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                     .foregroundStyle(option.selected ? .white : OnboardingStyle.secondaryText)
                     .multilineTextAlignment(.leading)
                     .lineSpacing(1)
@@ -1133,12 +1133,12 @@ struct RecommendedSetupView: View {
                 Spacer(minLength: 44)
                 ProfileCreatedArtwork()
                 Text("Your sleep profile is ready")
-                    .font(.title2.weight(.bold))
+                    .font(AppTypographyRole.sectionTitle)
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
                     .padding(.top, 24)
                 Text("Based on your answers, we've prepared\nthe best support plan for your nights.")
-                    .font(.callout.weight(.semibold))
+                    .font(AppTypographyRole.control)
                     .foregroundStyle(OnboardingStyle.secondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.top, 14)
@@ -1183,14 +1183,14 @@ private struct ProfileCreatedReferenceLayout: View {
                 .accessibilityHidden(true)
 
             Text("Your sleep profile is ready")
-                .font(.system(size: 26, weight: .bold))
+                .font(AppFont.latoBold(size: 26, relativeTo: .title))
                 .tracking(-0.5)
                 .frame(width: 376, height: 34)
                 .position(x: 215, y: 336)
                 .accessibilityAddTraits(.isHeader)
 
             Text("Based on your answers, we've prepared\nthe best support plan for your nights.")
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                 .foregroundStyle(Color(red: 0.61, green: 0.57, blue: 0.74))
                 .lineSpacing(3)
                 .multilineTextAlignment(.center)
@@ -1312,7 +1312,7 @@ private struct ProfileCreatedRecommendationCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Tonight's Recommended Setup")
-                .font(.system(size: 17, weight: .medium))
+                .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .medium))
                 .foregroundStyle(Color(red: 0.63, green: 0.58, blue: 0.88))
                 .padding(.top, 14)
 
@@ -1348,11 +1348,11 @@ private struct ProfileCreatedRecommendationRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(row.title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text(row.detail)
-                    .font(.system(size: 15, weight: .regular))
+                    .font(AppFont.inter(size: 15, relativeTo: .subheadline))
                     .foregroundStyle(Color(red: 0.62, green: 0.58, blue: 0.76))
                     .lineLimit(1)
             }
@@ -1369,10 +1369,10 @@ private struct ProfileCreatedPrimaryAction: View {
         Button(action: action) {
             HStack(spacing: 22) {
                 Text("Continue to comfort audio")
+                    .font(AppFont.latoBold(size: 17, relativeTo: .headline))
                 Image(systemName: "arrow.right")
                     .font(.system(size: 24, weight: .regular))
             }
-            .font(.system(size: 17, weight: .bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

@@ -1,6 +1,36 @@
 import AppIntents
 import Foundation
 
+nonisolated enum SleepSessionAudioAction: String, AppEnum, Codable, Sendable {
+    case startOrResume
+    case pause
+    case resume
+
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Grounding audio action")
+    static let caseDisplayRepresentations: [Self: DisplayRepresentation] = [
+        .startOrResume: "Start grounding audio",
+        .pause: "Pause grounding audio",
+        .resume: "Resume grounding audio",
+    ]
+}
+
+@MainActor
+final class SleepSessionAudioIntentBridge {
+    static let shared = SleepSessionAudioIntentBridge()
+
+    private var handler: (@MainActor (SleepSessionAudioAction) -> Bool)?
+
+    private init() {}
+
+    func install(handler: @escaping @MainActor (SleepSessionAudioAction) -> Bool) {
+        self.handler = handler
+    }
+
+    func perform(_ action: SleepSessionAudioAction) -> Bool {
+        handler?(action) ?? false
+    }
+}
+
 nonisolated enum ManualEpisodeActivationError: Error, Equatable {
     case appGroupUnavailable
     case persistenceFailed
@@ -10,6 +40,7 @@ nonisolated struct ManualEpisodeActivationStore: Sendable {
     struct Activation: Codable, Equatable, Sendable {
         let id: UUID
         let requestedAt: Date
+        let action: SleepSessionAudioAction?
     }
 
     static let appGroupInfoKey = "SPCAppGroupIdentifier"
@@ -29,11 +60,12 @@ nonisolated struct ManualEpisodeActivationStore: Sendable {
     @discardableResult
     func enqueue(
         id: UUID = UUID(),
-        requestedAt: Date = Date()
+        requestedAt: Date = Date(),
+        action: SleepSessionAudioAction = .startOrResume
     ) throws -> Activation {
         let defaults = try appGroupDefaults()
         var values = pending(in: defaults)
-        let activation = Activation(id: id, requestedAt: requestedAt)
+        let activation = Activation(id: id, requestedAt: requestedAt, action: action)
         if !values.contains(where: { $0.id == id }) {
             values.append(activation)
             values = Array(values.suffix(Self.queueLimit))
@@ -89,16 +121,53 @@ nonisolated struct ManualEpisodeActivationStore: Sendable {
     }
 }
 
-struct ManualEpisodeIntent: AppIntent {
+struct ManualEpisodeIntent: AudioPlaybackIntent {
     static let title: LocalizedStringResource = "I just had an episode"
     static let description = IntentDescription(
         "Opens Sleep Paralysis Companion manual visual grounding and the selected device-local recovery audio."
     )
-    static let openAppWhenRun = true
+    static let supportedModes: IntentModes = [.foreground]
     static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
 
+    @Parameter(title: "Action")
+    var action: SleepSessionAudioAction
+
+    init() {
+        action = .startOrResume
+    }
+
+    init(action: SleepSessionAudioAction) {
+        self.action = action
+    }
+
     func perform() async throws -> some IntentResult {
-        try ManualEpisodeActivationStore.live().enqueue()
+        try ManualEpisodeActivationStore.live().enqueue(action: action)
+        return .result()
+    }
+}
+
+struct SleepSessionPlaybackIntent: AudioPlaybackIntent {
+    static let title: LocalizedStringResource = "Control grounding audio"
+    static let description = IntentDescription("Starts, pauses, or resumes grounding audio.")
+    static let supportedModes: IntentModes = [.background]
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+
+    @Parameter(title: "Action")
+    var action: SleepSessionAudioAction
+
+    init() {
+        action = .startOrResume
+    }
+
+    init(action: SleepSessionAudioAction) {
+        self.action = action
+    }
+
+    func perform() async throws -> some IntentResult {
+        let handled = await SleepSessionAudioIntentBridge.shared.perform(action)
+        if !handled {
+            try ManualEpisodeActivationStore.live().enqueue(action: action)
+        }
         return .result()
     }
 }

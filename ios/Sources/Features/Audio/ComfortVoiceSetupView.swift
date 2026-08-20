@@ -34,7 +34,7 @@ struct PersonalAudioSetupView: View {
                 Button("Skip") {
                     model.continueFromAudioSetup()
                 }
-                .font(.callout.weight(.semibold))
+                .font(AppTypographyRole.control)
                 .foregroundStyle(ComfortVoiceStyle.secondaryText)
                 .padding(.top, 28)
                 .padding(.trailing, 26)
@@ -94,14 +94,14 @@ struct PersonalAudioSetupView: View {
                 .accessibilityHidden(true)
 
             Text("Record a loved\none’s voice")
-                .font(.system(size: 30, weight: .semibold, design: .rounded))
+                .font(AppFont.latoSemiBold(size: 30, relativeTo: .title))
                 .tracking(-0.8)
                 .lineSpacing(1)
                 .padding(.top, 20)
                 .accessibilityAddTraits(.isHeader)
 
             Text("This voice will play automatically during an\nepisode to calm and guide you back.")
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(AppFont.inter(size: 18, relativeTo: .callout, weight: .semibold))
                 .lineSpacing(4)
                 .foregroundStyle(ComfortVoiceStyle.secondaryText)
                 .padding(.top, 25)
@@ -170,7 +170,7 @@ struct PersonalAudioSetupView: View {
     private var recordingLabel: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             Text(model.isRecording ? "Recording · \(recordingDuration(at: context.date))" : microphoneStatus)
-                .font(.system(size: 17, weight: .regular, design: .rounded))
+                .font(AppFont.inter(size: 17, relativeTo: .body))
                 .foregroundStyle(ComfortVoiceStyle.secondaryText)
                 .monospacedDigit()
         }
@@ -189,7 +189,7 @@ struct PersonalAudioSetupView: View {
                     "breath and let go — I'm right here, and\n" +
                     "you're going to be okay.\""
             )
-            .font(.system(size: 20, weight: .semibold, design: .rounded))
+            .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .semibold))
             .lineSpacing(5)
             .foregroundStyle(ComfortVoiceStyle.scriptText)
             .padding(.top, 27)
@@ -229,9 +229,9 @@ struct PersonalAudioSetupView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Voice recording")
-                        .font(.system(size: 18, weight: .medium, design: .rounded))
+                        .font(AppFont.inter(size: 18, relativeTo: .callout, weight: .medium))
                     Text("\(clipDuration(clip)) · Ready to save")
-                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .font(AppFont.inter(size: 14, relativeTo: .footnote))
                         .foregroundStyle(ComfortVoiceStyle.secondaryText)
                 }
                 Spacer(minLength: 0)

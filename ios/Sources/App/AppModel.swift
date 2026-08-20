@@ -31,6 +31,8 @@ final class AppModel {
     private(set) var checkIns: [SubmittedCheckIn] = []
     private(set) var partnerContact: PartnerContact?
     private(set) var playbackState = GroundingPlaybackState.idle
+    private(set) var sleepSessionStartedAt: Date?
+    private(set) var isSleepSessionPresented = false
     private(set) var isRecording = false
     private(set) var catalogAudioService: any CatalogAudioLibraryServicing
     private(set) var exportURL: URL?
@@ -54,6 +56,7 @@ final class AppModel {
     private let accountDeletionClock: any Phase1BClock
     private let audioFiles: PersonalAudioFileStore
     private let audioController: RecoveryAudioController
+    private let sleepSessionLiveActivities: SleepSessionLiveActivityController
     private let catalogAudioConfiguration: CatalogAudioRemoteConfiguration?
     let reminders: SleepReminderService
     private let wakeAlarms: WakeAlarmService
@@ -78,6 +81,7 @@ final class AppModel {
         accountDeletionClock: any Phase1BClock = SystemPhase1BClock(),
         audioFiles: PersonalAudioFileStore = PersonalAudioFileStore(),
         audioController: RecoveryAudioController = RecoveryAudioController(),
+        sleepSessionLiveActivities: SleepSessionLiveActivityController = SleepSessionLiveActivityController(),
         reminders: SleepReminderService = SleepReminderService(),
         wakeAlarms: WakeAlarmService = WakeAlarmService(),
         catalogAudioConfiguration: CatalogAudioRemoteConfiguration? = nil,
@@ -94,6 +98,7 @@ final class AppModel {
         self.accountDeletionClock = accountDeletionClock
         self.audioFiles = audioFiles
         self.audioController = audioController
+        self.sleepSessionLiveActivities = sleepSessionLiveActivities
         self.catalogAudioConfiguration = catalogAudioConfiguration
         self.catalogAudioService = UnavailableCatalogAudioService()
         self.reminders = reminders
@@ -103,6 +108,13 @@ final class AppModel {
         self.deepLinkResolver = deepLinkResolver
         self.audioController.recordingEndedUnexpectedly = { [weak self] in
             self?.cancelRecording(reason: "Recording stopped before it could be saved. No partial recording was kept.")
+        }
+        self.audioController.playbackStateDidChange = { [weak self] state in
+            self?.playbackState = state
+            self?.updateSleepSessionLiveActivityForPlayback()
+        }
+        SleepSessionAudioIntentBridge.shared.install { [weak self] action in
+            self?.performSleepSessionAudioAction(action, presentSession: false) ?? false
         }
     }
 
@@ -313,7 +325,7 @@ final class AppModel {
                         userID: userID
                     )
                     questionnaireDraft = nil
-                    launchDestination = .recommendedSetup
+                    launchDestination = .personalAudio
                 }
             } catch {
                 feedbackMessage =
@@ -324,11 +336,12 @@ final class AppModel {
 
     func continueFromRecommendedSetup() {
         guard persona != nil else { return }
-        launchDestination = .personalAudio
+        launchDestination = .sleepSchedule
     }
 
     func continueFromAudioSetup() {
-        launchDestination = .sleepSchedule
+        guard persona != nil else { return }
+        launchDestination = .recommendedSetup
     }
 
     func saveSleepSchedule(_ schedule: SleepSchedule, requestPermission: Bool) {
@@ -557,9 +570,11 @@ final class AppModel {
                 let url = try await audioFiles.existingURL(for: clip)
                 try audioController.play(url: url, identifier: clip.id.uuidString)
                 playbackState = audioController.playbackState
+                updateSleepSessionLiveActivityForPlayback()
             } catch {
                 audioController.showVisualFallback()
                 playbackState = .visualFallback
+                updateSleepSessionLiveActivityForPlayback()
             }
         }
     }
@@ -567,31 +582,147 @@ final class AppModel {
     func togglePlayback() {
         audioController.togglePause()
         playbackState = audioController.playbackState
+        updateSleepSessionLiveActivityForPlayback()
     }
 
     func stopPlayback() {
         audioController.stopPlayback()
         playbackState = .idle
+        updateSleepSessionLiveActivityForPlayback()
     }
 
     func beginManualGrounding() {
         guard launchDestination == .home else { return }
         open(.grounding)
+        playSelectedRecoveryAudio()
+    }
+
+    func startSleepSession() {
+        guard launchDestination == .home else { return }
+        let startedAt = sleepSessionStartedAt ?? Date()
+        sleepSessionStartedAt = startedAt
+        isSleepSessionPresented = true
+        UserDefaults.standard.set(startedAt, forKey: Self.sleepSessionStartedAtKey)
+        UIApplication.shared.isIdleTimerDisabled = true
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try sleepSessionLiveActivities.start(startedAt: startedAt)
+            } catch {
+                feedbackMessage = "Sleep mode started, but its Lock Screen companion is unavailable."
+            }
+        }
+    }
+
+    func minimizeSleepSession() {
+        guard sleepSessionStartedAt != nil else { return }
+        isSleepSessionPresented = false
+        UIApplication.shared.isIdleTimerDisabled = false
+    }
+
+    func presentActiveSleepSession() {
+        guard launchDestination == .home, sleepSessionStartedAt != nil else { return }
+        selectedTab = .sleep
+        path = []
+        isSleepSessionPresented = true
+        UIApplication.shared.isIdleTimerDisabled = true
+    }
+
+    func endSleepSession() {
+        sleepSessionStartedAt = nil
+        isSleepSessionPresented = false
+        UserDefaults.standard.removeObject(forKey: Self.sleepSessionStartedAtKey)
+        UIApplication.shared.isIdleTimerDisabled = false
+        stopPlayback()
+
+        Task { @MainActor [weak self] in
+            await self?.sleepSessionLiveActivities.end()
+        }
+    }
+
+    func beginSleepSessionGrounding() {
+        guard launchDestination == .home, sleepSessionStartedAt != nil else { return }
+        playSelectedRecoveryAudio()
+    }
+
+    @discardableResult
+    func performSleepSessionAudioAction(
+        _ action: SleepSessionAudioAction,
+        presentSession: Bool
+    ) -> Bool {
+        guard launchDestination == .home, sleepSessionStartedAt != nil else { return false }
+        if presentSession {
+            presentActiveSleepSession()
+        }
+        switch action {
+        case .startOrResume:
+            if case .paused = playbackState {
+                togglePlayback()
+            } else if case .playing = playbackState {
+                break
+            } else {
+                beginSleepSessionGrounding()
+            }
+        case .pause:
+            if case .playing = playbackState {
+                togglePlayback()
+            }
+        case .resume:
+            if case .paused = playbackState {
+                togglePlayback()
+            }
+        }
+        return true
+    }
+
+    var sleepSessionAudioStatus: SleepSessionAudioStatus {
+        switch playbackState {
+        case .playing: .playing
+        case .paused: .paused
+        default: .ready
+        }
+    }
+
+    private func playSelectedRecoveryAudio() {
         guard case let .personalClip(id) = recoveryAudioDefault,
               let clip = personalClips.first(where: { $0.id == id })
         else {
             audioController.showVisualFallback()
             playbackState = .visualFallback
+            updateSleepSessionLiveActivityForPlayback()
             return
         }
         play(clip)
     }
 
+    private func updateSleepSessionLiveActivityForPlayback() {
+        guard sleepSessionStartedAt != nil else { return }
+        let status = sleepSessionAudioStatus
+        Task { @MainActor [weak self] in
+            await self?.sleepSessionLiveActivities.update(audioStatus: status)
+        }
+    }
+
     @discardableResult
     func requestManualGrounding() -> Bool {
         guard launchDestination == .home else { return false }
-        beginManualGrounding()
+        if sleepSessionStartedAt != nil {
+            isSleepSessionPresented = true
+            beginSleepSessionGrounding()
+        } else {
+            beginManualGrounding()
+        }
         return true
+    }
+
+    @discardableResult
+    func requestSleepSessionAudioAction(_ action: SleepSessionAudioAction) -> Bool {
+        if sleepSessionStartedAt != nil {
+            return performSleepSessionAudioAction(action, presentSession: true)
+        }
+        guard action == .startOrResume else { return false }
+        return requestManualGrounding()
     }
 
     @discardableResult
@@ -838,6 +969,10 @@ final class AppModel {
     }
 
     func openDeepLink(_ url: URL) {
+        if url.scheme?.lowercased() == "spc", url.host?.lowercased() == "sleep-session" {
+            presentActiveSleepSession()
+            return
+        }
         guard let route = deepLinkResolver.route(for: url) else { return }
         if launchDestination == .home {
             if route == .grounding {
@@ -913,11 +1048,20 @@ final class AppModel {
         } else if snapshot.persona == nil {
             launchDestination = .question(.episodeFrequency)
         } else if snapshot.profile.onboardingCompletedAt == nil {
-            launchDestination = .recommendedSetup
+            launchDestination = .personalAudio
         } else {
             launchDestination = .home
             restore(restoredState, profileID: snapshot.profile.id)
+            restoreSleepSessionIfNeeded()
         }
+    }
+
+    private func restoreSleepSessionIfNeeded() {
+        let persisted = UserDefaults.standard.object(forKey: Self.sleepSessionStartedAtKey) as? Date
+        guard let startedAt = sleepSessionLiveActivities.activeStartedAt ?? persisted else { return }
+        sleepSessionStartedAt = startedAt
+        isSleepSessionPresented = true
+        UIApplication.shared.isIdleTimerDisabled = true
     }
 
     private func setAudioDefault(_ value: LocalRecoveryAudioDefault) {
@@ -959,7 +1103,12 @@ final class AppModel {
         isMorningCheckInPresented = false
     }
 
+    private static let sleepSessionStartedAtKey = "spc.sleepSession.startedAt.v1"
+
     private func clearSessionState() {
+        if sleepSessionStartedAt != nil {
+            endSleepSession()
+        }
         cancelRecording(reason: nil)
         session = nil
         accountDeletionCoordinator = nil

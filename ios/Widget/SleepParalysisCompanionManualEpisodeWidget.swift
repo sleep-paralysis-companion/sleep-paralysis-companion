@@ -1,3 +1,4 @@
+import ActivityKit
 import AppIntents
 import SwiftUI
 import WidgetKit
@@ -75,9 +76,140 @@ struct SleepParalysisCompanionManualEpisodeWidget: Widget {
     }
 }
 
+struct SleepSessionLiveActivity: Widget {
+    var body: some WidgetConfiguration {
+        ActivityConfiguration(for: SleepSessionAttributes.self) { context in
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "moon.stars.fill")
+                        .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
+                    Text("Sleep session active")
+                        .font(.headline)
+                    Spacer()
+                    if context.state.audioStatus != .ready {
+                        Label(context.state.audioStatus.statusLabel, systemImage: context.state.audioStatus.statusIcon)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
+                            .labelStyle(.iconOnly)
+                            .accessibilityLabel(context.state.audioStatus.statusLabel)
+                    }
+                }
+
+                Button(intent: ManualEpisodeIntent(action: context.state.audioStatus.action)) {
+                    Label(context.state.audioStatus.buttonTitle, systemImage: context.state.audioStatus.buttonIcon)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color(red: 0.32, green: 0.41, blue: 0.78))
+                .accessibilityHint(context.state.audioStatus.foregroundActionHint)
+            }
+            .padding(.vertical, 4)
+            .activityBackgroundTint(Color(red: 0.05, green: 0.02, blue: 0.19))
+            .activitySystemActionForegroundColor(.white)
+            .widgetURL(URL(string: "spc://sleep-session"))
+        } dynamicIsland: { context in
+            DynamicIsland {
+                DynamicIslandExpandedRegion(.leading) {
+                    Label("Sleep mode", systemImage: "moon.stars.fill")
+                        .font(.headline)
+                        .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
+                }
+                DynamicIslandExpandedRegion(.trailing) {
+                    Image(systemName: context.state.audioStatus.statusIcon)
+                        .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
+                        .accessibilityLabel(context.state.audioStatus.statusLabel)
+                }
+                DynamicIslandExpandedRegion(.bottom) {
+                    Button(intent: SleepSessionPlaybackIntent(action: context.state.audioStatus.action)) {
+                        Label(context.state.audioStatus.buttonTitle, systemImage: context.state.audioStatus.buttonIcon)
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color(red: 0.32, green: 0.41, blue: 0.78))
+                }
+            } compactLeading: {
+                Image(systemName: "moon.stars.fill")
+                    .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
+                    .accessibilityLabel("Sleep session active")
+            } compactTrailing: {
+                Image(systemName: context.state.audioStatus.compactIcon)
+                    .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
+                    .accessibilityLabel(context.state.audioStatus.statusLabel)
+            } minimal: {
+                Image(systemName: "moon.stars.fill")
+                    .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
+                    .accessibilityLabel("Sleep session active")
+            }
+            .keylineTint(Color(red: 0.32, green: 0.41, blue: 0.78))
+            .widgetURL(URL(string: "spc://sleep-session"))
+        }
+    }
+}
+
+private extension SleepSessionAudioStatus {
+    var action: SleepSessionAudioAction {
+        switch self {
+        case .ready: .startOrResume
+        case .playing: .pause
+        case .paused: .resume
+        }
+    }
+
+    var buttonTitle: String {
+        switch self {
+        case .ready: "I just had an episode"
+        case .playing: "Pause grounding audio"
+        case .paused: "Resume grounding audio"
+        }
+    }
+
+    var buttonIcon: String {
+        switch self {
+        case .ready: "sparkles"
+        case .playing: "pause.fill"
+        case .paused: "play.fill"
+        }
+    }
+
+    var compactIcon: String {
+        switch self {
+        case .ready: "sparkles"
+        case .playing: "waveform"
+        case .paused: "pause.fill"
+        }
+    }
+
+    var statusIcon: String {
+        switch self {
+        case .ready: "bed.double.fill"
+        case .playing: "waveform"
+        case .paused: "pause.fill"
+        }
+    }
+
+    var statusLabel: String {
+        switch self {
+        case .ready: "Grounding audio ready"
+        case .playing: "Grounding audio is playing"
+        case .paused: "Grounding audio is paused"
+        }
+    }
+
+    var foregroundActionHint: String {
+        switch self {
+        case .ready: "Authenticates if needed, starts grounding audio, and opens the active session."
+        case .playing: "Authenticates if needed, pauses grounding audio, and opens the active session."
+        case .paused: "Authenticates if needed, resumes grounding audio, and opens the active session."
+        }
+    }
+}
+
 @main
 struct SleepParalysisCompanionWidgetBundle: WidgetBundle {
     var body: some Widget {
         SleepParalysisCompanionManualEpisodeWidget()
+        SleepSessionLiveActivity()
     }
 }

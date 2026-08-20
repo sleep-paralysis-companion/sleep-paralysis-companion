@@ -34,9 +34,9 @@ struct MeProfileView: View {
                 Circle().fill(.green).frame(width: 18, height: 18).overlay { Circle().stroke(.black, lineWidth: 3) }
             }
             Text("Hi, \(model.profile?.displayName ?? "")")
-                .font(.system(size: 34, weight: .bold)).lineLimit(1)
+                .font(AppFont.latoBold(size: 34, relativeTo: .largeTitle)).lineLimit(1)
             Spacer(minLength: 0)
-            Text("FREE").font(.headline).foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1))
+            Text("FREE").font(AppTypographyRole.label).foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1))
                 .padding(.horizontal, 14).padding(.vertical, 9)
                 .overlay { Capsule().stroke(Color.purple.opacity(0.8)) }
         }
@@ -48,7 +48,7 @@ struct MeProfileView: View {
                 Label("Free plan", systemImage: "circle.fill").foregroundStyle(.white); Spacer(); Text("No renewal")
                     .foregroundStyle(.white.opacity(0.58))
             }
-            Text("Upgrade availability will appear here when subscriptions are configured.").font(.callout)
+            Text("Upgrade availability will appear here when subscriptions are configured.").font(AppTypographyRole.supporting)
                 .foregroundStyle(.white.opacity(0.6))
             Button("Manage subscription", role: .destructive) { confirmCancellation = true }
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -62,7 +62,7 @@ struct MeProfileView: View {
                 Text("👩‍💻")
                     .font(.system(size: 42)); VStack(alignment: .leading) {
                         Text(LegalSupport.founderName)
-                            .font(.title2.bold())
+                            .font(AppTypographyRole.sectionTitle)
                         Text("Founder")
                             .foregroundStyle(.white.opacity(0.58))
                     }; Spacer(); Text("FOUNDER").foregroundStyle(Color(
@@ -75,11 +75,11 @@ struct MeProfileView: View {
                 "Building this for people like you. I’d love to hear about your experience " +
                     "and answer any questions directly."
             )
-            .font(.title3).foregroundStyle(.white.opacity(0.68))
+            .font(AppFont.inter(size: 20, relativeTo: .title3)).foregroundStyle(.white.opacity(0.68))
             Button { openURL(LegalSupport.supportEmailURL) } label: {
                 VStack(spacing: 4) {
-                    Text("Connect to the founder").font(.title3.bold())
-                    Text(LegalSupport.supportEmail).font(.footnote)
+                    Text("Connect to the founder").font(AppTypographyRole.cardTitle)
+                    Text(LegalSupport.supportEmail).font(AppTypographyRole.footnote)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -98,14 +98,14 @@ struct MeProfileView: View {
 
     private var menu: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("ACCOUNT").font(.headline).foregroundStyle(.white.opacity(0.5)).padding(.bottom, 10)
+            Text("ACCOUNT").font(AppTypographyRole.label).foregroundStyle(.white.opacity(0.5)).padding(.bottom, 10)
             row("📝", "Edit Profile") { model.open(.editProfile) }
             row("🔔", "Notifications", detail: model.reminderAuthorization == .authorized ? "On" : "Off") {
                 model.manageNotifications()
             }
             row("🔒", "Privacy & Data") { model.open(.dataPrivacy) }
             row("❔", "Help and Legal") { model.open(.helpLegal) }
-            Text("PREFERENCES").font(.headline).foregroundStyle(.white.opacity(0.5)).padding(.top, 26).padding(
+            Text("PREFERENCES").font(AppTypographyRole.label).foregroundStyle(.white.opacity(0.5)).padding(.top, 26).padding(
                 .bottom,
                 10
             )
@@ -125,7 +125,7 @@ struct MeProfileView: View {
             Color.purple.opacity(0.25),
             in: RoundedRectangle(cornerRadius: 13)
         ); Text(title)
-            .font(.title3.weight(.medium)); Spacer(); if let detail
+            .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium)); Spacer(); if let detail
         {
             Text(detail).foregroundStyle(.white.opacity(0.6))
         }; Image(systemName: "chevron.right").font(.headline).foregroundStyle(.white.opacity(0.6))
@@ -142,7 +142,7 @@ struct EditProfileView: View {
     @State private var name = ""
     var body: some View {
         NightScreen {
-            VStack(alignment: .leading, spacing: 24) { Text("Edit Profile").font(.largeTitle.bold()); TextField(
+            VStack(alignment: .leading, spacing: 24) { Text("Edit Profile").font(AppTypographyRole.hero); TextField(
                 "Display name",
                 text: $name
             ).textFieldStyle(.roundedBorder).textContentType(.name)
@@ -166,7 +166,7 @@ struct DefaultSupportSettingsView: View {
         NightScreen {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Default settings")
-                    .font(.title2.bold()); Text(
+                    .font(AppTypographyRole.sectionTitle); Text(
                         "Choose your sleep defaults and the support option you want to record after an episode."
                     )
                     .foregroundStyle(.white.opacity(0.6)); Text("Support partner")
@@ -176,7 +176,7 @@ struct DefaultSupportSettingsView: View {
                     "Add one phone number to enable an explicit call from the grounding screen. " +
                         "This stays on this device."
                 )
-                .font(.callout)
+                .font(AppTypographyRole.supporting)
                 .foregroundStyle(.white.opacity(0.6))
                 TextField("Name (optional)", text: $partnerName)
                     .textFieldStyle(.roundedBorder)
@@ -252,7 +252,7 @@ struct DefaultSupportSettingsView: View {
             height: 46
         )
         .background(.purple, in: RoundedRectangle(cornerRadius: 7)); VStack(alignment: .leading) {
-            Text(title).font(.headline); Text(subtitle).font(.caption).foregroundStyle(.white.opacity(0.55))
+            Text(title).font(AppTypographyRole.control); Text(subtitle).font(AppTypographyRole.caption).foregroundStyle(.white.opacity(0.55))
         }; Spacer(); Image(systemName: selection.wrappedValue == value ? "checkmark.circle.fill" : "circle")
         .foregroundStyle(.blue).font(.title3)
         }.padding(14).background(

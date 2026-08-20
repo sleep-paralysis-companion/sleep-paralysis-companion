@@ -331,6 +331,7 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
     private var recordingStartedAt: Date?
     private var interruptionTask: Task<Void, Never>?
     var recordingEndedUnexpectedly: (@MainActor @Sendable () -> Void)?
+    var playbackStateDidChange: (@MainActor @Sendable (GroundingPlaybackState) -> Void)?
 
     override init() {
         super.init()
@@ -429,6 +430,7 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
         guard player.play() else { throw Phase1ActionError.audioUnavailable }
         self.player = player
         playbackState = .playing(identifier)
+        playbackStateDidChange?(playbackState)
     }
 
     func togglePause() {
@@ -437,11 +439,13 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
             player.pause()
             if case let .playing(identifier) = playbackState {
                 playbackState = .paused(identifier)
+                playbackStateDidChange?(playbackState)
             }
         } else {
             player.play()
             if case let .paused(identifier) = playbackState {
                 playbackState = .playing(identifier)
+                playbackStateDidChange?(playbackState)
             }
         }
     }
@@ -450,12 +454,14 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
         player?.stop()
         player = nil
         playbackState = .idle
+        playbackStateDidChange?(playbackState)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     func showVisualFallback() {
         stopPlayback()
         playbackState = .visualFallback
+        playbackStateDidChange?(playbackState)
     }
 
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {

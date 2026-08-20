@@ -27,9 +27,9 @@ struct GroundingView: View {
                         .frame(width: reduceMotion ? 138 : 154, height: reduceMotion ? 138 : 154)
                     VStack {
                         Text("Breathe slowly")
-                            .font(.title2.bold())
+                            .font(AppTypographyRole.sectionTitle)
                         Text("Notice five things you can see")
-                            .font(.callout)
+                            .font(AppTypographyRole.supporting)
                             .foregroundStyle(.white.opacity(0.68))
                     }
                     .multilineTextAlignment(.center)
@@ -41,7 +41,7 @@ struct GroundingView: View {
 
                 NightCard {
                     Label(playbackTitle, systemImage: playbackIcon)
-                        .font(.headline)
+                        .font(AppTypographyRole.control)
                     Text(playbackDetail)
                         .foregroundStyle(.white.opacity(0.68))
                     HStack {
@@ -68,7 +68,7 @@ struct GroundingView: View {
                     "No episode record is created by opening this screen. " +
                         "A history entry exists only after you explicitly submit a check-in."
                 )
-                .font(.footnote)
+                .font(AppTypographyRole.footnote)
                 .foregroundStyle(.white.opacity(0.58))
             }
             .padding(.top, 24)

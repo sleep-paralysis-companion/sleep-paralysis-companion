@@ -19,7 +19,7 @@ struct FigmaSleepScheduleContent: View {
                         .padding(.top, isOnboarding ? 46 : 22)
 
                     Text("What time do you want to sleep?")
-                        .font(.system(size: dynamicTypeSize.isAccessibilitySize ? 28 : 34, weight: .bold))
+                        .font(AppFont.latoBold(size: dynamicTypeSize.isAccessibilitySize ? 28 : 34, relativeTo: .largeTitle))
                         .tracking(-0.7)
                         .padding(.top, 32)
                         .accessibilityAddTraits(.isHeader)
@@ -28,7 +28,7 @@ struct FigmaSleepScheduleContent: View {
                         "We'll remind you 15 minutes before bedtime, giving you time to relax "
                             + "and prepare for sleep peacefully."
                     )
-                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .font(AppFont.inter(size: 18, relativeTo: .callout))
                     .foregroundStyle(Color(red: 0.62, green: 0.59, blue: 0.76))
                     .lineSpacing(4)
                     .padding(.top, 12)
@@ -54,7 +54,7 @@ struct FigmaSleepScheduleContent: View {
                             "Your wake-up reminder choice is saved. Gentle audio will become available "
                                 + "once it is added to the app."
                         )
-                        .font(.footnote)
+                        .font(AppTypographyRole.footnote)
                         .foregroundStyle(Color(red: 0.64, green: 0.60, blue: 0.78))
                         .padding(.top, 12)
                         .accessibilityIdentifier("schedule.wakeReminder.assetUnavailable")
@@ -68,7 +68,7 @@ struct FigmaSleepScheduleContent: View {
                             "Bedtime reminders use your notification preference. Wake-up audio needs its own "
                                 + "alarm permission once the audio asset is included."
                         )
-                        .font(.footnote)
+                        .font(AppTypographyRole.footnote)
                         .foregroundStyle(.white.opacity(0.62))
                         .padding(.top, 16)
                     }
@@ -102,21 +102,21 @@ struct FigmaSleepScheduleContent: View {
                 .frame(width: 30)
                 .accessibilityHidden(true)
             Text(title)
-                .font(.system(size: 26, weight: .bold))
+                .font(AppFont.latoBold(size: 26, relativeTo: .title))
         }
     }
 
     private var reminderDays: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Reminder days")
-                .font(.headline)
+                .font(AppTypographyRole.control)
             HStack(spacing: 7) {
                 ForEach(1 ... 7, id: \.self) { weekday in
                     Button {
                         toggle(weekday: weekday)
                     } label: {
                         Text(weekdayLabel(weekday))
-                            .font(.caption.weight(.bold))
+                            .font(AppFont.inter(size: 12, relativeTo: .caption, weight: .semibold))
                             .frame(width: 38, height: 38)
                             .background(
                                 includes(weekday: weekday)
@@ -157,9 +157,9 @@ struct FigmaSleepScheduleContent: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Wake-up reminder")
-                        .font(.headline)
+                        .font(AppTypographyRole.control)
                     Text(wakeReminderDescription)
-                        .font(.subheadline)
+                        .font(AppFont.inter(size: 15, relativeTo: .subheadline))
                         .foregroundStyle(Color(red: 0.62, green: 0.59, blue: 0.76))
                 }
                 Spacer(minLength: 12)
@@ -285,7 +285,7 @@ private struct SleepWheelColumn<Value: Hashable>: View {
         Picker("", selection: $selection) {
             ForEach(values, id: \.self) { value in
                 Text(label(value))
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(AppFont.latoBold(size: 30, relativeTo: .title2))
                     .tag(value)
             }
         }
@@ -354,7 +354,7 @@ private struct WakeReminderConfigurationView: View {
                             "Your chosen time was saved, but the wake-up alarm was not scheduled "
                                 + "because its local sound is unavailable or invalid."
                         )
-                        .font(.footnote)
+                        .font(AppTypographyRole.footnote)
                     }
                 }
 
@@ -364,7 +364,7 @@ private struct WakeReminderConfigurationView: View {
                             "The selected wake-up sound was unavailable, so the bundled local "
                                 + "fallback was scheduled instead."
                         )
-                        .font(.footnote)
+                        .font(AppTypographyRole.footnote)
                     }
                 }
             }

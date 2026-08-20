@@ -18,6 +18,7 @@ struct AppRootView: View {
             launchContent
                 .navigationDestination(for: AppRoute.self, destination: destination)
         }
+        .font(AppTypographyRole.body)
         .tint(AppColorRole.accent)
         .onOpenURL(perform: model.openDeepLink)
         .task {
@@ -56,7 +57,7 @@ struct AppRootView: View {
 
     private func attemptManualEpisodeHandoff() {
         guard let activation = try? activationStore.firstPending(),
-              model.requestManualGrounding()
+              model.requestSleepSessionAudioAction(activation.action ?? .startOrResume)
         else { return }
         _ = try? activationStore.consume(id: activation.id)
     }

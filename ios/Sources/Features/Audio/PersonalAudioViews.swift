@@ -23,9 +23,9 @@ private struct LegacyPersonalAudioSetupView: View {
                         model.isRecording ? "Recording in progress" : "Record a private clip",
                         systemImage: model.isRecording ? "waveform.circle.fill" : "mic.circle.fill"
                     )
-                    .font(.headline)
+                    .font(AppTypographyRole.control)
                     Text("A visible recording can be stopped or cancelled at any time.")
-                        .font(.callout)
+                        .font(AppTypographyRole.supporting)
                         .foregroundStyle(.white.opacity(0.68))
                         .padding(.vertical, 6)
                     if model.isRecording {
@@ -55,7 +55,7 @@ private struct LegacyPersonalAudioSetupView: View {
                 if model.personalClips.isEmpty {
                     NightCard {
                         Label("No personal clips yet", systemImage: "waveform.slash")
-                            .font(.headline)
+                            .font(AppTypographyRole.control)
                         Text("You can continue without audio. Silent visual grounding remains available.")
                             .foregroundStyle(.white.opacity(0.68))
                     }
@@ -72,9 +72,9 @@ private struct LegacyPersonalAudioSetupView: View {
                 ForEach(model.providedAudio) { item in
                     NightCard {
                         Label(item.title, systemImage: "music.note")
-                            .font(.headline)
+                            .font(AppTypographyRole.control)
                         Text(item.isBundled ? item.detail : "\(item.detail) Production asset not bundled.")
-                            .font(.callout)
+                            .font(AppTypographyRole.supporting)
                             .foregroundStyle(.white.opacity(0.68))
                         Button("Select", systemImage: "checkmark.circle") {
                             model.selectProvidedAudio(item)
@@ -95,7 +95,7 @@ private struct LegacyPersonalAudioSetupView: View {
                     "Personal audio is never included in structured export, analytics, diagnostics, notifications, " +
                         "widgets, or Supabase."
                 )
-                .font(.footnote)
+                .font(AppTypographyRole.footnote)
                 .foregroundStyle(.white.opacity(0.58))
             }
             .padding(.top, isOnboarding ? 32 : 0)
@@ -157,9 +157,9 @@ private struct LegacyPersonalAudioSetupView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(clip.source == .recorded ? "Recorded comfort clip" : "Imported comfort clip")
-                        .font(.headline)
+                        .font(AppTypographyRole.control)
                     Text(clip.createdOrImportedAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
+                        .font(AppTypographyRole.caption)
                         .foregroundStyle(.white.opacity(0.62))
                 }
                 Spacer()

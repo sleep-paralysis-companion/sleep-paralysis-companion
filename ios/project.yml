@@ -122,6 +122,7 @@ targets:
         excludes:
           - Info.plist
       - path: Sources/AppIntents/ManualEpisodeIntent.swift
+      - path: Sources/SleepSession/SleepSessionAttributes.swift
     settings:
       base:
         APPLICATION_EXTENSION_API_ONLY: YES

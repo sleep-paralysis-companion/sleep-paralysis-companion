@@ -45,6 +45,16 @@ final class WidgetActivationStoreTests: XCTestCase {
         XCTAssertTrue(try store.consume(id: activation.id))
     }
 
+    func testActivationPreservesRequestedPlaybackAction() throws {
+        let suite = uniqueSuite()
+        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let store = ManualEpisodeActivationStore(suiteName: suite)
+
+        try store.enqueue(action: .pause)
+
+        XCTAssertEqual(try store.firstPending()?.action, .pause)
+    }
+
     func testWrongOrMissingSuiteNeverFallsBackToStandardDefaults() {
         UserDefaults.standard.removeObject(forKey: ManualEpisodeActivationStore.pendingKey)
         let store = ManualEpisodeActivationStore(suiteName: nil)
@@ -57,6 +67,35 @@ final class WidgetActivationStoreTests: XCTestCase {
 
     private func uniqueSuite() -> String {
         "spc.tests.activation.\(UUID().uuidString)"
+    }
+}
+
+final class SleepSessionFoundationTests: XCTestCase {
+    func testLiveActivityContentStateDistinguishesPlaybackStates() {
+        let ready = SleepSessionAttributes.ContentState(audioStatus: .ready)
+        let playing = SleepSessionAttributes.ContentState(audioStatus: .playing)
+        let paused = SleepSessionAttributes.ContentState(audioStatus: .paused)
+
+        XCTAssertNotEqual(ready, playing)
+        XCTAssertNotEqual(playing, paused)
+        XCTAssertEqual(ready.audioStatus, .ready)
+        XCTAssertEqual(playing.audioStatus, .playing)
+        XCTAssertEqual(paused.audioStatus, .paused)
+    }
+
+    func testApplicationDeclaresLiveActivitiesBackgroundAudioAndBundledFonts() throws {
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "NSSupportsLiveActivities") as? Bool, true)
+
+        let backgroundModes = try XCTUnwrap(
+            Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String]
+        )
+        XCTAssertTrue(backgroundModes.contains("audio"))
+
+        let fonts = try XCTUnwrap(Bundle.main.object(forInfoDictionaryKey: "UIAppFonts") as? [String])
+        XCTAssertTrue(fonts.contains("InterVariable.ttf"))
+        XCTAssertTrue(fonts.contains("Lato-Bold.ttf"))
+        XCTAssertTrue(fonts.contains("Lato-Regular.ttf"))
+        XCTAssertTrue(fonts.contains("Lato-SemiBold.ttf"))
     }
 }
 
