@@ -18,6 +18,19 @@ nonisolated enum PersonalAlarmAudioPreparationError: Error, Equatable, Sendable 
     case installFailed
 }
 
+/// AVAudioConverter invokes its input block synchronously during `convert`.
+/// Keep the callback state behind one explicitly scoped sendable boundary so
+/// Swift 6 does not treat the converter's callback as an unsafe mutable capture.
+private final class PersonalAlarmConverterInputState: @unchecked Sendable {
+    let inputBuffer: AVAudioPCMBuffer
+    var reachedEnd = false
+    var sourceReadError: Error?
+
+    init(inputBuffer: AVAudioPCMBuffer) {
+        self.inputBuffer = inputBuffer
+    }
+}
+
 /// Stable, pure values shared by the preparation boundary and tests.
 nonisolated enum PersonalAlarmAudioContract {
     static let sampleRate: Double = 44_100
@@ -204,38 +217,37 @@ actor PersonalAlarmAudioPreparer {
             throw PersonalAlarmAudioPreparationError.conversionFailed
         }
 
-        var reachedEnd = false
-        var sourceReadError: Error?
+        let inputState = PersonalAlarmConverterInputState(inputBuffer: inputBuffer)
 
         while true {
             try Task.checkCancellation()
             outputBuffer.frameLength = 0
             var conversionError: NSError?
             let status = converter.convert(to: outputBuffer, error: &conversionError) { _, status in
-                if reachedEnd {
+                if inputState.reachedEnd {
                     status.pointee = .endOfStream
                     return nil
                 }
 
                 do {
-                    try source.read(into: inputBuffer)
+                    try source.read(into: inputState.inputBuffer)
                 } catch {
-                    sourceReadError = error
-                    reachedEnd = true
+                    inputState.sourceReadError = error
+                    inputState.reachedEnd = true
                     status.pointee = .endOfStream
                     return nil
                 }
 
-                guard inputBuffer.frameLength > 0 else {
-                    reachedEnd = true
+                guard inputState.inputBuffer.frameLength > 0 else {
+                    inputState.reachedEnd = true
                     status.pointee = .endOfStream
                     return nil
                 }
                 status.pointee = .haveData
-                return inputBuffer
+                return inputState.inputBuffer
             }
 
-            if sourceReadError != nil {
+            if inputState.sourceReadError != nil {
                 throw PersonalAlarmAudioPreparationError.sourceUnavailable
             }
             if conversionError != nil || status == .error {
