@@ -1,4 +1,4 @@
-import ActivityKit
+@preconcurrency import ActivityKit
 import Foundation
 
 @MainActor
@@ -28,7 +28,6 @@ final class SleepSessionLiveActivityController {
         guard let activeActivity else { return }
         let state = SleepSessionAttributes.ContentState(audioStatus: audioStatus)
         await activeActivity.update(ActivityContent(state: state, staleDate: nil))
-        activity = activeActivity
     }
 
     func end() async {
