@@ -168,18 +168,48 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
         else {
             throw RemoteMutationError.validation
         }
+        guard let schedule = try await database.alarmSchedule(
+            id: operation.entityID,
+            profileID: operation.profileID
+        ), let audio = schedule.wakeAudio else {
+            throw RemoteMutationError.validation
+        }
+        guard schedule.revision == operation.localRevision else {
+            throw RemoteMutationError.validation
+        }
         return .alarm(
             RemoteAlarmPreferenceDTO(
-                id: alarm.id,
+                id: schedule.id,
                 ownerUserID: ownerUserID,
-                localHour: alarm.localHour,
-                localMinute: alarm.localMinute,
-                weekdaysMask: alarm.weekdaysMask,
+                localHour: schedule.wakeHour,
+                localMinute: schedule.wakeMinute,
+                weekdaysMask: schedule.weekdaysMask,
                 snoozeMinutes: alarm.snoozeMinutes,
-                enabledIntent: alarm.enabledIntent,
-                revision: alarm.revision
+                enabledIntent: schedule.isEnabled,
+                revision: schedule.revision,
+                scheduleName: schedule.name,
+                scheduleKind: schedule.kind == .sleep ? "sleep" : "wake_only",
+                sleepHour: schedule.bedtimeHour,
+                sleepMinute: schedule.bedtimeMinute,
+                oneTimeLocalDate: schedule.oneTimeDate?.iso8601String,
+                bedtimeReminderLeadMinutes: schedule.bedtimeReminderLeadMinutes,
+                prewakeLeadMinutes: schedule.wakeReminderLeadMinutes,
+                wakeAudioKind: audioKind(audio),
+                wakeAudioReference: audio.reference.stableIdentifier,
+                displayOrder: schedule.sortOrder
             )
         )
+    }
+
+    private func audioKind(_ selection: AlarmAudioSelection) -> String {
+        switch selection.reference {
+        case .bundled:
+            "bundled"
+        case .catalog:
+            "catalog"
+        case .personal:
+            "personal"
+        }
     }
 
     private func checkInPayload(

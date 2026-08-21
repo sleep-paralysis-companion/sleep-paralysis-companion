@@ -7,6 +7,7 @@ nonisolated struct Phase1ResumeSnapshot: Sendable {
     let clips: [PersonalAudioClipMetadata]
     let audioDefault: LocalRecoveryAudioDefault?
     let schedule: SleepSchedule
+    let schedules: [AlarmSchedule]
     let checkIns: [SubmittedCheckIn]
     let settings: AppSettings
     let partnerContact: PartnerContact?
@@ -128,6 +129,16 @@ actor IntegratedPhase1Store {
         let existing = try await database.alarms(profileID: profileID).first
         let now = Date()
         let alarmID = existing?.id ?? UUID()
+        _ = try await database.saveAlarmSchedule(
+            AlarmSchedule(
+                legacy: schedule,
+                id: alarmID,
+                profileID: profileID,
+                createdAt: existing?.createdAt ?? now,
+                updatedAt: now
+            ),
+            profileID: profileID
+        )
         let wakePlan = WakeAlarmPlanner.plan(for: schedule)
         let preference = AlarmPreference(
             id: alarmID,
@@ -146,6 +157,7 @@ actor IntegratedPhase1Store {
             revision: (existing?.revision ?? 0) + 1
         )
         try await database.saveAlarm(preference)
+        try await preferences.delete(userID: userID)
         try await enqueueLatestUpsert(
             database: database,
             profileID: profileID,
@@ -160,6 +172,49 @@ actor IntegratedPhase1Store {
         )
         await synchronizePending(profileID: profileID, userID: userID)
         return preference
+    }
+
+    func saveAlarmSchedule(
+        _ schedule: AlarmSchedule,
+        profileID: UUID,
+        userID: UUID
+    ) async throws -> AlarmSchedule {
+        guard schedule.profileID == nil || schedule.profileID == profileID,
+              schedule.isValid
+        else {
+            throw Phase1ActionError.invalidSchedule
+        }
+        let database = try databaseInstance()
+        let stored = try await database.saveAlarmSchedule(schedule, profileID: profileID)
+        try await preferences.delete(userID: userID)
+        try await enqueueLatestUpsert(
+            database: database,
+            profileID: profileID,
+            entityType: .alarm,
+            entityID: stored.id,
+            revision: stored.revision
+        )
+        try await database.markIntegratedOnboardingComplete(
+            profileID: profileID,
+            userID: userID,
+            completedAt: stored.updatedAt
+        )
+        await synchronizePending(profileID: profileID, userID: userID)
+        return stored
+    }
+
+    func alarmSchedules(profileID: UUID) async throws -> [AlarmSchedule] {
+        try await databaseInstance().alarmSchedules(profileID: profileID)
+    }
+
+    func deleteAlarmSchedule(
+        id: UUID,
+        profileID: UUID,
+        userID: UUID
+    ) async throws {
+        try await databaseInstance().deleteAlarmSchedule(id: id, profileID: profileID)
+        try await preferences.delete(userID: userID)
+        await synchronizePending(profileID: profileID, userID: userID)
     }
 
     func alarmPreference(profileID: UUID) async throws -> AlarmPreference? {
@@ -326,7 +381,17 @@ actor IntegratedPhase1Store {
             profileID: profile.id,
             authenticatedUserID: userID
         )
-        let schedule = try await preferences.read(userID: userID) ?? .defaultValue
+        let legacySchedule = try await preferences.read(userID: userID)
+        let schedules = try await database.alarmSchedules(profileID: profile.id)
+        let schedule = schedules.first.map(SleepSchedule.init) ?? legacySchedule ?? .defaultValue
+        let effectiveSchedules: [AlarmSchedule]
+        if !schedules.isEmpty {
+            effectiveSchedules = schedules
+        } else if let legacySchedule {
+            effectiveSchedules = [AlarmSchedule(legacy: legacySchedule, profileID: profile.id)]
+        } else {
+            effectiveSchedules = []
+        }
         let checkIns = try await database.checkIns(profileID: profile.id)
         let partnerContact = try await database.partnerContact(profileID: profile.id)
         guard let settings = try await database.settings(profileID: profile.id) else {
@@ -339,6 +404,7 @@ actor IntegratedPhase1Store {
             clips: clips,
             audioDefault: audioDefault,
             schedule: schedule,
+            schedules: effectiveSchedules,
             checkIns: checkIns,
             settings: settings,
             partnerContact: partnerContact

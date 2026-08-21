@@ -110,7 +110,25 @@ actor LocalDatabase {
         else {
             throw Phase1BValidationError.invalidAlarmTime
         }
-        try write { try AlarmPreferenceRecord(alarm).save($0) }
+        try write { database in
+            var record = AlarmPreferenceRecord(alarm)
+            if let existing = try AlarmPreferenceRecord.fetchOne(
+                database,
+                key: alarm.id.uuidString
+            ) {
+                record.scheduleName = existing.scheduleName
+                record.scheduleKind = existing.scheduleKind
+                record.sleepHour = existing.sleepHour
+                record.sleepMinute = existing.sleepMinute
+                record.oneTimeLocalDate = existing.oneTimeLocalDate
+                record.bedtimeReminderLeadMinutes = existing.bedtimeReminderLeadMinutes
+                record.prewakeLeadMinutes = existing.prewakeLeadMinutes
+                record.wakeAudioKind = existing.wakeAudioKind
+                record.wakeAudioReference = existing.wakeAudioReference
+                record.displayOrder = existing.displayOrder
+            }
+            try record.save(database)
+        }
     }
 
     func alarms(profileID: UUID) throws -> [AlarmPreference] {
@@ -132,6 +150,128 @@ actor LocalDatabase {
                 return nil
             }
             return try record.domainValue()
+        }
+    }
+
+    func saveAlarmSchedule(_ schedule: AlarmSchedule, profileID: UUID) throws -> AlarmSchedule {
+        guard schedule.profileID == nil || schedule.profileID == profileID,
+              schedule.isValid
+        else {
+            throw Phase1ActionError.invalidSchedule
+        }
+
+        let existing = try pool.read { database in
+            try AlarmPreferenceRecord.fetchOne(database, key: schedule.id.uuidString)
+        }
+        guard existing == nil || existing?.profileID == profileID.uuidString else {
+            throw Phase1ActionError.accountMismatch
+        }
+        if existing == nil {
+            let count = try pool.read { database in
+                try AlarmPreferenceRecord
+                    .filter(Column("profileID") == profileID.uuidString)
+                    .fetchCount(database)
+            }
+            guard count < AlarmSchedule.maximumCount else {
+                throw Phase1ActionError.invalidSchedule
+            }
+        }
+
+        let revision = (existing?.revision ?? 0) + 1
+        let stored = AlarmSchedule(
+            id: schedule.id,
+            profileID: profileID,
+            name: schedule.name,
+            kind: schedule.kind,
+            bedtimeHour: schedule.bedtimeHour,
+            bedtimeMinute: schedule.bedtimeMinute,
+            wakeHour: schedule.wakeHour,
+            wakeMinute: schedule.wakeMinute,
+            weekdaysMask: schedule.weekdaysMask,
+            oneTimeDate: schedule.oneTimeDate,
+            bedtimeReminderLeadMinutes: schedule.bedtimeReminderLeadMinutes,
+            wakeReminderLeadMinutes: schedule.wakeReminderLeadMinutes,
+            finalWakeAlarmEnabled: schedule.finalWakeAlarmEnabled,
+            wakeAudio: schedule.wakeAudio,
+            isEnabled: schedule.isEnabled,
+            sortOrder: schedule.sortOrder,
+            createdAt: existing.map { Date(timeIntervalSince1970: $0.createdAt) } ?? schedule.createdAt,
+            updatedAt: existing == nil ? schedule.updatedAt : Date(),
+            revision: revision
+        )
+        let otherSchedules = try alarmSchedules(profileID: profileID).filter { $0.id != stored.id }
+        try AlarmScheduleValidator.validate(otherSchedules + [stored])
+        try write { database in
+            try AlarmPreferenceRecord(stored).save(database)
+        }
+        return stored
+    }
+
+    func alarmSchedules(profileID: UUID) throws -> [AlarmSchedule] {
+        try pool.read { database in
+            try AlarmPreferenceRecord
+                .filter(Column("profileID") == profileID.uuidString)
+                .order(Column("displayOrder"), Column("createdAt"), Column("id"))
+                .fetchAll(database)
+                .map { try $0.scheduleValue() }
+        }
+    }
+
+    func alarmSchedule(id: UUID, profileID: UUID) throws -> AlarmSchedule? {
+        try pool.read { database in
+            guard let record = try AlarmPreferenceRecord.fetchOne(
+                database,
+                key: id.uuidString
+            ), record.profileID == profileID.uuidString else {
+                return nil
+            }
+            return try record.scheduleValue()
+        }
+    }
+
+    func deleteAlarmSchedule(
+        id: UUID,
+        profileID: UUID,
+        date: Date = Date(),
+        tombstoneID: UUID = UUID(),
+        operationID: UUID = UUID(),
+        idempotencyKey: UUID = UUID()
+    ) throws {
+        try write { database in
+            guard let record = try AlarmPreferenceRecord.fetchOne(
+                database,
+                key: id.uuidString
+            ), record.profileID == profileID.uuidString else {
+                return
+            }
+            let deletedRevision = record.revision + 1
+            _ = try AlarmPreferenceRecord.deleteOne(database, key: id.uuidString)
+            try DeletionTombstoneRecord(
+                id: tombstoneID.uuidString,
+                profileID: profileID.uuidString,
+                entityType: SyncEntityType.alarm.rawValue,
+                entityID: id.uuidString,
+                deletedRevision: deletedRevision,
+                deletedAt: date.timeIntervalSince1970,
+                acknowledgedAt: nil,
+                purgeAfter: date.addingTimeInterval(30 * 86400).timeIntervalSince1970
+            ).save(database)
+            try SynchronizationOperationRecord(
+                id: operationID.uuidString,
+                profileID: profileID.uuidString,
+                entityType: SyncEntityType.tombstone.rawValue,
+                entityID: tombstoneID.uuidString,
+                operation: SyncOperationKind.delete.rawValue,
+                idempotencyKey: idempotencyKey.uuidString,
+                baseRevision: record.revision,
+                localRevision: deletedRevision,
+                state: SynchronizationState.pending.rawValue,
+                attemptCount: 0,
+                nextAttemptAt: nil,
+                lastErrorCategory: nil,
+                createdAt: date.timeIntervalSince1970,
+                updatedAt: date.timeIntervalSince1970
+            ).save(database)
         }
     }
 

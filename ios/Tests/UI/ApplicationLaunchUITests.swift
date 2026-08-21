@@ -223,6 +223,11 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 12))
         capture("12-home", app: app)
+        app.buttons["home.sleepSchedule"].tap()
+        XCTAssertTrue(app.otherElements["schedule.alarmHistory"].waitForExistence(timeout: 8))
+        capture("12a-alarm-history", app: app)
+        app.buttons["schedule.history.back"].tap()
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.buttons["home.manualEpisode"].tap()
 
         XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))

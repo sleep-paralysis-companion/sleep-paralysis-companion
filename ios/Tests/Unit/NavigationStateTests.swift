@@ -10,7 +10,7 @@ final class NavigationStateTests: XCTestCase {
             ("spc://episode", .grounding),
             ("spc://audio", .audioLibrary),
             ("spc://catalog", .curatedAudioLibrary),
-            ("spc://schedule", .sleepSchedule),
+            ("spc://schedule", .alarmHistory),
             ("spc://checkin", .morningCheckIn),
             ("spc://privacy", .dataPrivacy),
             ("spc://help", .helpLegal),

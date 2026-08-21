@@ -143,6 +143,44 @@ private struct AppRouteDestinationView: View {
             }
         case .sleepSchedule:
             SleepScheduleView(model: model)
+        case .alarmHistory:
+            AlarmHistoryView(
+                schedules: model.scheduleUIModels,
+                onBack: dismissScheduleRoute,
+                onAdd: {
+                    model.beginNewSchedule()
+                    model.open(.alarmScheduleEditor)
+                },
+                onEdit: { schedule in
+                    model.editSchedule(schedule)
+                    model.open(.alarmScheduleEditor)
+                },
+                onToggle: { schedule, enabled in
+                    model.toggleScheduleUI(schedule, enabled: enabled)
+                },
+                onDelete: { schedule in
+                    model.deleteScheduleUI(schedule)
+                }
+            )
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarBackButtonHidden(true)
+        case .alarmScheduleEditor:
+            AlarmScheduleEditorView(
+                schedule: model.selectedScheduleUIModel,
+                audioOptions: model.scheduleAudioOptions,
+                onCancel: dismissScheduleRoute,
+                onSave: { schedule in
+                    if model.saveScheduleUI(schedule) {
+                        dismissScheduleRoute()
+                    }
+                },
+                onDelete: { schedule in
+                    model.deleteScheduleUI(schedule)
+                    dismissScheduleRoute()
+                }
+            )
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarBackButtonHidden(true)
         case .morningCheckIn:
             MorningCheckInView(model: model)
         case .checkInDetail:
@@ -162,5 +200,10 @@ private struct AppRouteDestinationView: View {
         case .defaultSettings:
             DefaultSupportSettingsView(model: model)
         }
+    }
+
+    private func dismissScheduleRoute() {
+        guard !model.path.isEmpty else { return }
+        model.setPath(Array(model.path.dropLast()))
     }
 }

@@ -97,6 +97,43 @@ nonisolated struct AlarmPreference: Equatable, Codable, Sendable {
     var revision: Int64
 }
 
+/// Device scheduling state for a multi-event `AlarmSchedule`. The schedule
+/// itself stores user intent; this value only records the two independently
+/// managed AlarmKit identifiers and their latest reconciliation outcome.
+nonisolated struct AlarmScheduleAlarmState: Equatable, Codable, Sendable {
+    let scheduleID: UUID
+    var gentleAlarmID: String?
+    var finalAlarmID: String?
+    var systemState: AlarmSystemState
+    var lastScheduleResult: AlarmScheduleResult
+    var updatedAt: Date
+    var revision: Int64
+
+    init(
+        scheduleID: UUID,
+        gentleAlarmID: String? = nil,
+        finalAlarmID: String? = nil,
+        systemState: AlarmSystemState = .notScheduled,
+        lastScheduleResult: AlarmScheduleResult = .none,
+        updatedAt: Date = Date(),
+        revision: Int64 = 1
+    ) {
+        self.scheduleID = scheduleID
+        self.gentleAlarmID = gentleAlarmID
+        self.finalAlarmID = finalAlarmID
+        self.systemState = systemState
+        self.lastScheduleResult = lastScheduleResult
+        self.updatedAt = updatedAt
+        self.revision = revision
+    }
+
+    var systemAlarmIDs: [String] {
+        [gentleAlarmID, finalAlarmID].compactMap { $0 }
+    }
+}
+
+typealias AlarmScheduleSchedulingState = AlarmScheduleAlarmState
+
 nonisolated struct AudioCatalogItem: Equatable, Codable, Sendable {
     let id: String
     var version: Int

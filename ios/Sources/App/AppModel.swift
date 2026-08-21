@@ -25,6 +25,8 @@ final class AppModel {
     private(set) var personalClips: [PersonalAudioClipMetadata] = []
     private(set) var recoveryAudioDefault: LocalRecoveryAudioDefault?
     private(set) var sleepSchedule = SleepSchedule.defaultValue
+    private(set) var alarmSchedules: [AlarmSchedule] = []
+    private(set) var selectedAlarmScheduleID: UUID?
     private(set) var accountDeletionState = AccountDeletionState.idle
     var reminderAuthorization = ReminderAuthorizationState.notDetermined
     private(set) var wakeAlarmOutcome = WakeAlarmSchedulingOutcome.notRequested
@@ -41,6 +43,38 @@ final class AppModel {
     var profile: LocalProfile?
     var settings: AppSettings?
 
+    var scheduleUIModels: [ScheduleUIModel] {
+        alarmSchedules
+            .sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
+            .map(ScheduleUIModel.init)
+    }
+
+    var selectedScheduleUIModel: ScheduleUIModel? {
+        guard let selectedAlarmScheduleID,
+              let schedule = alarmSchedules.first(where: { $0.id == selectedAlarmScheduleID })
+        else { return nil }
+        return ScheduleUIModel(schedule)
+    }
+
+    var scheduleAudioOptions: [ScheduleUIAudioSelection] {
+        var result: [ScheduleUIAudioSelection] = [
+            .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+        ]
+        if let selectedID = AlarmSoundSelectionStore.selectedAlarmAssetID(),
+           selectedID != SystemAudioAssets.defaultAlarmAssetID
+        {
+            result.append(.catalog(id: selectedID, title: "Downloaded sound", isAvailable: true))
+        }
+        result.append(contentsOf: personalClips.enumerated().map { index, clip in
+            .personal(
+                id: clip.id,
+                title: "Personal recording \(index + 1)",
+                isAvailable: clip.availability == .ready
+            )
+        })
+        return result
+    }
+
     func updatePartnerContact(_ contact: PartnerContact?) {
         partnerContact = contact
     }
@@ -55,6 +89,7 @@ final class AppModel {
     private let accountDeletionIdentifier: any IdentifierGenerating
     private let accountDeletionClock: any Phase1BClock
     private let audioFiles: PersonalAudioFileStore
+    private let personalAlarmAudioPreparer: PersonalAlarmAudioPreparer
     private let audioController: RecoveryAudioController
     private let sleepSessionLiveActivities: SleepSessionLiveActivityController
     private let catalogAudioConfiguration: CatalogAudioRemoteConfiguration?
@@ -70,6 +105,7 @@ final class AppModel {
     @ObservationIgnored private var activationTask: Task<Void, Never>?
     @ObservationIgnored private var recordingLimitTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRecordingClipID: UUID?
+    @ObservationIgnored private var alarmSchedulingStates: [UUID: AlarmScheduleSchedulingState] = [:]
 
     init(
         environment: AppEnvironment,
@@ -97,6 +133,7 @@ final class AppModel {
         self.accountDeletionIdentifier = accountDeletionIdentifier
         self.accountDeletionClock = accountDeletionClock
         self.audioFiles = audioFiles
+        self.personalAlarmAudioPreparer = PersonalAlarmAudioPreparer(fileStore: audioFiles)
         self.audioController = audioController
         self.sleepSessionLiveActivities = sleepSessionLiveActivities
         self.catalogAudioConfiguration = catalogAudioConfiguration
@@ -358,19 +395,15 @@ final class AppModel {
                     userID: userID
                 )
                 sleepSchedule = schedule
-                reminderAuthorization = requestPermission
-                    ? try await reminders.requestPermissionAndSchedule(schedule)
-                    : try await reminders.updateWithoutPrompt(schedule)
-                let wakeResult = await wakeAlarms.reconcile(
-                    schedule: schedule,
-                    preference: wakePreference
-                )
-                wakeAlarmOutcome = wakeResult.1
-                try await store.saveWakeAlarmPreference(
-                    wakeResult.0,
+                let namedSchedule = AlarmSchedule(
+                    legacy: schedule,
+                    id: wakePreference.id,
                     profileID: profileID,
-                    userID: userID
+                    createdAt: wakePreference.createdAt,
+                    updatedAt: wakePreference.updatedAt
                 )
+                alarmSchedules = [namedSchedule]
+                try await refreshScheduleDeviceArtifacts(requestPermission: requestPermission)
                 launchDestination = .home
                 resetNavigation()
             } catch {
@@ -379,6 +412,160 @@ final class AppModel {
                     "without reminders."
             }
         }
+    }
+
+    func beginNewSchedule() {
+        guard alarmSchedules.count < AlarmSchedule.maximumCount else {
+            feedbackMessage = "You can create up to \(AlarmSchedule.maximumCount) schedules."
+            return
+        }
+        selectedAlarmScheduleID = nil
+    }
+
+    func editSchedule(_ schedule: ScheduleUIModel) {
+        selectedAlarmScheduleID = schedule.id
+    }
+
+    @discardableResult
+    func saveScheduleUI(_ value: ScheduleUIModel) -> Bool {
+        guard let profileID, let userID else { return false }
+        let existing = alarmSchedules.first(where: { $0.id == value.id })
+        let schedule = value.domainValue(
+            profileID: profileID,
+            existing: existing,
+            sortOrder: existing?.sortOrder ?? alarmSchedules.count
+        )
+        var proposed = alarmSchedules.filter { $0.id != schedule.id }
+        proposed.append(schedule)
+        do {
+            try AlarmScheduleValidator.validate(proposed)
+        } catch AlarmScheduleValidationError.maximumSchedulesExceeded(limit: _) {
+            feedbackMessage = "You can create up to \(AlarmSchedule.maximumCount) schedules."
+            return false
+        } catch AlarmScheduleValidationError.collision(_) {
+            feedbackMessage = "This alarm collides with another enabled schedule. Choose a different time or reminder."
+            return false
+        } catch {
+            feedbackMessage = "Choose valid times, repeat days, and reminder settings."
+            return false
+        }
+
+        let previous = alarmSchedules
+        alarmSchedules = proposed.sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
+        selectedAlarmScheduleID = schedule.id
+        updateLegacyScheduleSummary()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                var storedSchedule = schedule
+                if case let .personal(clipID)? = storedSchedule.wakeAudio?.reference {
+                    if let clip = personalClips.first(where: { $0.id == clipID }) {
+                        let prepared = try await personalAlarmAudioPreparer.prepare(clip: clip)
+                        storedSchedule.wakeAudio?.localFileName = prepared.fileName
+                        storedSchedule.wakeAudio?.availability = .available
+                    } else {
+                        storedSchedule.wakeAudio?.localFileName = nil
+                        storedSchedule.wakeAudio?.availability = .unavailableOnThisDevice
+                    }
+                    if let index = alarmSchedules.firstIndex(where: { $0.id == storedSchedule.id }) {
+                        alarmSchedules[index] = storedSchedule
+                    }
+                }
+                let persisted = try await store.saveAlarmSchedule(
+                    storedSchedule,
+                    profileID: profileID,
+                    userID: userID
+                )
+                if let index = alarmSchedules.firstIndex(where: { $0.id == persisted.id }) {
+                    alarmSchedules[index] = persisted
+                }
+                try await refreshScheduleDeviceArtifacts(requestPermission: false)
+                if storedSchedule.wakeAudioIsUnavailableOnThisDevice, storedSchedule.isEnabled {
+                    feedbackMessage =
+                        "Audio unavailable on this device. " +
+                        "Choose another sound before this alarm can be scheduled."
+                }
+            } catch {
+                alarmSchedules = previous
+                updateLegacyScheduleSummary()
+                feedbackMessage = "The schedule could not be saved. Nothing was replaced."
+            }
+        }
+        return true
+    }
+
+    func toggleScheduleUI(_ value: ScheduleUIModel, enabled: Bool) {
+        var draft = value
+        draft.isEnabled = enabled
+        _ = saveScheduleUI(draft)
+    }
+
+    func deleteScheduleUI(_ value: ScheduleUIModel) {
+        guard let profileID, let userID,
+              alarmSchedules.contains(where: { $0.id == value.id })
+        else { return }
+        let previous = alarmSchedules
+        let deletedSchedule = alarmSchedules.first { $0.id == value.id }
+        alarmSchedules.removeAll { $0.id == value.id }
+        if selectedAlarmScheduleID == value.id {
+            selectedAlarmScheduleID = nil
+        }
+        updateLegacyScheduleSummary()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                if let deletedSchedule {
+                    let currentState = alarmSchedulingStates[deletedSchedule.id]
+                        ?? AlarmScheduleSchedulingState(scheduleID: deletedSchedule.id)
+                    alarmSchedulingStates[deletedSchedule.id] = await wakeAlarms.cancel(
+                        schedule: deletedSchedule,
+                        state: currentState
+                    )
+                }
+                try await store.deleteAlarmSchedule(id: value.id, profileID: profileID, userID: userID)
+                try await refreshScheduleDeviceArtifacts(requestPermission: false)
+                alarmSchedulingStates[value.id] = nil
+            } catch {
+                alarmSchedules = previous
+                updateLegacyScheduleSummary()
+                try? await refreshScheduleDeviceArtifacts(requestPermission: false)
+                feedbackMessage = "The schedule could not be deleted."
+            }
+        }
+    }
+
+    private func refreshScheduleReminders(requestPermission: Bool) async throws {
+        reminderAuthorization = requestPermission
+            ? try await reminders.requestPermissionAndSchedule(alarmSchedules)
+            : try await reminders.updateWithoutPrompt(alarmSchedules)
+    }
+
+    private func refreshScheduleDeviceArtifacts(requestPermission: Bool) async throws {
+        try await refreshScheduleReminders(requestPermission: requestPermission)
+        var outcomes: [WakeAlarmSchedulingOutcome] = []
+        for schedule in alarmSchedules {
+            let current = alarmSchedulingStates[schedule.id]
+                ?? AlarmScheduleSchedulingState(scheduleID: schedule.id)
+            let reconciled = await wakeAlarms.reconcile(schedule: schedule, state: current)
+            alarmSchedulingStates[schedule.id] = reconciled.0
+            outcomes.append(reconciled.1)
+        }
+        if outcomes.contains(.failed) || outcomes.contains(.audioAssetUnavailable) {
+            wakeAlarmOutcome = .failed
+        } else if outcomes.contains(.denied) {
+            wakeAlarmOutcome = .denied
+        } else if outcomes.contains(.scheduled) {
+            wakeAlarmOutcome = .scheduled
+        } else {
+            wakeAlarmOutcome = .notRequested
+        }
+    }
+
+    private func updateLegacyScheduleSummary() {
+        guard let schedule = alarmSchedules.first(where: { $0.kind == .sleep && $0.isEnabled })
+            ?? alarmSchedules.first(where: { $0.kind == .sleep })
+        else { return }
+        sleepSchedule = SleepSchedule(schedule)
     }
 
     func importAudio(from url: URL) {
@@ -536,7 +723,25 @@ final class AppModel {
                     commitBytes: { try await self.audioFiles.commitDeletion($0) },
                     rollbackBytes: { try await self.audioFiles.rollbackDeletion($0) }
                 )
+                try await personalAlarmAudioPreparer.removePreparedClip(clipID: clip.id)
                 personalClips.removeAll { $0.id == clip.id }
+                for index in alarmSchedules.indices {
+                    guard case let .personal(clipID)? = alarmSchedules[index].wakeAudio?.reference,
+                          clipID == clip.id
+                    else { continue }
+                    var affected = alarmSchedules[index]
+                    affected.wakeAudio?.localFileName = nil
+                    affected.wakeAudio?.availability = .unavailableOnThisDevice
+                    affected.updatedAt = Date()
+                    affected.revision += 1
+                    let saved = try await store.saveAlarmSchedule(
+                        affected,
+                        profileID: profileID,
+                        userID: userID
+                    )
+                    alarmSchedules[index] = saved
+                }
+                try await refreshScheduleDeviceArtifacts(requestPermission: false)
                 if recoveryAudioDefault == .personalClip(clip.id) {
                     recoveryAudioDefault = nil
                 }
@@ -1016,24 +1221,12 @@ final class AppModel {
         persona = snapshot.persona
         personalClips = snapshot.clips
         recoveryAudioDefault = snapshot.audioDefault
-        sleepSchedule = snapshot.schedule
+        alarmSchedules = snapshot.schedules.sorted {
+            ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt)
+        }
+        updateLegacyScheduleSummary()
         do {
-            if let persistedAlarm = try await store.alarmPreference(profileID: snapshot.profile.id) {
-                let reconciled = await wakeAlarms.reconcile(
-                    schedule: snapshot.schedule,
-                    preference: persistedAlarm
-                )
-                wakeAlarmOutcome = reconciled.1
-                if reconciled.0 != persistedAlarm {
-                    try? await store.saveWakeAlarmPreference(
-                        reconciled.0,
-                        profileID: snapshot.profile.id,
-                        userID: session.userID
-                    )
-                }
-            } else {
-                wakeAlarmOutcome = .notRequested
-            }
+            try await refreshScheduleDeviceArtifacts(requestPermission: false)
         } catch {
             wakeAlarmOutcome = .failed
         }
@@ -1121,6 +1314,9 @@ final class AppModel {
         persona = nil
         personalClips = []
         recoveryAudioDefault = nil
+        alarmSchedules = []
+        selectedAlarmScheduleID = nil
+        alarmSchedulingStates = [:]
         checkIns = []
         partnerContact = nil
         audioExportURL = nil

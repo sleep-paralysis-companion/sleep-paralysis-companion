@@ -57,6 +57,16 @@ nonisolated struct AlarmPreferenceRecord: Codable, FetchableRecord, PersistableR
     var createdAt: Double
     var updatedAt: Double
     var revision: Int64
+    var scheduleName: String
+    var scheduleKind: String
+    var sleepHour: Int?
+    var sleepMinute: Int?
+    var oneTimeLocalDate: String?
+    var bedtimeReminderLeadMinutes: Int?
+    var prewakeLeadMinutes: Int?
+    var wakeAudioKind: String
+    var wakeAudioReference: String
+    var displayOrder: Int
 }
 
 nonisolated struct AudioCatalogRecord: Codable, FetchableRecord, PersistableRecord, Sendable {

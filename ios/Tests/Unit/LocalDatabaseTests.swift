@@ -184,6 +184,114 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertEqual(storedCache, cache)
     }
 
+    func testAlarmScheduleRoundTripUpdateAndTombstoneDelete() async throws {
+        let database = try await seededDatabase()
+        let scheduleID = Phase1BFixture.uuid("a0000000-0000-4000-8000-000000000001")
+        let tombstoneID = Phase1BFixture.uuid("a0000000-0000-4000-8000-000000000002")
+        let operationID = Phase1BFixture.uuid("a0000000-0000-4000-8000-000000000003")
+        let idempotencyKey = Phase1BFixture.uuid("a0000000-0000-4000-8000-000000000004")
+        let schedule = AlarmSchedule(
+            id: scheduleID,
+            profileID: Phase1BFixture.profileID,
+            name: "Work nights",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 30,
+            wakeHour: 6,
+            wakeMinute: 30,
+            weekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            wakeReminderLeadMinutes: 10,
+            wakeAudio: .defaultBundled,
+            isEnabled: true,
+            sortOrder: 2,
+            createdAt: Phase1BFixture.now,
+            updatedAt: Phase1BFixture.now
+        )
+
+        let stored = try await database.saveAlarmSchedule(
+            schedule,
+            profileID: Phase1BFixture.profileID
+        )
+        XCTAssertEqual(stored.revision, 1)
+        let insertedSchedules = try await database.alarmSchedules(profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(insertedSchedules, [stored])
+
+        var changed = stored
+        changed.name = "Updated work nights"
+        let updated = try await database.saveAlarmSchedule(
+            changed,
+            profileID: Phase1BFixture.profileID
+        )
+        XCTAssertEqual(updated.revision, 2)
+        XCTAssertEqual(updated.createdAt, stored.createdAt)
+        XCTAssertEqual(updated.name, "Updated work nights")
+
+        try await database.deleteAlarmSchedule(
+            id: scheduleID,
+            profileID: Phase1BFixture.profileID,
+            date: Phase1BFixture.now.addingTimeInterval(60),
+            tombstoneID: tombstoneID,
+            operationID: operationID,
+            idempotencyKey: idempotencyKey
+        )
+        let deletedSchedules = try await database.alarmSchedules(profileID: Phase1BFixture.profileID)
+        XCTAssertTrue(deletedSchedules.isEmpty)
+        let tombstone = try await database.tombstone(
+            id: tombstoneID,
+            profileID: Phase1BFixture.profileID
+        )
+        XCTAssertEqual(tombstone?.entityType, .alarm)
+        XCTAssertEqual(tombstone?.entityID, scheduleID)
+        XCTAssertEqual(tombstone?.deletedRevision, 3)
+        let operation = try await database.operations(profileID: Phase1BFixture.profileID).first
+        XCTAssertEqual(operation?.entityType, .tombstone)
+        XCTAssertEqual(operation?.entityID, tombstoneID)
+        XCTAssertEqual(operation?.localRevision, 3)
+        XCTAssertEqual(operation?.idempotencyKey, idempotencyKey)
+    }
+
+    func testAlarmSchedulePersistenceEnforcesEightScheduleLimit() async throws {
+        let database = try await seededDatabase()
+        for index in 0 ..< AlarmSchedule.maximumCount {
+            let schedule = AlarmSchedule(
+                name: "Schedule \(index)",
+                kind: .wakeOnlyRecurring,
+                bedtimeHour: nil,
+                bedtimeMinute: nil,
+                wakeHour: 1,
+                wakeMinute: index,
+                weekdaysMask: 0b0000_0001,
+                oneTimeDate: nil,
+                bedtimeReminderLeadMinutes: nil,
+                wakeReminderLeadMinutes: nil
+            )
+            _ = try await database.saveAlarmSchedule(
+                schedule,
+                profileID: Phase1BFixture.profileID
+            )
+        }
+
+        let schedules = try await database.alarmSchedules(profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(schedules.count, AlarmSchedule.maximumCount)
+        await XCTAssertThrowsErrorAsync {
+            _ = try await database.saveAlarmSchedule(
+                AlarmSchedule(
+                    name: "Ninth schedule",
+                    kind: .wakeOnlyRecurring,
+                    bedtimeHour: nil,
+                    bedtimeMinute: nil,
+                    wakeHour: 2,
+                    wakeMinute: 0,
+                    weekdaysMask: 0b0000_0001,
+                    bedtimeReminderLeadMinutes: nil,
+                    wakeReminderLeadMinutes: nil
+                ),
+                profileID: Phase1BFixture.profileID
+            )
+        }
+    }
+
     func testDraftRetentionPurgesAfterSevenDays() async throws {
         let database = try await seededDatabase()
         let oldDraft = CheckInDraft(

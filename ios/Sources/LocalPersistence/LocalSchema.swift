@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 
 nonisolated enum LocalSchema {
-    static let currentVersion = 9
+    static let currentVersion = 10
 
     static func migrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
@@ -15,6 +15,7 @@ nonisolated enum LocalSchema {
         registerPartnerCall(on: &migrator)
         registerAudioCacheRepair(on: &migrator)
         registerAlarmSoundSelection(on: &migrator)
+        registerAlarmSchedules(on: &migrator)
         return migrator
     }
 
@@ -538,6 +539,56 @@ nonisolated enum LocalSchema {
             try database.execute(sql: """
             ALTER TABLE alarm_preferences ADD COLUMN alarmSoundFileName TEXT;
             UPDATE spc_schema_metadata SET schema_version = 9 WHERE singleton = 1;
+            """)
+        }
+    }
+
+    private static func registerAlarmSchedules(on migrator: inout DatabaseMigrator) {
+        migrator.registerMigration("v10_alarm_schedules") { database in
+            try database.execute(sql: """
+            ALTER TABLE alarm_preferences ADD COLUMN scheduleName TEXT NOT NULL
+                DEFAULT 'Sleep schedule'
+                CHECK (length(trim(scheduleName)) BETWEEN 1 AND 80);
+            ALTER TABLE alarm_preferences ADD COLUMN scheduleKind TEXT NOT NULL
+                DEFAULT 'sleep'
+                CHECK (scheduleKind IN ('sleep', 'wake_only'));
+            ALTER TABLE alarm_preferences ADD COLUMN sleepHour INTEGER
+                CHECK (sleepHour IS NULL OR sleepHour BETWEEN 0 AND 23);
+            ALTER TABLE alarm_preferences ADD COLUMN sleepMinute INTEGER
+                CHECK (sleepMinute IS NULL OR sleepMinute BETWEEN 0 AND 59);
+            ALTER TABLE alarm_preferences ADD COLUMN oneTimeLocalDate TEXT
+                CHECK (
+                    oneTimeLocalDate IS NULL
+                    OR oneTimeLocalDate GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                );
+            ALTER TABLE alarm_preferences ADD COLUMN bedtimeReminderLeadMinutes INTEGER
+                CHECK (
+                    bedtimeReminderLeadMinutes IS NULL
+                    OR bedtimeReminderLeadMinutes IN (0, 5, 10, 15, 30, 60)
+                );
+            ALTER TABLE alarm_preferences ADD COLUMN prewakeLeadMinutes INTEGER
+                CHECK (prewakeLeadMinutes IS NULL OR prewakeLeadMinutes IN (5, 10, 15, 30));
+            ALTER TABLE alarm_preferences ADD COLUMN wakeAudioKind TEXT NOT NULL
+                DEFAULT 'bundled'
+                CHECK (wakeAudioKind IN ('bundled', 'catalog', 'personal'));
+            ALTER TABLE alarm_preferences ADD COLUMN wakeAudioReference TEXT NOT NULL
+                DEFAULT 'bundled:SPCWakeUpGentleLoop.caf'
+                CHECK (length(trim(wakeAudioReference)) BETWEEN 1 AND 255);
+            ALTER TABLE alarm_preferences ADD COLUMN displayOrder INTEGER NOT NULL
+                DEFAULT 0
+                CHECK (displayOrder BETWEEN 0 AND 100000);
+
+            UPDATE alarm_preferences
+            SET sleepHour = localHour,
+                sleepMinute = localMinute,
+                bedtimeReminderLeadMinutes = NULL,
+                prewakeLeadMinutes = NULL,
+                oneTimeLocalDate = NULL
+            WHERE scheduleKind = 'sleep'
+              AND sleepHour IS NULL
+              AND sleepMinute IS NULL;
+
+            UPDATE spc_schema_metadata SET schema_version = 10 WHERE singleton = 1;
             """)
         }
     }

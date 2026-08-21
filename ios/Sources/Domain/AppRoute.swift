@@ -38,6 +38,8 @@ nonisolated enum AppRoute: String, CaseIterable, Codable, Hashable, Sendable {
     case audioLibrary
     case curatedAudioLibrary
     case sleepSchedule
+    case alarmHistory
+    case alarmScheduleEditor
     case morningCheckIn
     case checkInDetail
     case editQuestionnaire
@@ -127,7 +129,7 @@ nonisolated struct DeepLinkResolver: Sendable {
         case "grounding", "episode": .grounding
         case "audio": .audioLibrary
         case "catalog", "curated-audio": .curatedAudioLibrary
-        case "schedule": .sleepSchedule
+        case "schedule", "schedules", "alarm-history": .alarmHistory
         case "checkin": .morningCheckIn
         case "privacy": .dataPrivacy
         case "help": .helpLegal

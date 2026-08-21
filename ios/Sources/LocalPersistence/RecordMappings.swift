@@ -110,6 +110,45 @@ nonisolated extension AlarmPreferenceRecord {
         createdAt = value.createdAt.timeIntervalSince1970
         updatedAt = value.updatedAt.timeIntervalSince1970
         revision = value.revision
+        scheduleName = "Sleep schedule"
+        scheduleKind = "sleep"
+        sleepHour = value.localHour
+        sleepMinute = value.localMinute
+        oneTimeLocalDate = nil
+        bedtimeReminderLeadMinutes = nil
+        prewakeLeadMinutes = nil
+        wakeAudioKind = "bundled"
+        wakeAudioReference = value.alarmSoundFileName.map { "bundled:\($0)" }
+            ?? "bundled:SPCWakeUpGentleLoop.caf"
+        displayOrder = 0
+    }
+
+    init(_ value: AlarmSchedule) {
+        id = value.id.uuidString
+        profileID = value.profileID?.uuidString ?? ""
+        systemAlarmID = nil
+        alarmSoundFileName = value.wakeAudio?.localFileName
+        localHour = value.wakeHour
+        localMinute = value.wakeMinute
+        weekdaysMask = value.weekdaysMask
+        snoozeMinutes = nil
+        enabledIntent = value.isEnabled
+        systemState = AlarmSystemState.notScheduled.rawValue
+        lastScheduleResult = AlarmScheduleResult.none.rawValue
+        createdAt = value.createdAt.timeIntervalSince1970
+        updatedAt = value.updatedAt.timeIntervalSince1970
+        scheduleName = value.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        scheduleKind = value.kind == .sleep ? "sleep" : "wake_only"
+        sleepHour = value.bedtimeHour
+        sleepMinute = value.bedtimeMinute
+        oneTimeLocalDate = value.oneTimeDate?.iso8601String
+        bedtimeReminderLeadMinutes = value.bedtimeReminderLeadMinutes
+        prewakeLeadMinutes = value.wakeReminderLeadMinutes
+        wakeAudioKind = value.wakeAudio.map(audioKind) ?? "bundled"
+        wakeAudioReference = value.wakeAudio.map(audioReference)
+            ?? "bundled:SPCWakeUpGentleLoop.caf"
+        displayOrder = value.sortOrder
+        revision = value.revision
     }
 
     func domainValue() throws -> AlarmPreference {
@@ -136,6 +175,121 @@ nonisolated extension AlarmPreferenceRecord {
             updatedAt: Date(timeIntervalSince1970: updatedAt),
             revision: revision
         )
+    }
+
+    func scheduleValue() throws -> AlarmSchedule {
+        guard let identifier = UUID(uuidString: id),
+              let owner = UUID(uuidString: profileID),
+              let kind = scheduleKindValue(),
+              let audio = audioSelection(),
+              let schedule = optionalScheduleDate()
+        else {
+            throw RecordMappingError.invalidStoredValue(
+                table: Self.databaseTableName,
+                field: "schedule"
+            )
+        }
+
+        let value = AlarmSchedule(
+            id: identifier,
+            profileID: owner,
+            name: scheduleName,
+            kind: kind,
+            bedtimeHour: sleepHour,
+            bedtimeMinute: sleepMinute,
+            wakeHour: localHour,
+            wakeMinute: localMinute,
+            weekdaysMask: weekdaysMask,
+            oneTimeDate: schedule,
+            bedtimeReminderLeadMinutes: bedtimeReminderLeadMinutes,
+            wakeReminderLeadMinutes: prewakeLeadMinutes,
+            finalWakeAlarmEnabled: true,
+            wakeAudio: audio,
+            isEnabled: enabledIntent,
+            sortOrder: displayOrder,
+            createdAt: Date(timeIntervalSince1970: createdAt),
+            updatedAt: Date(timeIntervalSince1970: updatedAt),
+            revision: revision
+        )
+        guard value.isValid else {
+            throw RecordMappingError.invalidStoredValue(
+                table: Self.databaseTableName,
+                field: "schedule"
+            )
+        }
+        return value
+    }
+
+    private func scheduleKindValue() -> AlarmScheduleKind? {
+        switch scheduleKind {
+        case "sleep":
+            .sleep
+        case "wake_only":
+            oneTimeLocalDate == nil ? .wakeOnlyRecurring : .wakeOnlyOneTime
+        default:
+            nil
+        }
+    }
+
+    private func optionalScheduleDate() -> AlarmLocalDate?? {
+        guard let oneTimeLocalDate else { return .some(nil) }
+        let parts = oneTimeLocalDate.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        let value = AlarmLocalDate(year: parts[0], month: parts[1], day: parts[2])
+        return value.isValid ? .some(value) : nil
+    }
+
+    private func audioSelection() -> AlarmAudioSelection? {
+        switch wakeAudioKind {
+        case "bundled":
+            let resource = wakeAudioReference.hasPrefix("bundled:")
+                ? String(wakeAudioReference.dropFirst("bundled:".count))
+                : wakeAudioReference
+            guard !resource.isEmpty else { return nil }
+            return AlarmAudioSelection(
+                reference: .bundled(resourceName: resource),
+                localFileName: alarmSoundFileName
+            )
+        case "catalog":
+            let parts = wakeAudioReference.split(separator: ":")
+            guard parts.count == 3,
+                  parts[0] == "catalog",
+                  let version = Int(parts[2])
+            else { return nil }
+            return AlarmAudioSelection(
+                reference: .catalog(assetID: String(parts[1]), version: version),
+                localFileName: alarmSoundFileName
+            )
+        case "personal":
+            let reference = wakeAudioReference.hasPrefix("personal:")
+                ? String(wakeAudioReference.dropFirst("personal:".count))
+                : ""
+            guard let clipID = UUID(uuidString: reference) else { return nil }
+            return AlarmAudioSelection(
+                reference: .personal(clipID: clipID),
+                localFileName: alarmSoundFileName,
+                availability: alarmSoundFileName == nil
+                    ? .unavailableOnThisDevice
+                    : .available
+            )
+        default:
+            return nil
+        }
+    }
+
+    private static func audioKind(_ selection: AlarmAudioSelection) -> String {
+        switch selection.reference {
+        case .bundled:
+            "bundled"
+        case .catalog:
+            "catalog"
+        case .personal:
+            "personal"
+        }
+    }
+
+    private static func audioReference(_ selection: AlarmAudioSelection) -> String {
+        selection.reference.stableIdentifier
     }
 }
 

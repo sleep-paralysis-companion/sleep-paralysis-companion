@@ -47,6 +47,60 @@ nonisolated struct RemoteAlarmPreferenceDTO: Codable, Equatable, Sendable {
     let snoozeMinutes: Int?
     let enabledIntent: Bool
     let revision: Int64
+    let scheduleName: String?
+    let scheduleKind: String?
+    let sleepHour: Int?
+    let sleepMinute: Int?
+    let oneTimeLocalDate: String?
+    let bedtimeReminderLeadMinutes: Int?
+    let prewakeLeadMinutes: Int?
+    let wakeAudioKind: String?
+    let wakeAudioReference: String?
+    let displayOrder: Int?
+
+    /// The first seven arguments preserve the legacy alarm DTO construction
+    /// contract.  Schedule fields are optional only for old development rows;
+    /// new schedule mutations pass every field explicitly so the strict
+    /// Supabase payload allow-list is satisfied.
+    init(
+        id: UUID,
+        ownerUserID: UUID,
+        localHour: Int,
+        localMinute: Int,
+        weekdaysMask: Int,
+        snoozeMinutes: Int?,
+        enabledIntent: Bool,
+        revision: Int64,
+        scheduleName: String? = nil,
+        scheduleKind: String? = nil,
+        sleepHour: Int? = nil,
+        sleepMinute: Int? = nil,
+        oneTimeLocalDate: String? = nil,
+        bedtimeReminderLeadMinutes: Int? = nil,
+        prewakeLeadMinutes: Int? = nil,
+        wakeAudioKind: String? = nil,
+        wakeAudioReference: String? = nil,
+        displayOrder: Int? = nil
+    ) {
+        self.id = id
+        self.ownerUserID = ownerUserID
+        self.localHour = localHour
+        self.localMinute = localMinute
+        self.weekdaysMask = weekdaysMask
+        self.snoozeMinutes = snoozeMinutes
+        self.enabledIntent = enabledIntent
+        self.revision = revision
+        self.scheduleName = scheduleName
+        self.scheduleKind = scheduleKind
+        self.sleepHour = sleepHour
+        self.sleepMinute = sleepMinute
+        self.oneTimeLocalDate = oneTimeLocalDate
+        self.bedtimeReminderLeadMinutes = bedtimeReminderLeadMinutes
+        self.prewakeLeadMinutes = prewakeLeadMinutes
+        self.wakeAudioKind = wakeAudioKind
+        self.wakeAudioReference = wakeAudioReference
+        self.displayOrder = displayOrder
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -57,6 +111,16 @@ nonisolated struct RemoteAlarmPreferenceDTO: Codable, Equatable, Sendable {
         case snoozeMinutes = "snooze_minutes"
         case enabledIntent = "enabled_intent"
         case revision
+        case scheduleName = "schedule_name"
+        case scheduleKind = "schedule_kind"
+        case sleepHour = "sleep_hour"
+        case sleepMinute = "sleep_minute"
+        case oneTimeLocalDate = "one_time_local_date"
+        case bedtimeReminderLeadMinutes = "bedtime_reminder_lead_minutes"
+        case prewakeLeadMinutes = "prewake_lead_minutes"
+        case wakeAudioKind = "wake_audio_kind"
+        case wakeAudioReference = "wake_audio_reference"
+        case displayOrder = "display_order"
     }
 }
 

@@ -125,7 +125,7 @@ struct HomeView: View {
 
     private var scheduleLink: some View {
         Button {
-            model.open(.sleepSchedule)
+            model.open(.alarmHistory)
         } label: {
             HStack(spacing: 16) {
                 HomeIconBadge(systemImage: "clock")
@@ -164,12 +164,12 @@ struct HomeView: View {
 
     private var editScheduleLink: some View {
         Button {
-            model.open(.sleepSchedule)
+            model.open(.alarmHistory)
         } label: {
             HStack(spacing: 16) {
                 HomeIconBadge(systemImage: "calendar")
 
-                Text("Edit schedule")
+                Text("Manage schedules")
                     .font(AppFont.inter(size: 18, relativeTo: .callout))
 
                 Spacer(minLength: 8)
@@ -188,7 +188,7 @@ struct HomeView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Edit sleep schedule")
+        .accessibilityLabel("Manage sleep schedules")
         .accessibilityIdentifier("home.editSchedule")
     }
 
