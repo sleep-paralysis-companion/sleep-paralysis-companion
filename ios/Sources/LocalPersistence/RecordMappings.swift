@@ -144,8 +144,8 @@ nonisolated extension AlarmPreferenceRecord {
         oneTimeLocalDate = value.oneTimeDate?.iso8601String
         bedtimeReminderLeadMinutes = value.bedtimeReminderLeadMinutes
         prewakeLeadMinutes = value.wakeReminderLeadMinutes
-        wakeAudioKind = value.wakeAudio.map(audioKind) ?? "bundled"
-        wakeAudioReference = value.wakeAudio.map(audioReference)
+        wakeAudioKind = value.wakeAudio.map(AlarmPreferenceRecord.audioKind) ?? "bundled"
+        wakeAudioReference = value.wakeAudio.map(AlarmPreferenceRecord.audioReference)
             ?? "bundled:SPCWakeUpGentleLoop.caf"
         displayOrder = value.sortOrder
         revision = value.revision

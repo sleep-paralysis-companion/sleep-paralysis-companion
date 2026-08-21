@@ -261,7 +261,7 @@ nonisolated extension ScheduleUIModel {
             wakeHour: wakeHour,
             wakeMinute: wakeMinute,
             weekdaysMask: kind == .wakeOnlyOneTime ? 0 : repeatWeekdaysMask,
-            oneTimeDate: kind == .wakeOnlyOneTime ? oneTimeDate.map(AlarmLocalDate.init(date:)) : nil,
+            oneTimeDate: kind == .wakeOnlyOneTime ? oneTimeDate.map { AlarmLocalDate(date: $0) } : nil,
             bedtimeReminderLeadMinutes: kind == .sleep ? bedtimeReminderLeadMinutes : nil,
             wakeReminderLeadMinutes: preWakeReminderLeadMinutes,
             finalWakeAlarmEnabled: true,
