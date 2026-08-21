@@ -374,7 +374,7 @@ nonisolated enum AlarmScheduleCollisionValidator {
             guard let date = schedule.oneTimeDate else { return [] }
             return wakeOccurrences(schedule: schedule, date: date, calendar: calendar)
         case .wakeOnlyRecurring:
-            return (-1 ... 7).flatMap { offset in
+            return (-1 ... 7).flatMap { offset -> [AlarmScheduleOccurrence] in
                 let date = startDate.addingDays(offset, calendar: calendar)
                 guard let weekday = calendarWeekday(date, calendar: calendar),
                       includes(schedule.weekdaysMask, weekday)
@@ -386,7 +386,7 @@ nonisolated enum AlarmScheduleCollisionValidator {
                   let bedtimeMinute = schedule.bedtimeMinute
             else { return [] }
 
-            return (-1 ... 7).flatMap { offset in
+            return (-1 ... 7).flatMap { offset -> [AlarmScheduleOccurrence] in
                 let bedtimeDate = startDate.addingDays(offset, calendar: calendar)
                 guard let weekday = calendarWeekday(bedtimeDate, calendar: calendar),
                       includes(schedule.weekdaysMask, weekday)
