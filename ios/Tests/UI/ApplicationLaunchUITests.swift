@@ -203,16 +203,16 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(partnerNotAlwaysPresentChoice.exists)
         partnerNotAlwaysPresentChoice.tap()
 
-        let recommendedSetupAction = app.buttons["Continue to comfort audio"]
-        XCTAssertTrue(recommendedSetupAction.waitForExistence(timeout: 8))
-        capture("09-recommended-setup", app: app)
-        recommendedSetupAction.tap()
-
         XCTAssertTrue(app.buttons["comfortVoice.record"].waitForExistence(timeout: 8))
-        capture("10-comfort-audio", app: app)
+        capture("09-comfort-audio", app: app)
         let skipAction = app.buttons["comfortVoice.skip"]
         makeHittable(skipAction, in: app)
         skipAction.tap()
+
+        let recommendedSetupAction = app.buttons["Continue to comfort audio"]
+        XCTAssertTrue(recommendedSetupAction.waitForExistence(timeout: 8))
+        capture("10-recommended-setup", app: app)
+        recommendedSetupAction.tap()
 
         XCTAssertTrue(app.staticTexts["What time do you want to sleep?"].waitForExistence(timeout: 8))
         capture("11-sleep-schedule", app: app)
