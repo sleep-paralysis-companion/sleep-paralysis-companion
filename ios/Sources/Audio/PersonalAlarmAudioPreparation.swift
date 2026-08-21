@@ -19,10 +19,10 @@ nonisolated enum PersonalAlarmAudioPreparationError: Error, Equatable, Sendable 
 }
 
 /// AVAudioConverter invokes its input block synchronously during `convert`.
-/// Keep the callback state behind one explicitly scoped sendable boundary so
-/// Swift 6 does not treat the converter's callback as an unsafe mutable capture.
-private final class PersonalAlarmConverterInputState: @unchecked Sendable {
-    let inputBuffer: AVAudioPCMBuffer
+/// Keep the callback state in a scoped heap value so Swift 6 does not treat
+/// the converter's callback as an unsafe mutable capture.
+private struct PersonalAlarmConverterInputState {
+    var inputBuffer: AVAudioPCMBuffer
     var reachedEnd = false
     var sourceReadError: Error?
 
@@ -217,37 +217,42 @@ actor PersonalAlarmAudioPreparer {
             throw PersonalAlarmAudioPreparationError.conversionFailed
         }
 
-        let inputState = PersonalAlarmConverterInputState(inputBuffer: inputBuffer)
+        let inputState = UnsafeMutablePointer<PersonalAlarmConverterInputState>.allocate(capacity: 1)
+        inputState.initialize(to: PersonalAlarmConverterInputState(inputBuffer: inputBuffer))
+        defer {
+            inputState.deinitialize(count: 1)
+            inputState.deallocate()
+        }
 
         while true {
             try Task.checkCancellation()
             outputBuffer.frameLength = 0
             var conversionError: NSError?
             let status = converter.convert(to: outputBuffer, error: &conversionError) { _, status in
-                if inputState.reachedEnd {
+                if inputState.pointee.reachedEnd {
                     status.pointee = .endOfStream
                     return nil
                 }
 
                 do {
-                    try source.read(into: inputState.inputBuffer)
+                    try source.read(into: inputState.pointee.inputBuffer)
                 } catch {
-                    inputState.sourceReadError = error
-                    inputState.reachedEnd = true
+                    inputState.pointee.sourceReadError = error
+                    inputState.pointee.reachedEnd = true
                     status.pointee = .endOfStream
                     return nil
                 }
 
-                guard inputState.inputBuffer.frameLength > 0 else {
-                    inputState.reachedEnd = true
+                guard inputState.pointee.inputBuffer.frameLength > 0 else {
+                    inputState.pointee.reachedEnd = true
                     status.pointee = .endOfStream
                     return nil
                 }
                 status.pointee = .haveData
-                return inputState.inputBuffer
+                return inputState.pointee.inputBuffer
             }
 
-            if inputState.sourceReadError != nil {
+            if inputState.pointee.sourceReadError != nil {
                 throw PersonalAlarmAudioPreparationError.sourceUnavailable
             }
             if conversionError != nil || status == .error {
