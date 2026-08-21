@@ -194,21 +194,21 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
                 oneTimeLocalDate: schedule.oneTimeDate?.iso8601String,
                 bedtimeReminderLeadMinutes: schedule.bedtimeReminderLeadMinutes,
                 prewakeLeadMinutes: schedule.wakeReminderLeadMinutes,
-                wakeAudioKind: audioKind(audio),
+                wakeAudioKind: try audioKind(audio),
                 wakeAudioReference: audio.reference.stableIdentifier,
                 displayOrder: schedule.sortOrder
             )
         )
     }
 
-    private func audioKind(_ selection: AlarmAudioSelection) -> String {
+    private func audioKind(_ selection: AlarmAudioSelection) throws -> String {
         switch selection.reference {
         case .bundled:
             "bundled"
         case .catalog:
             "catalog"
         case .personal:
-            "personal"
+            throw RemoteMutationError.validation
         }
     }
 

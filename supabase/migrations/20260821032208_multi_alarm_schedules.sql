@@ -105,7 +105,7 @@ alter table public.alarm_preferences
   add constraint alarm_preferences_prewake_range_check
     check (prewake_lead_minutes is null or prewake_lead_minutes in (5, 10, 15, 30)),
   add constraint alarm_preferences_wake_audio_kind_check
-    check (wake_audio_kind in ('bundled', 'catalog', 'personal')),
+    check (wake_audio_kind in ('bundled', 'catalog')),
   add constraint alarm_preferences_wake_audio_reference_check
     check (char_length(btrim(wake_audio_reference)) between 1 and 255),
   add constraint alarm_preferences_display_order_check
@@ -320,7 +320,7 @@ begin
         or (v_sleep_minute is not null and v_sleep_minute not between 0 and 59)
         or v_display_order is null or v_display_order not between 0 and 100000
         or v_wake_audio_kind is null
-        or v_wake_audio_kind not in ('bundled', 'catalog', 'personal')
+        or v_wake_audio_kind not in ('bundled', 'catalog')
         or v_wake_audio_reference is null
         or char_length(btrim(v_wake_audio_reference)) not between 1 and 255
         or (v_bedtime_reminder_lead_minutes is not null

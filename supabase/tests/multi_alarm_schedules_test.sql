@@ -134,7 +134,7 @@ select is(
   'catalog audio choice is persisted independently'
 );
 
-select lives_ok(
+select throws_ok(
   $test$
   select * from public.apply_sync_mutation(
     'a1000000-0000-4000-8000-000000000003',
@@ -165,17 +165,18 @@ select lives_ok(
     }'::jsonb
   )
   $test$,
-  'owner creates a one-time wake-only alarm'
-);
-select is(
-  (select one_time_local_date::text from public.alarm_preferences where id = 'a3000000-0000-4000-8000-000000000003'),
-  '2026-08-24',
-  'one-time local date is persisted'
+  '22023', 'malformed alarm payload',
+  'personal audio remains device-local and cannot cross the sync boundary'
 );
 select is(
   (select count(*)::integer from public.alarm_preferences),
-  3,
+  2,
   'multiple schedules coexist for one owner'
+);
+select is(
+  (select count(*)::integer from public.alarm_preferences where id = 'a3000000-0000-4000-8000-000000000003'),
+  0,
+  'personal audio schedule is not persisted remotely'
 );
 
 select throws_ok(
@@ -436,7 +437,7 @@ select throws_ok(
     'a2000000-0000-4000-8000-00000000000c',
     'alarm',
     'a3000000-0000-4000-8000-000000000001',
-    'upsert', 0, 2,
+    'upsert', 0, 1,
     '{
       "id":"a3000000-0000-4000-8000-000000000001",
       "owner_user_id":"11111111-1111-4111-8111-111111111111",
@@ -454,7 +455,7 @@ select throws_ok(
       "wake_audio_reference":"soft-rise",
       "display_order":0,
       "enabled_intent":true,
-      "revision":2
+      "revision":1
     }'::jsonb
   )
   $test$,
@@ -474,7 +475,7 @@ select lives_ok(
       "id":"a4000000-0000-4000-8000-000000000001",
       "owner_user_id":"11111111-1111-4111-8111-111111111111",
       "entity_type":"alarm",
-      "entity_id":"a3000000-0000-4000-8000-000000000003",
+      "entity_id":"a3000000-0000-4000-8000-000000000001",
       "deleted_revision":2,
       "deleted_at":"2026-08-21T00:00:00Z"
     }'::jsonb
@@ -484,14 +485,14 @@ select lives_ok(
 );
 select is(
   (select count(*)::integer from public.alarm_preferences),
-  2,
-  'deleted one-time alarm is removed from the schedule list'
+  1,
+  'deleted schedule is removed from the schedule list'
 );
 select is(
   (
     select count(*)::integer from public.deletion_tombstones
     where entity_type = 'alarm'
-      and entity_id = 'a3000000-0000-4000-8000-000000000003'
+      and entity_id = 'a3000000-0000-4000-8000-000000000001'
   ),
   1,
   'deleted schedule has one alarm tombstone'
@@ -503,22 +504,22 @@ select throws_ok(
     'a1000000-0000-4000-8000-00000000000e',
     'a2000000-0000-4000-8000-00000000000e',
     'alarm',
-    'a3000000-0000-4000-8000-000000000003',
+    'a3000000-0000-4000-8000-000000000001',
     'upsert', 2, 3,
     '{
-      "id":"a3000000-0000-4000-8000-000000000003",
+      "id":"a3000000-0000-4000-8000-000000000001",
       "owner_user_id":"11111111-1111-4111-8111-111111111111",
       "schedule_name":"Resurrection",
-      "schedule_kind":"wake_only",
-      "sleep_hour":null,
-      "sleep_minute":null,
+      "schedule_kind":"sleep",
+      "sleep_hour":22,
+      "sleep_minute":30,
       "local_hour":6,
-      "local_minute":0,
-      "weekdays_mask":0,
-      "one_time_local_date":"2026-08-25",
-      "wake_audio_kind":"personal",
-      "wake_audio_reference":"00000000-0000-0000-0000-000000000001",
-      "display_order":2,
+      "local_minute":30,
+      "weekdays_mask":127,
+      "one_time_local_date":null,
+      "wake_audio_kind":"bundled",
+      "wake_audio_reference":"soft-rise",
+      "display_order":0,
       "enabled_intent":true,
       "revision":3
     }'::jsonb

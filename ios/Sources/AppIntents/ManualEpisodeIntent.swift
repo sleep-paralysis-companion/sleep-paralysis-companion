@@ -127,6 +127,7 @@ struct ManualEpisodeIntent: AudioPlaybackIntent {
         "Opens Sleep Paralysis Companion manual visual grounding and the selected device-local recovery audio."
     )
     static let supportedModes: IntentModes = [.foreground]
+    static let openAppWhenRun = true
     static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
 
     @Parameter(title: "Action")

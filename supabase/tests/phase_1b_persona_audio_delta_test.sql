@@ -10,7 +10,19 @@ select ok(to_regclass('public.personal_audio_clip_metadata') is null, 'no remote
 select ok(not exists (select 1 from storage.buckets where id ilike '%personal%audio%'), 'no personal-audio Storage bucket row exists');
 select ok(not exists (select 1 from storage.objects where bucket_id ilike '%personal%audio%' or name ilike '%personal%audio%'), 'no personal-audio Storage object/reference exists');
 select ok(not exists (select 1 from pg_policies where schemaname = 'storage' and tablename in ('buckets', 'objects') and policyname ilike '%personal%audio%'), 'no personal-audio Storage policy exists');
-select ok(not exists (select 1 from information_schema.columns where table_schema = 'public' and column_name ilike '%audio%' and table_name not in ('audio_catalog')), 'no remote personal-audio columns exist');
+select ok(not exists (
+  select 1
+  from information_schema.columns
+  where table_schema = 'public'
+    and column_name ilike '%audio%'
+    and not (
+      table_name = 'audio_catalog'
+      or (
+        table_name = 'alarm_preferences'
+        and column_name in ('wake_audio_kind', 'wake_audio_reference')
+      )
+    )
+), 'no remote personal-audio columns exist');
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at
