@@ -403,7 +403,13 @@ final class AppModel {
                     updatedAt: wakePreference.updatedAt
                 )
                 alarmSchedules = [namedSchedule]
-                try await refreshScheduleDeviceArtifacts(requestPermission: requestPermission)
+                do {
+                    try await refreshScheduleDeviceArtifacts(requestPermission: requestPermission)
+                } catch {
+                    wakeAlarmOutcome = .failed
+                    feedbackMessage =
+                        "Your schedule was saved, but reminders are unavailable on this device."
+                }
                 launchDestination = .home
                 resetNavigation()
             } catch {
