@@ -403,6 +403,8 @@ final class AppModel {
                     updatedAt: wakePreference.updatedAt
                 )
                 alarmSchedules = [namedSchedule]
+                launchDestination = .home
+                resetNavigation()
                 do {
                     try await refreshScheduleDeviceArtifacts(requestPermission: requestPermission)
                 } catch {
@@ -410,8 +412,6 @@ final class AppModel {
                     feedbackMessage =
                         "Your schedule was saved, but reminders are unavailable on this device."
                 }
-                launchDestination = .home
-                resetNavigation()
             } catch {
                 feedbackMessage =
                     "The schedule could not be saved. You can continue using Sleep Paralysis Companion " +
