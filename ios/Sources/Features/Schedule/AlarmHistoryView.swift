@@ -579,7 +579,7 @@ private struct ScheduleTimeColumn: View {
     }
 }
 
-private func weekdaySummary(_ mask: Int) -> String {
+func weekdaySummary(_ mask: Int) -> String {
     let symbols = Calendar.current.shortStandaloneWeekdaySymbols
     let days = (1 ... 7).compactMap { day -> String? in
         guard mask & (1 << (day - 1)) != 0,
