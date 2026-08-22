@@ -3,13 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>method</key>
-	<string>app-store</string>
+	<string>app-store-connect</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>com.sleepcompanion.spc</key>
-		<string>AppStore com.sleepcompanion.spc</string>
-		<key>com.sleepcompanion.spc.widget</key>
-		<string>AppStore com.sleepcompanion.spc.widget</string>
+		<key>app.sleepcompanion.spc</key>
+		<string>AppStore app.sleepcompanion.spc</string>
+		<key>app.sleepcompanion.spc.widget</key>
+		<string>AppStore app.sleepcompanion.spc.widget</string>
 	</dict>
 	<key>signingStyle</key>
 	<string>manual</string>
