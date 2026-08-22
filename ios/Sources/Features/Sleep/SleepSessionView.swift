@@ -42,6 +42,7 @@ struct SleepSessionView: View {
         .preferredColorScheme(.dark)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sleepSession.active")
         .accessibilityAction(.escape) {
             model.minimizeSleepSession()

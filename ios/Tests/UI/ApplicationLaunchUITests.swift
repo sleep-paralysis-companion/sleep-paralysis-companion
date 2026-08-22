@@ -257,23 +257,20 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         let activeSleepSession = app.otherElements["sleepSession.active"]
         XCTAssertTrue(activeSleepSession.waitForExistence(timeout: 8))
-        let sleepSessionEpisode = app.descendants(matching: .any)["sleepSession.episode"]
-        let sleepSessionMinimize = app.descendants(matching: .any)["sleepSession.minimize"]
-        let sleepSessionEnd = app.descendants(matching: .any)["sleepSession.end"]
-        XCTAssertTrue(sleepSessionEpisode.waitForExistence(timeout: 3))
-        XCTAssertTrue(sleepSessionMinimize.exists)
-        XCTAssertTrue(sleepSessionEnd.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["sleepSession.episode"].exists)
+        XCTAssertTrue(app.buttons["sleepSession.minimize"].exists)
+        XCTAssertTrue(app.buttons["sleepSession.end"].waitForExistence(timeout: 3))
         capture("15a-sleep-session", app: app)
         activeSleepSession.swipeDown()
         XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
         app.buttons["sleepSession.start"].tap()
         XCTAssertTrue(activeSleepSession.waitForExistence(timeout: 8))
-        sleepSessionMinimize.tap()
+        app.buttons["sleepSession.minimize"].tap()
         XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
         app.buttons["sleepSession.start"].tap()
         XCTAssertTrue(activeSleepSession.waitForExistence(timeout: 8))
-        XCTAssertTrue(sleepSessionEnd.waitForExistence(timeout: 3))
-        sleepSessionEnd.tap()
+        XCTAssertTrue(app.buttons["sleepSession.end"].waitForExistence(timeout: 3))
+        app.buttons["sleepSession.end"].tap()
         XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["home.manualEpisode"].exists)
 
