@@ -10,11 +10,14 @@ PRODUCTION_CONFIG="$REPOSITORY_ROOT/ios/Configurations/Production.xcconfig"
 plutil -lint \
   "$EXPORT_OPTIONS" \
   "$REPOSITORY_ROOT/ios/Resources/Info.plist" \
-  "$REPOSITORY_ROOT/ios/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json" \
   "$REPOSITORY_ROOT/ios/Widget/Info.plist" \
   "$REPOSITORY_ROOT/ios/Resources/PrivacyInfo.xcprivacy" \
   "$REPOSITORY_ROOT/ios/Resources/SleepParalysisCompanion.entitlements" \
   "$REPOSITORY_ROOT/ios/Widget/SPCWidgetExtension.entitlements"
+
+python3 -m json.tool \
+  "$REPOSITORY_ROOT/ios/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json" \
+  >/dev/null
 
 grep -Fxq 'SPC_BUNDLE_IDENTIFIER = app.sleepcompanion.spc' "$PRODUCTION_CONFIG"
 grep -Fq 'APP_BUNDLE_ID: app.sleepcompanion.spc' "$WORKFLOW"
