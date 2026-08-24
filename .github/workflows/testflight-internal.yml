@@ -96,6 +96,9 @@ jobs:
             ios/.generated/SourcePackages
           key: testflight-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/versions.env', 'ios/project.yml', 'ios/Package.resolved') }}
 
+      - name: Select and verify the pinned Xcode toolchain
+        run: bash scripts/select_xcode.sh
+
       - name: Configure authorized public runtime values
         run: |
           set -euo pipefail
