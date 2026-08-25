@@ -30,7 +30,9 @@ grep -Fq '<string>app-store-connect</string>' "$EXPORT_OPTIONS"
 grep -Fq 'PROVISIONING_PROFILE_SPECIFIER: "Sleep Paralysis Companion - App Store"' "$PROJECT_SPEC"
 grep -Fq 'PROVISIONING_PROFILE_SPECIFIER: "Sleep Paralysis Companion Widget - App Store"' "$PROJECT_SPEC"
 grep -Fq 'ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon' "$PROJECT_SPEC"
-grep -Fq '"idiom" : "ios-marketing"' \
+grep -Fq '"idiom" : "universal"' \
+  "$REPOSITORY_ROOT/ios/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
+grep -Fq '"platform" : "ios"' \
   "$REPOSITORY_ROOT/ios/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
 [[ "$(plutil -extract ITSAppUsesNonExemptEncryption raw -o - \
   "$REPOSITORY_ROOT/ios/Resources/Info.plist")" == "false" ]]
