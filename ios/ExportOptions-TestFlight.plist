@@ -9,9 +9,9 @@
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>app.sleepcompanion.spc</key>
-		<string>AppStore app.sleepcompanion.spc</string>
+		<string>Sleep Paralysis Companion - App Store</string>
 		<key>app.sleepcompanion.spc.widget</key>
-		<string>AppStore app.sleepcompanion.spc.widget</string>
+		<string>Sleep Paralysis Companion Widget - App Store</string>
 	</dict>
 	<key>signingStyle</key>
 	<string>manual</string>

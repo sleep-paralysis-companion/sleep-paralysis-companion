@@ -106,7 +106,7 @@ targets:
         Production:
           CODE_SIGNING_ALLOWED: YES
           CODE_SIGNING_REQUIRED: YES
-          PROVISIONING_PROFILE_SPECIFIER: "AppStore app.sleepcompanion.spc"
+          PROVISIONING_PROFILE_SPECIFIER: "Sleep Paralysis Companion - App Store"
     dependencies:
       - package: GRDB
         product: GRDB
@@ -138,7 +138,7 @@ targets:
         Production:
           CODE_SIGNING_ALLOWED: YES
           CODE_SIGNING_REQUIRED: YES
-          PROVISIONING_PROFILE_SPECIFIER: "AppStore app.sleepcompanion.spc.widget"
+          PROVISIONING_PROFILE_SPECIFIER: "Sleep Paralysis Companion Widget - App Store"
 
   SPCUnitTests:
     type: bundle.unit-test

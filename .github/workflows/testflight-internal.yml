@@ -170,8 +170,8 @@ jobs:
             }
           }
 
-          validate_profile "$APP_BUNDLE_ID" "AppStore $APP_BUNDLE_ID" "group.$APP_BUNDLE_ID"
-          validate_profile "$WIDGET_BUNDLE_ID" "AppStore $WIDGET_BUNDLE_ID" "group.$APP_BUNDLE_ID"
+          validate_profile "$APP_BUNDLE_ID" "Sleep Paralysis Companion - App Store" "group.$APP_BUNDLE_ID"
+          validate_profile "$WIDGET_BUNDLE_ID" "Sleep Paralysis Companion Widget - App Store" "group.$APP_BUNDLE_ID"
 
       - name: Archive and export the production IPA
         id: archive
