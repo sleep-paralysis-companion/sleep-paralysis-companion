@@ -204,7 +204,16 @@ jobs:
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
           release-notes: ${{ inputs.release_notes }}
           uses-non-exempt-encryption: 'false'
-          wait-for-processing: 'true'
+          wait-for-processing: 'false'
+
+      - name: Wait for Apple build processing
+        env:
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          APP_BUNDLE_ID: ${{ env.APP_BUNDLE_ID }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: node scripts/poll_build_processing.mjs
 
       - name: Retain archive and build metadata
         if: always()
