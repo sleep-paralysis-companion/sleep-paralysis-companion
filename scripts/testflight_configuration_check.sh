@@ -54,4 +54,8 @@ if ! grep -Eq '^    CURRENT_PROJECT_VERSION: [1-9][0-9]*$' "$PROJECT_SPEC"; then
   exit 1
 fi
 
+if [[ -f "$REPOSITORY_ROOT/ios/Configurations/Local.xcconfig" ]] || [[ "${SPC_REQUIRE_AUTH_CONFIG:-0}" == "1" ]]; then
+  bash "$REPOSITORY_ROOT/scripts/auth_config_preflight.sh" --configuration Production
+fi
+
 echo "TestFlight repository configuration is internally consistent."

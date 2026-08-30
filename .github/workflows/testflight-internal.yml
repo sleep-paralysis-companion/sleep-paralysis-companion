@@ -101,11 +101,8 @@ jobs:
 
       - name: Configure authorized public runtime values
         run: |
-          set -euo pipefail
-          {
-            printf '%s\n' "SPC_SUPABASE_PUBLISHABLE_KEY = $SPC_SUPABASE_PUBLISHABLE_KEY"
-            printf '%s\n' 'SPC_OAUTH_REDIRECT_URL = spc:/$()/auth/callback'
-          } > ios/Configurations/Local.xcconfig
+          bash scripts/provision_local_xcconfig.sh
+          bash scripts/auth_config_preflight.sh --configuration Production
 
       - name: Generate the Xcode project and resolve packages
         run: bash scripts/bootstrap.sh

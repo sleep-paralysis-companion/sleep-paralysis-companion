@@ -1,13 +1,25 @@
 // Copy to Local.xcconfig for developer-only public configuration.
-// Local.xcconfig is ignored. Never place passwords, tokens, service-role keys,
-// Apple signing secrets, or other credentials in an xcconfig or Info.plist.
+// Local.xcconfig is gitignored.
+// See docs/phase-1c/AUTH_CONFIG_PROVISIONING.md for provisioning instructions,
+// security guidelines, and CI environment variable configuration.
+//
+// NEVER place passwords, tokens, service-role/secret keys, Apple signing secrets,
+// or other credentials in an xcconfig or Info.plist.
+//
+// Note on URLs in xcconfig: Xcode treats '//' as a comment delimiter.
+// Escape '://' as ':/$()/' (e.g., 'spc:/$()/auth/callback') or use
+// 'scripts/provision_local_xcconfig.sh' to safely format and generate this file.
+
 SPC_PUBLIC_API_BASE_URL =
 SPC_ALLOWED_API_HOSTS =
 SPC_PRODUCTION_API_HOSTS =
 SPC_AUDIO_CATALOG_MANIFEST_URL =
 SPC_AUDIO_CATALOG_AUTHORIZATION_URL =
 SPC_AUDIO_CATALOG_ALLOWED_HOSTS =
+
 // Public client configuration only. Never place a service-role or secret key here.
+// Approved production publishable key format starts with sb_publishable_.
 SPC_SUPABASE_PUBLISHABLE_KEY = sb_publishable_replace_with_project_key
-// Must exactly match an approved Supabase Auth redirect allow-list entry.
-SPC_OAUTH_REDIRECT_URL =
+
+// Must exactly match an approved Supabase Auth redirect allow-list entry (spc:/$()/auth/callback).
+SPC_OAUTH_REDIRECT_URL = spc:/$()/auth/callback

@@ -16,6 +16,8 @@ run_gate() {
 }
 
 run_gate select_xcode bash "$REPOSITORY_ROOT/scripts/select_xcode.sh"
+run_gate provision_config bash "$REPOSITORY_ROOT/scripts/provision_local_xcconfig.sh"
+run_gate auth_preflight bash "$REPOSITORY_ROOT/scripts/auth_config_preflight.sh" --configuration Development
 run_gate bootstrap bash "$REPOSITORY_ROOT/scripts/bootstrap.sh"
 run_gate format_check bash "$REPOSITORY_ROOT/scripts/format_check.sh"
 run_gate lint_check bash "$REPOSITORY_ROOT/scripts/lint_check.sh"
