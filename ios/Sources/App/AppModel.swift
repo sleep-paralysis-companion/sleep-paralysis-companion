@@ -177,13 +177,13 @@ final class AppModel {
             await configureCatalogAudioServiceIfAvailable()
             reminderAuthorization = await reminders.authorizationState()
             do {
-                guard let restored = try await authentication.restore() else {
+                guard let restoreResult = try await authentication.restore() else {
                     launchDestination = .splash
                     authenticationState = authentication.isConfigured ? .ready : .configurationRequired
                     accountAccessState = .signedOut
                     return
                 }
-                try await resume(session: restored, restoredState: restoredState)
+                try await resume(session: restoreResult.session, restoredState: restoredState)
                 #if DEBUG
                     applyUITestShowcaseRouteIfRequested()
                 #endif
@@ -191,6 +191,12 @@ final class AppModel {
                 session = nil
                 authenticationState = .sessionExpired
                 accountAccessState = .expired
+                launchDestination = .authentication
+            } catch let error as AuthenticationError {
+                session = nil
+                authenticationState = .failed
+                accountAccessState = .signedOut
+                feedbackMessage = "Authentication failed. Please sign in again."
                 launchDestination = .authentication
             } catch {
                 feedbackMessage = "Your protected local data could not be opened. Nothing was replaced."
