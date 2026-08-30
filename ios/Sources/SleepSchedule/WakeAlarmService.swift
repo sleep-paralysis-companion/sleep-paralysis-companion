@@ -188,8 +188,7 @@ private final class WakeAlarmServiceGate {
                     updated(
                         state,
                         scheduleID: schedule.id,
-                        gentleAlarmID: nil,
-                        finalAlarmID: nil,
+                        alarmIDs: (gentleAlarmID: nil, finalAlarmID: nil),
                         systemState: .notScheduled,
                         result: .none
                     ),
@@ -200,8 +199,7 @@ private final class WakeAlarmServiceGate {
                     updated(
                         state,
                         scheduleID: schedule.id,
-                        gentleAlarmID: state.gentleAlarmID,
-                        finalAlarmID: state.finalAlarmID,
+                        alarmIDs: (gentleAlarmID: state.gentleAlarmID, finalAlarmID: state.finalAlarmID),
                         systemState: .failed,
                         result: .failed
                     ),
@@ -218,8 +216,7 @@ private final class WakeAlarmServiceGate {
                     updated(
                         state,
                         scheduleID: schedule.id,
-                        gentleAlarmID: state.gentleAlarmID,
-                        finalAlarmID: state.finalAlarmID,
+                        alarmIDs: (gentleAlarmID: state.gentleAlarmID, finalAlarmID: state.finalAlarmID),
                         systemState: .failed,
                         result: .failed
                     ),
@@ -230,8 +227,7 @@ private final class WakeAlarmServiceGate {
                 updated(
                     state,
                     scheduleID: schedule.id,
-                    gentleAlarmID: nil,
-                    finalAlarmID: nil,
+                    alarmIDs: (gentleAlarmID: nil, finalAlarmID: nil),
                     systemState: .needsAttention,
                     result: .failed
                 ),
@@ -253,8 +249,7 @@ private final class WakeAlarmServiceGate {
                     updated(
                         state,
                         scheduleID: schedule.id,
-                        gentleAlarmID: state.gentleAlarmID,
-                        finalAlarmID: state.finalAlarmID,
+                        alarmIDs: (gentleAlarmID: state.gentleAlarmID, finalAlarmID: state.finalAlarmID),
                         systemState: .denied,
                         result: .denied
                     ),
@@ -264,7 +259,7 @@ private final class WakeAlarmServiceGate {
 
             let existing = try AlarmManager.shared.alarms
             let ownedIDs = ownedAlarmIDs(for: schedule, state: state)
-            let externalIDs = Set(existing.map { $0.id.uuidString }).subtracting(ownedIDs)
+            let externalIDs = Set(existing.map(\.id.uuidString)).subtracting(ownedIDs)
             try cancelOwnedAlarms(for: schedule, state: state, alarms: existing)
 
             var scheduledIDs: [String: String] = [:]
@@ -300,8 +295,7 @@ private final class WakeAlarmServiceGate {
                     updated(
                         state,
                         scheduleID: schedule.id,
-                        gentleAlarmID: nil,
-                        finalAlarmID: nil,
+                        alarmIDs: (gentleAlarmID: nil, finalAlarmID: nil),
                         systemState: .failed,
                         result: .failed
                     ),
@@ -313,8 +307,10 @@ private final class WakeAlarmServiceGate {
                 updated(
                     state,
                     scheduleID: schedule.id,
-                    gentleAlarmID: scheduledIDs[WakeAlarmEventRole.gentleAudio.rawValue],
-                    finalAlarmID: scheduledIDs[WakeAlarmEventRole.finalWake.rawValue],
+                    alarmIDs: (
+                        gentleAlarmID: scheduledIDs[WakeAlarmEventRole.gentleAudio.rawValue],
+                        finalAlarmID: scheduledIDs[WakeAlarmEventRole.finalWake.rawValue]
+                    ),
                     systemState: .scheduled,
                     result: .success
                 ),
@@ -325,8 +321,7 @@ private final class WakeAlarmServiceGate {
                 updated(
                     state,
                     scheduleID: schedule.id,
-                    gentleAlarmID: state.gentleAlarmID,
-                    finalAlarmID: state.finalAlarmID,
+                    alarmIDs: (gentleAlarmID: state.gentleAlarmID, finalAlarmID: state.finalAlarmID),
                     systemState: .failed,
                     result: .failed
                 ),
@@ -346,8 +341,7 @@ private final class WakeAlarmServiceGate {
             return updated(
                 state,
                 scheduleID: schedule.id,
-                gentleAlarmID: nil,
-                finalAlarmID: nil,
+                alarmIDs: (gentleAlarmID: nil, finalAlarmID: nil),
                 systemState: .notScheduled,
                 result: .none
             )
@@ -355,8 +349,7 @@ private final class WakeAlarmServiceGate {
             return updated(
                 state,
                 scheduleID: schedule.id,
-                gentleAlarmID: state.gentleAlarmID,
-                finalAlarmID: state.finalAlarmID,
+                alarmIDs: (gentleAlarmID: state.gentleAlarmID, finalAlarmID: state.finalAlarmID),
                 systemState: .failed,
                 result: .failed
             )
@@ -438,15 +431,14 @@ private final class WakeAlarmServiceGate {
             return nil
         }
 
-        let requestedFileName: String?
-        switch selection.reference {
+        let requestedFileName: String? = switch selection.reference {
         case let .bundled(resourceName):
-            requestedFileName = selection.localFileName ?? resourceName
+            selection.localFileName ?? resourceName
         case .catalog, .personal:
             // Catalog and personal audio must already resolve to a verified
             // local file. Calling resolveAlarmSound with nil would otherwise
             // permit a bundled fallback, which would silently change intent.
-            requestedFileName = selection.localFileName
+            selection.localFileName
         }
 
         guard let requestedFileName,
@@ -463,15 +455,14 @@ private final class WakeAlarmServiceGate {
     private func updated(
         _ state: AlarmScheduleSchedulingState,
         scheduleID: UUID,
-        gentleAlarmID: String?,
-        finalAlarmID: String?,
+        alarmIDs: (gentleAlarmID: String?, finalAlarmID: String?),
         systemState: AlarmSystemState,
         result: AlarmScheduleResult
     ) -> AlarmScheduleSchedulingState {
         AlarmScheduleSchedulingState(
             scheduleID: scheduleID,
-            gentleAlarmID: gentleAlarmID,
-            finalAlarmID: finalAlarmID,
+            gentleAlarmID: alarmIDs.gentleAlarmID,
+            finalAlarmID: alarmIDs.finalAlarmID,
             systemState: systemState,
             lastScheduleResult: result,
             updatedAt: Date(),

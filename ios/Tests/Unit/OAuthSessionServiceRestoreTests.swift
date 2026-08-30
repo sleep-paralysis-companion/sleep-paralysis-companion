@@ -35,7 +35,9 @@ actor ScriptedSupabaseAuthRefresher: SupabaseAuthRefreshing {
 
 final class OAuthSessionServiceRestoreTests: XCTestCase {
     private let fixedNow = Date(timeIntervalSince1970: 1_753_660_800)
-    private let testUserID = UUID(uuidString: "22222222-2222-4222-8222-222222222222")!
+    private let testUserID = UUID(
+        uuid: (0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x42, 0x22, 0x82, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22)
+    ) // 22222222-2222-4222-8222-222222222222
 
     private func makeClient() -> SupabaseClient {
         SupabaseClient(
@@ -162,7 +164,10 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         XCTAssertEqual(updatedMaterial.provider, .google)
         XCTAssertEqual(updatedMaterial.accessToken, "new-access")
         XCTAssertEqual(updatedMaterial.refreshToken, "new-refresh")
-        XCTAssertEqual(updatedMaterial.expiresAt.timeIntervalSince1970, Double(Int(updatedExpiry.timeIntervalSince1970)))
+        XCTAssertEqual(
+            updatedMaterial.expiresAt.timeIntervalSince1970,
+            Double(Int(updatedExpiry.timeIntervalSince1970))
+        )
 
         let storedInKeychain = try store.read()
         XCTAssertEqual(storedInKeychain, updatedMaterial)
@@ -176,16 +181,6 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-10)
         )
-        // LockedKeychain with write failure simulation
-        let keychain = LockedKeychain()
-        try keychain.write(
-            JSONEncoder().encode(staleSession),
-            service: "app.sleepcompanion.spc.phase1.session",
-            account: "current"
-        )
-        let failingKeychain = LockedKeychain(failure: .keychainFailure)
-        let failingStore = KeychainSessionStore(keychain: failingKeychain)
-
         let refreshedSDKSession = try makeSyntheticSession(
             userID: testUserID,
             accessToken: "new-access",
@@ -193,15 +188,8 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             expiresAt: fixedNow.addingTimeInterval(3600).timeIntervalSince1970
         )
         let refresher = ScriptedSupabaseAuthRefresher(behavior: .success(refreshedSDKSession))
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: failingStore,
-            authRefresher: refresher,
-            clock: FixedClock(value: fixedNow)
-        )
 
-        // Note: failingStore.read() will fail if called; to test write failure specifically,
-        // we use a store that reads initially and fails on write
+        // The store below reads the initially stored session and fails on write.
         final class WriteFailingKeychain: KeychainClient {
             private let underlying = LockedKeychain()
             init(initialSession: AuthenticationSessionMaterial) throws {
@@ -211,18 +199,21 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
                     account: "current"
                 )
             }
+
             func read(service: String, account: String) throws -> Data? {
                 try underlying.read(service: service, account: account)
             }
-            func write(_ data: Data, service: String, account: String) throws {
+
+            func write(_: Data, service _: String, account _: String) throws {
                 throw AuthenticationError.keychainFailure
             }
+
             func delete(service: String, account: String) throws {
                 try underlying.delete(service: service, account: account)
             }
         }
 
-        let store = KeychainSessionStore(keychain: try WriteFailingKeychain(initialSession: staleSession))
+        let store = try KeychainSessionStore(keychain: WriteFailingKeychain(initialSession: staleSession))
         let serviceWithFailingWrite = SupabaseOAuthSessionService(
             client: makeClient(),
             sessionStore: store,
@@ -517,7 +508,10 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         let notFound404Error = NSError(
             domain: "AuthError",
             code: 404,
-            userInfo: [NSLocalizedDescriptionKey: "<html><head><title>404 Not Found</title></head><body><h1>404 Not Found</h1></body></html>"]
+            userInfo: [
+                NSLocalizedDescriptionKey: "<html><head><title>404 Not Found</title></head>" +
+                    "<body><h1>404 Not Found</h1></body></html>",
+            ]
         )
         let refresher = ScriptedSupabaseAuthRefresher(behavior: .failure(notFound404Error))
         let service = SupabaseOAuthSessionService(
@@ -533,7 +527,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         XCTAssertEqual(try store.read(), staleSession)
     }
 
-    func testStaleSessionUnclassifiedBare422PreservesKeychainAndReturnsStoredSessionOffline() async throws {
+    func testStaleSessionUnclassifiedBare422PreservesStoredSessionOffline() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
         let staleSession = AuthenticationSessionMaterial(
@@ -693,7 +687,11 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifyRefreshError(
-                NSError(domain: "AuthError", code: 404, userInfo: [NSLocalizedDescriptionKey: "<html>404 Not Found</html>"])
+                NSError(
+                    domain: "AuthError",
+                    code: 404,
+                    userInfo: [NSLocalizedDescriptionKey: "<html>404 Not Found</html>"]
+                )
             ),
             .unclassified
         )
@@ -705,7 +703,11 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifyRefreshError(
-                NSError(domain: "AuthError", code: 422, userInfo: [NSLocalizedDescriptionKey: "Unprocessable proxy entity"])
+                NSError(
+                    domain: "AuthError",
+                    code: 422,
+                    userInfo: [NSLocalizedDescriptionKey: "Unprocessable proxy entity"]
+                )
             ),
             .unclassified
         )

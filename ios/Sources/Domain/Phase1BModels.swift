@@ -128,7 +128,7 @@ nonisolated struct AlarmScheduleAlarmState: Equatable, Codable, Sendable {
     }
 
     var systemAlarmIDs: [String] {
-        [gentleAlarmID, finalAlarmID].compactMap { $0 }
+        [gentleAlarmID, finalAlarmID].compactMap(\.self)
     }
 }
 

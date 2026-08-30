@@ -227,13 +227,13 @@ final class AlarmScheduleTests: XCTestCase {
     }
 
     func testReminderIdentifiersAreScheduleSpecific() throws {
-        var first = AlarmSchedule(
-            id: try XCTUnwrap(UUID(uuidString: "10000000-0000-4000-8000-000000000011")),
+        var first = try AlarmSchedule(
+            id: XCTUnwrap(UUID(uuidString: "10000000-0000-4000-8000-000000000011")),
             name: "First"
         )
         var second = first
-        second = AlarmSchedule(
-            id: try XCTUnwrap(UUID(uuidString: "10000000-0000-4000-8000-000000000012")),
+        second = try AlarmSchedule(
+            id: XCTUnwrap(UUID(uuidString: "10000000-0000-4000-8000-000000000012")),
             name: "Second"
         )
         first.weekdaysMask = 0b0000_0001

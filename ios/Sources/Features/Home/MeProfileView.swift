@@ -48,7 +48,8 @@ struct MeProfileView: View {
                 Label("Free plan", systemImage: "circle.fill").foregroundStyle(.white); Spacer(); Text("No renewal")
                     .foregroundStyle(.white.opacity(0.58))
             }
-            Text("Upgrade availability will appear here when subscriptions are configured.").font(AppTypographyRole.supporting)
+            Text("Upgrade availability will appear here when subscriptions are configured.")
+                .font(AppTypographyRole.supporting)
                 .foregroundStyle(.white.opacity(0.6))
             Button("Manage subscription", role: .destructive) { confirmCancellation = true }
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -105,10 +106,11 @@ struct MeProfileView: View {
             }
             row("🔒", "Privacy & Data") { model.open(.dataPrivacy) }
             row("❔", "Help and Legal") { model.open(.helpLegal) }
-            Text("PREFERENCES").font(AppTypographyRole.label).foregroundStyle(.white.opacity(0.5)).padding(.top, 26).padding(
-                .bottom,
-                10
-            )
+            Text("PREFERENCES")
+                .font(AppTypographyRole.label)
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.top, 26)
+                .padding(.bottom, 10)
             row("🎧", "Audio library") { model.open(.curatedAudioLibrary) }
             row("🎙️", "Personal audio") { model.open(.audioLibrary) }
             row("⚙️", "Default Settings") { model.open(.defaultSettings) }
@@ -251,10 +253,14 @@ struct DefaultSupportSettingsView: View {
             width: 46,
             height: 46
         )
-        .background(.purple, in: RoundedRectangle(cornerRadius: 7)); VStack(alignment: .leading) {
-            Text(title).font(AppTypographyRole.control); Text(subtitle).font(AppTypographyRole.caption).foregroundStyle(.white.opacity(0.55))
+        .background(.purple, in: RoundedRectangle(cornerRadius: 7))
+        VStack(alignment: .leading) {
+            Text(title).font(AppTypographyRole.control)
+            Text(subtitle)
+                .font(AppTypographyRole.caption)
+                .foregroundStyle(.white.opacity(0.55))
         }; Spacer(); Image(systemName: selection.wrappedValue == value ? "checkmark.circle.fill" : "circle")
-        .foregroundStyle(.blue).font(.title3)
+            .foregroundStyle(.blue).font(.title3)
         }.padding(14).background(
             Color.indigo.opacity(0.35),
             in: RoundedRectangle(cornerRadius: 18)

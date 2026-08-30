@@ -384,13 +384,12 @@ actor IntegratedPhase1Store {
         let legacySchedule = try await preferences.read(userID: userID)
         let schedules = try await database.alarmSchedules(profileID: profile.id)
         let schedule = schedules.first.map(SleepSchedule.init) ?? legacySchedule ?? .defaultValue
-        let effectiveSchedules: [AlarmSchedule]
-        if !schedules.isEmpty {
-            effectiveSchedules = schedules
+        let effectiveSchedules: [AlarmSchedule] = if !schedules.isEmpty {
+            schedules
         } else if let legacySchedule {
-            effectiveSchedules = [AlarmSchedule(legacy: legacySchedule, profileID: profile.id)]
+            [AlarmSchedule(legacy: legacySchedule, profileID: profile.id)]
         } else {
-            effectiveSchedules = []
+            []
         }
         let checkIns = try await database.checkIns(profileID: profile.id)
         let partnerContact = try await database.partnerContact(profileID: profile.id)

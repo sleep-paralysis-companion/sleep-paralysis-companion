@@ -272,26 +272,26 @@ private struct SleepSessionClock: View {
 
 private struct SleepSessionBackground: View {
     private static let stars: [SleepSessionStar] = [
-        .init(x: 150.87, y: 332.93, size: 4.01, opacity: 0.20),
-        .init(x: 61.36, y: 829.94, size: 5.31, opacity: 0.45),
-        .init(x: 63.14, y: 512.22, size: 5.37, opacity: 0.46),
-        .init(x: 344.17, y: 563.74, size: 4.71, opacity: 0.33),
-        .init(x: 10.02, y: 405.82, size: 4.98, opacity: 0.38),
-        .init(x: 290.18, y: 762.60, size: 5.07, opacity: 0.54),
-        .init(x: 334.91, y: 304.55, size: 4.53, opacity: 0.29),
-        .init(x: 208.21, y: 178.87, size: 4.86, opacity: 0.36),
-        .init(x: 3.99, y: 518.45, size: 5.53, opacity: 0.49),
-        .init(x: 382.46, y: 674.90, size: 4.74, opacity: 0.43),
-        .init(x: 162.22, y: 789.15, size: 4.47, opacity: 0.28),
-        .init(x: 93.61, y: 832.62, size: 5.60, opacity: 0.50),
-        .init(x: 192.30, y: 51.65, size: 6.00, opacity: 0.58),
-        .init(x: 94.24, y: 453.67, size: 5.52, opacity: 0.71),
-        .init(x: 4.05, y: 567.83, size: 5.77, opacity: 0.78),
-        .init(x: 125.88, y: 725.35, size: 4.73, opacity: 0.43),
-        .init(x: 325.71, y: 192.89, size: 5.95, opacity: 0.66),
-        .init(x: 59.87, y: 391.48, size: 4.14, opacity: 0.22),
-        .init(x: 227.57, y: 390.38, size: 5.98, opacity: 0.63),
-        .init(x: 336.25, y: 233.24, size: 5.58, opacity: 0.74),
+        .init(xPosition: 150.87, yPosition: 332.93, size: 4.01, opacity: 0.20),
+        .init(xPosition: 61.36, yPosition: 829.94, size: 5.31, opacity: 0.45),
+        .init(xPosition: 63.14, yPosition: 512.22, size: 5.37, opacity: 0.46),
+        .init(xPosition: 344.17, yPosition: 563.74, size: 4.71, opacity: 0.33),
+        .init(xPosition: 10.02, yPosition: 405.82, size: 4.98, opacity: 0.38),
+        .init(xPosition: 290.18, yPosition: 762.60, size: 5.07, opacity: 0.54),
+        .init(xPosition: 334.91, yPosition: 304.55, size: 4.53, opacity: 0.29),
+        .init(xPosition: 208.21, yPosition: 178.87, size: 4.86, opacity: 0.36),
+        .init(xPosition: 3.99, yPosition: 518.45, size: 5.53, opacity: 0.49),
+        .init(xPosition: 382.46, yPosition: 674.90, size: 4.74, opacity: 0.43),
+        .init(xPosition: 162.22, yPosition: 789.15, size: 4.47, opacity: 0.28),
+        .init(xPosition: 93.61, yPosition: 832.62, size: 5.60, opacity: 0.50),
+        .init(xPosition: 192.30, yPosition: 51.65, size: 6.00, opacity: 0.58),
+        .init(xPosition: 94.24, yPosition: 453.67, size: 5.52, opacity: 0.71),
+        .init(xPosition: 4.05, yPosition: 567.83, size: 5.77, opacity: 0.78),
+        .init(xPosition: 125.88, yPosition: 725.35, size: 4.73, opacity: 0.43),
+        .init(xPosition: 325.71, yPosition: 192.89, size: 5.95, opacity: 0.66),
+        .init(xPosition: 59.87, yPosition: 391.48, size: 4.14, opacity: 0.22),
+        .init(xPosition: 227.57, yPosition: 390.38, size: 5.98, opacity: 0.63),
+        .init(xPosition: 336.25, yPosition: 233.24, size: 5.58, opacity: 0.74),
     ]
 
     var body: some View {
@@ -321,8 +321,8 @@ private struct SleepSessionBackground: View {
                             height: star.size * proxy.size.width / 393
                         )
                         .position(
-                            x: star.x / 393 * proxy.size.width,
-                            y: star.y / 932 * proxy.size.height
+                            x: star.xPosition / 393 * proxy.size.width,
+                            y: star.yPosition / 932 * proxy.size.height
                         )
                 }
             }
@@ -332,8 +332,8 @@ private struct SleepSessionBackground: View {
 }
 
 private struct SleepSessionStar {
-    let x: CGFloat
-    let y: CGFloat
+    let xPosition: CGFloat
+    let yPosition: CGFloat
     let size: CGFloat
     let opacity: Double
 }

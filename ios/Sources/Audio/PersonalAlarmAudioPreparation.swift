@@ -20,7 +20,7 @@ nonisolated enum PersonalAlarmAudioPreparationError: Error, Equatable, Sendable 
 
 /// Stable, pure values shared by the preparation boundary and tests.
 nonisolated enum PersonalAlarmAudioContract {
-    static let sampleRate: Double = 44_100
+    static let sampleRate: Double = 44100
     static let channelCount = 1
     static let bitDepth = 16
     static let fileExtension = "caf"
@@ -197,10 +197,11 @@ actor PersonalAlarmAudioPreparer {
             pcmFormat: source.processingFormat,
             frameCapacity: 4096
         ),
-        let outputBuffer = AVAudioPCMBuffer(
-            pcmFormat: outputFormat,
-            frameCapacity: 4096
-        ) else {
+            let outputBuffer = AVAudioPCMBuffer(
+                pcmFormat: outputFormat,
+                frameCapacity: 4096
+            )
+        else {
             throw PersonalAlarmAudioPreparationError.conversionFailed
         }
 

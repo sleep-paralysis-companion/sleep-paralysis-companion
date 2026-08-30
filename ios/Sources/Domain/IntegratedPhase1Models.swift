@@ -346,8 +346,13 @@ nonisolated struct AlarmScheduleCollision: Codable, Equatable, Sendable {
     let first: AlarmScheduleOccurrence
     let second: AlarmScheduleOccurrence
 
-    var date: AlarmLocalDate { first.date }
-    var minuteOfDay: Int { first.minuteOfDay }
+    var date: AlarmLocalDate {
+        first.date
+    }
+
+    var minuteOfDay: Int {
+        first.minuteOfDay
+    }
 }
 
 nonisolated enum AlarmScheduleValidationError: Error, Codable, Equatable, Sendable {

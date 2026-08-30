@@ -177,7 +177,7 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
         guard schedule.revision == operation.localRevision else {
             throw RemoteMutationError.validation
         }
-        return .alarm(
+        return try .alarm(
             RemoteAlarmPreferenceDTO(
                 id: schedule.id,
                 ownerUserID: ownerUserID,
@@ -194,7 +194,7 @@ nonisolated struct LocalDatabaseOutboundPayloadProvider: OutboundPayloadProvidin
                 oneTimeLocalDate: schedule.oneTimeDate?.iso8601String,
                 bedtimeReminderLeadMinutes: schedule.bedtimeReminderLeadMinutes,
                 prewakeLeadMinutes: schedule.wakeReminderLeadMinutes,
-                wakeAudioKind: try audioKind(audio),
+                wakeAudioKind: audioKind(audio),
                 wakeAudioReference: audio.reference.stableIdentifier,
                 displayOrder: schedule.sortOrder
             )

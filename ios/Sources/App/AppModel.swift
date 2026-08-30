@@ -192,7 +192,7 @@ final class AppModel {
                 authenticationState = .sessionExpired
                 accountAccessState = .expired
                 launchDestination = .authentication
-            } catch let error as AuthenticationError {
+            } catch is AuthenticationError {
                 session = nil
                 authenticationState = .failed
                 accountAccessState = .signedOut
@@ -438,6 +438,19 @@ final class AppModel {
         selectedAlarmScheduleID = schedule.id
     }
 
+    private func scheduleValidationFeedback(proposed: [AlarmSchedule]) -> String? {
+        do {
+            try AlarmScheduleValidator.validate(proposed)
+            return nil
+        } catch AlarmScheduleValidationError.maximumSchedulesExceeded(limit: _) {
+            return "You can create up to \(AlarmSchedule.maximumCount) schedules."
+        } catch AlarmScheduleValidationError.collision(_) {
+            return "This alarm collides with another enabled schedule. Choose a different time or reminder."
+        } catch {
+            return "Choose valid times, repeat days, and reminder settings."
+        }
+    }
+
     @discardableResult
     func saveScheduleUI(_ value: ScheduleUIModel) -> Bool {
         guard let profileID, let userID else { return false }
@@ -449,16 +462,8 @@ final class AppModel {
         )
         var proposed = alarmSchedules.filter { $0.id != schedule.id }
         proposed.append(schedule)
-        do {
-            try AlarmScheduleValidator.validate(proposed)
-        } catch AlarmScheduleValidationError.maximumSchedulesExceeded(limit: _) {
-            feedbackMessage = "You can create up to \(AlarmSchedule.maximumCount) schedules."
-            return false
-        } catch AlarmScheduleValidationError.collision(_) {
-            feedbackMessage = "This alarm collides with another enabled schedule. Choose a different time or reminder."
-            return false
-        } catch {
-            feedbackMessage = "Choose valid times, repeat days, and reminder settings."
+        if let message = scheduleValidationFeedback(proposed: proposed) {
+            feedbackMessage = message
             return false
         }
 

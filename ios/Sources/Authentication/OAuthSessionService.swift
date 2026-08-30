@@ -12,7 +12,7 @@ nonisolated enum SessionRestoreResult: Equatable, Sendable {
         case let .fresh(material),
              let .refreshed(material),
              let .preservedOffline(material, _):
-            return material
+            material
         }
     }
 }
@@ -158,12 +158,11 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         }
     }
 
-    // | Error Pattern / Class                               | Classification       | Action & Rationale                                             |
-    // | --------------------------------------------------- | -------------------- | -------------------------------------------------------------- |
-    // | URLError / NSURLErrorDomain / CFNetwork / POSIX     | .network             | Preserve stored session; offline or transient network issue.    |
-    // | Keywords ("invalid_grant", "session_not_found", …)  | .definitiveRejection | Purge stored session & throw .expired; token invalid/revoked.  |
-    // | Bare HTTP 401, 403, 400                             | .definitiveRejection | Purge stored session & throw .expired; auth endpoint rejected. |
-    // | Bare HTTP 404, 422, 429, 5xx, decoding / other      | .unclassified        | Preserve stored session (fail-safe); avoid accidental lockouts.|
+    /// Refresh-failure classification (S1 contract):
+    /// - URLError / NSURLErrorDomain / CFNetwork / POSIX → .network: preserve stored session (offline or transient).
+    /// - Keywords ("invalid_grant", "session_not_found", …) → .definitiveRejection: purge session; throw .expired.
+    /// - Bare HTTP 401, 403, 400 → .definitiveRejection: purge session; throw .expired; endpoint rejected token.
+    /// - Bare HTTP 404, 422, 429, 5xx, decoding / other → .unclassified: preserve stored session (fail-safe).
     nonisolated static func classifyRefreshError(_ error: any Error) -> SessionRefreshErrorClassification {
         if error is URLError {
             return .network
@@ -219,10 +218,8 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             "revoked",
         ]
 
-        for pattern in definitivePatterns {
-            if description.contains(pattern) {
-                return .definitiveRejection
-            }
+        for pattern in definitivePatterns where description.contains(pattern) {
+            return .definitiveRejection
         }
 
         if let statusCode, statusCode == 401 || statusCode == 403 {

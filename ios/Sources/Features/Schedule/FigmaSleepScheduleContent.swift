@@ -19,7 +19,12 @@ struct FigmaSleepScheduleContent: View {
                         .padding(.top, isOnboarding ? 46 : 22)
 
                     Text("What time do you want to sleep?")
-                        .font(AppFont.latoBold(size: dynamicTypeSize.isAccessibilitySize ? 28 : 34, relativeTo: .largeTitle))
+                        .font(
+                            AppFont.latoBold(
+                                size: dynamicTypeSize.isAccessibilitySize ? 28 : 34,
+                                relativeTo: .largeTitle
+                            )
+                        )
                         .tracking(-0.7)
                         .padding(.top, 32)
                         .accessibilityAddTraits(.isHeader)

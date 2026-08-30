@@ -3,8 +3,8 @@ import Foundation
 import XCTest
 
 final class PersonalAlarmAudioPreparationTests: XCTestCase {
-    func testPreparedFileNameIsDeterministicAndScopedToClipID() {
-        let clipID = UUID(uuidString: "A1000000-0000-4000-8000-000000000001")!
+    func testPreparedFileNameIsDeterministicAndScopedToClipID() throws {
+        let clipID = try XCTUnwrap(UUID(uuidString: "A1000000-0000-4000-8000-000000000001"))
 
         XCTAssertEqual(
             PersonalAlarmAudioContract.fileName(for: clipID),
@@ -24,7 +24,7 @@ final class PersonalAlarmAudioPreparationTests: XCTestCase {
     }
 
     func testAlarmKitOutputContractIsMonoPcm16CafAt44100Hz() {
-        XCTAssertEqual(PersonalAlarmAudioContract.sampleRate, 44_100)
+        XCTAssertEqual(PersonalAlarmAudioContract.sampleRate, 44100)
         XCTAssertEqual(PersonalAlarmAudioContract.channelCount, 1)
         XCTAssertEqual(PersonalAlarmAudioContract.bitDepth, 16)
         XCTAssertEqual(PersonalAlarmAudioContract.fileExtension, "caf")

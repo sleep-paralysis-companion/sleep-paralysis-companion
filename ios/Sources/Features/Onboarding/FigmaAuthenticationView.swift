@@ -268,7 +268,7 @@ private struct AuthenticationReferenceLayout: View {
                 .tracking(-0.55)
                 .accessibilityAddTraits(.isHeader)
             Text(subtitle)
-            .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
+                .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                 .foregroundStyle(AuthenticationPalette.secondaryText)
         }
         .frame(width: 348, alignment: .leading)

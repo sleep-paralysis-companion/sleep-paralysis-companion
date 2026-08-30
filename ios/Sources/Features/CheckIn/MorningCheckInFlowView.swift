@@ -134,7 +134,7 @@ struct MorningCheckInFlowView: View {
                             .background(Color(red: 0.11, green: 0.12, blue: 0.31))
                             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                         Text(answer.title)
-                        .font(AppFont.inter(size: 24, relativeTo: .title2, weight: .medium))
+                            .font(AppFont.inter(size: 24, relativeTo: .title2, weight: .medium))
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 0)
                     }

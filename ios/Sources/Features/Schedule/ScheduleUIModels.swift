@@ -71,7 +71,6 @@ nonisolated enum ScheduleUIAudioSelection: Equatable, Identifiable, Sendable {
             false
         }
     }
-
 }
 
 nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {

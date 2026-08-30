@@ -588,9 +588,15 @@ func weekdaySummary(_ mask: Int) -> String {
         return symbols[day - 1]
     }
 
-    if days.count == 7 { return "Every day" }
-    if mask == 0b0011_1110 { return "Mon – Fri" }
-    if mask == 0b0100_0001 { return "Sat – Sun" }
+    if days.count == 7 {
+        return "Every day"
+    }
+    if mask == 0b0011_1110 {
+        return "Mon – Fri"
+    }
+    if mask == 0b0100_0001 {
+        return "Sat – Sun"
+    }
     return days.joined(separator: " · ")
 }
 
@@ -621,5 +627,5 @@ private func compactDaySummary(_ schedule: ScheduleUIModel) -> String {
 }
 
 private func timeString(hour: Int, minute: Int) -> String {
-    "\(hour % 12 == 0 ? 12 : hour % 12):\(String(format: "%02d", minute)) \(hour >= 12 ? "PM" : "AM")"
+    "\(hour.isMultiple(of: 12) ? 12 : hour % 12):\(String(format: "%02d", minute)) \(hour >= 12 ? "PM" : "AM")"
 }
