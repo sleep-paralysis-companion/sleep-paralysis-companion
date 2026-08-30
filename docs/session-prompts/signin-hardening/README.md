@@ -50,6 +50,15 @@ into seven low-conflict sessions so parallel chat sessions cannot stomp each oth
   variable `SPC_OAUTH_REDIRECT_URL`, then runs `scripts/auth_config_preflight.sh
   --configuration Production` before bootstrap/archive. Other `phase-1*.yml` workflows run
   verification gates via `scripts/verify_ci.sh`.
+- **Verification route (owner has no Mac):** verification runs on **GitHub Actions hosted
+  runners**. `phase-1-integrated-app.yml` is the full battery ("Build and run all iOS tests":
+  format + lint + static + privacy + unit/UI on `macos-26`) and triggers on: **push to `main`**
+  (added during S1B follow-up; direct-to-main is the owner's normal flow, so every main push is
+  verified post-merge), **push to `codex/phase-1-integrated-app`**, **workflow_dispatch**, and
+  **pull_request** (paths `ios/**`, `scripts/**`, `supabase/**` — useful for pre-merge gating on
+  branches). `phase-1a-ios.yml`, `phase-1b-foundation.yml`, and `phase-1c-onboarding.yml` remain
+  PR-path-triggered only. Session prompts referencing `make lint/unit/ui` should treat those as
+  the CI gates above and say so in their verification instructions; if a session's changes must be
+  verified before landing on main, use a branch + PR instead of a direct push.
 - Make targets (`Makefile`): `bootstrap format lint static privacy secrets simulator build unit ui verify`
-  — all require macOS/Xcode. Development sessions on Windows must author code + tests statically
-  and **never claim executed builds or tests that did not run**; every prompt repeats this rule.
+  — all require macOS/Xcode and are exercised inside the PR workflows above, not by the owner.
