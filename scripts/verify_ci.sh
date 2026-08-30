@@ -7,12 +7,12 @@ run_gate() {
   local gate_name="$1"
   shift
   echo "Running hosted verification gate: $gate_name"
-  if "$@"; then
-    return 0
+  local gate_status=0
+  "$@" || gate_status=$?
+  if [[ "$gate_status" -ne 0 ]]; then
+    echo "::error title=Hosted iOS verification gate failed::$gate_name (exit $gate_status)"
+    return "$gate_status"
   fi
-  local gate_status=$?
-  echo "::error title=Hosted iOS verification gate failed::$gate_name (exit $gate_status)"
-  return "$gate_status"
 }
 
 run_gate select_xcode bash "$REPOSITORY_ROOT/scripts/select_xcode.sh"
