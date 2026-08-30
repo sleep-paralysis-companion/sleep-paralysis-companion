@@ -22,9 +22,13 @@ plutil -convert json -o - "$MANIFEST" | jq -e '
             == ["NSPrivacyCollectedDataTypePurposeAppFunctionality"]] | all)
   and ([.NSPrivacyAccessedAPITypes[].NSPrivacyAccessedAPIType] | sort)
       == ([
+        "NSPrivacyAccessedAPICategoryDiskSpace",
         "NSPrivacyAccessedAPICategoryFileTimestamp",
         "NSPrivacyAccessedAPICategoryUserDefaults"
       ] | sort)
+  and (.NSPrivacyAccessedAPITypes[] |
+        select(.NSPrivacyAccessedAPIType == "NSPrivacyAccessedAPICategoryDiskSpace") |
+        .NSPrivacyAccessedAPITypeReasons == ["3B52.1"])
   and (.NSPrivacyAccessedAPITypes[] |
         select(.NSPrivacyAccessedAPIType == "NSPrivacyAccessedAPICategoryFileTimestamp") |
         .NSPrivacyAccessedAPITypeReasons == ["C617.1"])
@@ -44,7 +48,10 @@ grep -Fq "PrivacyInfo.xcprivacy" "$PROJECT_FILE" || {
   exit 1
 }
 
-if grep -R -n -E 'systemUptime|volumeAvailableCapacity|creationDate|statfs|\bstat\(' "$REPOSITORY_ROOT/ios/Sources"; then
+# Required-reason API tripwire. volumeAvailableCapacity is intentionally not
+# listed here: disk-space reads are covered by the manifest declaration above,
+# which this script enforces exactly (NSPrivacyAccessedAPICategoryDiskSpace).
+if grep -R -n -E 'systemUptime|creationDate|statfs|\bstat\(' "$REPOSITORY_ROOT/ios/Sources"; then
   echo "Potential required-reason API usage needs manifest review." >&2
   exit 1
 fi

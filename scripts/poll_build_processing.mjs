@@ -187,7 +187,7 @@ async function main() {
     console.log(`JWT generation validated (kid=${apiKeyId}, iss=${issuerId.slice(0,8)}..., ttl=${ttl}s, aud=${payload.aud}) — fresh token per request enabled`);
   } catch (e) {
     console.error(`JWT generation failed: ${e.message}`);
-    console.error('Check that APPSTORE_API_PRIVATE_KEY is raw .p8 PEM (-----BEGIN PRIVATE KEY-----) and not base64-wrapped.');
+    console.error('Check that APPSTORE_API_PRIVATE_KEY is a raw .p8 PEM file and not base64-wrapped.');
     process.exit(1);
   }
 
