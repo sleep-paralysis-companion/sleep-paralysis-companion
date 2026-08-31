@@ -299,6 +299,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             return .networkUnavailable
         }
 
+        let nsError = error as NSError
         let isHTTPCode = nsError.code >= 400 && nsError.code < 600 &&
             nsError.domain != NSPOSIXErrorDomain &&
             nsError.domain != NSURLErrorDomain &&
