@@ -34,13 +34,11 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let play = app.buttons["catalogAudio.play.quick_unwind"]
-        XCTAssertTrue(play.waitForExistence(timeout: 8))
         makeHittable(play, in: app)
         play.tap()
         XCTAssertTrue(app.staticTexts["Playing preview"].waitForExistence(timeout: 3))
 
         let pause = app.buttons["catalogAudio.pause.quick_unwind"]
-        XCTAssertTrue(pause.exists)
         makeHittable(pause, in: app)
         pause.tap()
         XCTAssertTrue(app.staticTexts["Preview paused"].waitForExistence(timeout: 3))
@@ -52,7 +50,6 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let download = app.buttons["catalogAudio.download.quick_unwind"]
-        XCTAssertTrue(download.waitForExistence(timeout: 8))
         makeHittable(download, in: app)
         download.tap()
         XCTAssertTrue(app.otherElements["catalogAudio.progress.quick_unwind"].waitForExistence(timeout: 3))
@@ -64,13 +61,17 @@ final class CatalogAudioLibraryUITests: XCTestCase {
     func testDownloadedAndOfflineStatesAreExplicit() {
         let downloaded = application(scenario: "downloaded")
         downloaded.launch()
-        XCTAssertTrue(downloaded.staticTexts["Available offline"].waitForExistence(timeout: 8))
-        XCTAssertTrue(downloaded.buttons["catalogAudio.remove.quick_unwind"].exists)
+        let remove = downloaded.buttons["catalogAudio.remove.quick_unwind"]
+        makeHittable(remove, in: downloaded)
+        XCTAssertTrue(downloaded.staticTexts["Available offline"].exists)
+        XCTAssertTrue(remove.exists)
 
         let offline = application(scenario: "offline")
         offline.launch()
-        XCTAssertTrue(offline.staticTexts["Unavailable offline"].waitForExistence(timeout: 8))
-        XCTAssertTrue(offline.buttons["catalogAudio.download.quick_unwind"].exists)
+        let download = offline.buttons["catalogAudio.download.quick_unwind"]
+        makeHittable(download, in: offline)
+        XCTAssertTrue(offline.staticTexts["Unavailable offline"].exists)
+        XCTAssertTrue(download.exists)
     }
 
     @MainActor
@@ -79,7 +80,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let selection = app.buttons["catalogAudio.selectAlarm.morning_alarm"]
-        XCTAssertTrue(selection.waitForExistence(timeout: 8))
+        makeHittable(selection, in: app)
         XCTAssertEqual(selection.label, "Selected for alarm")
         XCTAssertTrue(app.staticTexts["Available offline"].exists)
     }
@@ -89,10 +90,10 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let app = application(scenario: "failed-download")
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Download failed"].waitForExistence(timeout: 8))
         let retry = app.buttons["catalogAudio.download.quick_unwind"]
-        XCTAssertTrue(retry.exists)
         makeHittable(retry, in: app)
+        XCTAssertTrue(app.staticTexts["Download failed"].exists)
+        XCTAssertTrue(retry.exists)
         retry.tap()
         XCTAssertTrue(app.staticTexts["Download failed"].waitForExistence(timeout: 3))
     }
@@ -103,7 +104,6 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let remove = app.buttons["catalogAudio.remove.quick_unwind"]
-        XCTAssertTrue(remove.waitForExistence(timeout: 8))
         makeHittable(remove, in: app)
         remove.tap()
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Removed Quick Unwind'"))
@@ -126,6 +126,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         for _ in 0 ..< 10 where !element.isHittable {
             app.swipeUp()
         }
+        XCTAssertTrue(element.waitForExistence(timeout: 8), app.debugDescription)
         XCTAssertTrue(element.isHittable, app.debugDescription)
     }
 }

@@ -106,6 +106,11 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.buttons["I lie awake scared for a while"].tap()
         app.buttons["No – I go through this alone"].tap()
 
+        XCTAssertTrue(app.buttons["comfortVoice.record"].waitForExistence(timeout: 8))
+        let skipAction = app.buttons["comfortVoice.skip"]
+        makeHittable(skipAction, in: app)
+        skipAction.tap()
+
         let resultHeading = app.staticTexts["Your sleep profile is ready"]
         let resultAction = app.buttons["Continue to comfort audio"]
         XCTAssertTrue(resultHeading.waitForExistence(timeout: 8))
@@ -133,8 +138,6 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(aloneChoice.waitForExistence(timeout: 8))
         aloneChoice.tap()
 
-        XCTAssertTrue(app.buttons["Continue to comfort audio"].waitForExistence(timeout: 8))
-        app.buttons["Continue to comfort audio"].tap()
         let recordAction = app.buttons["comfortVoice.record"]
         let uploadAction = app.buttons["comfortVoice.upload"]
         let skipAction = app.buttons["comfortVoice.skip"]
@@ -142,6 +145,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(uploadAction.exists)
         XCTAssertTrue(skipAction.exists)
         skipAction.tap()
+
+        let recommendedSetupAction = app.buttons["Continue to comfort audio"]
+        XCTAssertTrue(recommendedSetupAction.waitForExistence(timeout: 8))
+        recommendedSetupAction.tap()
 
         XCTAssertTrue(app.staticTexts["What time do you want to sleep?"].waitForExistence(timeout: 8))
         let saveSchedule = app.buttons["schedule.save"]
