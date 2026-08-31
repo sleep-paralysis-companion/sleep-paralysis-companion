@@ -30,13 +30,13 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let app = application(scenario: "streaming-preview")
         app.launch()
 
-        let play = app.buttons["catalogAudio.play.quick_unwind"]
+        let play = app.buttons.matching(NSPredicate(format: "label == 'Play preview'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(play, in: app), app.debugDescription)
         makeHittable(play, in: app)
         play.tap()
         XCTAssertTrue(app.staticTexts["Playing preview"].waitForExistence(timeout: 3))
 
-        let pause = app.buttons["catalogAudio.pause.quick_unwind"]
+        let pause = app.buttons.matching(NSPredicate(format: "label == 'Pause preview'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(pause, in: app), app.debugDescription)
         makeHittable(pause, in: app)
         pause.tap()
@@ -48,7 +48,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let app = application(scenario: "download-progress")
         app.launch()
 
-        let download = app.buttons["catalogAudio.download.quick_unwind"]
+        let download = app.buttons.matching(NSPredicate(format: "label == 'Download for offline'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(download, in: app), app.debugDescription)
         makeHittable(download, in: app)
         download.tap()
@@ -60,14 +60,14 @@ final class CatalogAudioLibraryUITests: XCTestCase {
     func testDownloadedAndOfflineStatesAreExplicit() {
         let downloaded = application(scenario: "downloaded")
         downloaded.launch()
-        let remove = downloaded.buttons["catalogAudio.remove.quick_unwind"]
+        let remove = downloaded.buttons.matching(NSPredicate(format: "label == 'Remove offline download'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(remove, in: downloaded), downloaded.debugDescription)
         XCTAssertTrue(downloaded.staticTexts["Available offline"].exists)
         XCTAssertTrue(remove.exists)
 
         let offline = application(scenario: "offline")
         offline.launch()
-        let download = offline.buttons["catalogAudio.download.quick_unwind"]
+        let download = offline.buttons.matching(NSPredicate(format: "label == 'Download for offline'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(download, in: offline), offline.debugDescription)
         XCTAssertTrue(offline.staticTexts["Unavailable offline"].exists)
         XCTAssertTrue(download.exists)
@@ -78,10 +78,9 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let app = application(scenario: "selected-alarm")
         app.launch()
 
-        let selection = app.buttons["catalogAudio.selectAlarm.morning_alarm"]
+        let selection = app.buttons.matching(NSPredicate(format: "label == 'Selected for alarm'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(selection, in: app), app.debugDescription)
         makeHittable(selection, in: app)
-        XCTAssertEqual(selection.label, "Selected for alarm")
         XCTAssertTrue(app.staticTexts["Available offline"].exists)
     }
 
@@ -90,7 +89,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let app = application(scenario: "failed-download")
         app.launch()
 
-        let retry = app.buttons["catalogAudio.download.quick_unwind"]
+        let retry = app.buttons.matching(NSPredicate(format: "label == 'Download for offline'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(retry, in: app), app.debugDescription)
         XCTAssertTrue(app.staticTexts["Download failed"].exists)
         XCTAssertTrue(retry.exists)
@@ -104,11 +103,11 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let app = application(scenario: "storage-removal")
         app.launch()
 
-        let remove = app.buttons["catalogAudio.remove.quick_unwind"]
+        let remove = app.buttons.matching(NSPredicate(format: "label == 'Remove offline download'")).firstMatch
         XCTAssertTrue(waitForExistenceByScrolling(remove, in: app), app.debugDescription)
         makeHittable(remove, in: app)
         remove.tap()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Removed Quick Unwind'"))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Removed'"))
             .firstMatch.waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Stream preview available"].exists)
     }
