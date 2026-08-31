@@ -697,11 +697,7 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             location: LocalStoreLocation(namespace: "test-auth-\(UUID().uuidString)")
         )
         return AppModel(
-            environment: AppEnvironment(
-                isProduction: false,
-                buildVariant: "test",
-                bundleIdentifier: "app.sleepcompanion.spc"
-            ),
+            environment: .development,
             accessPolicy: AccessPolicy(),
             store: store,
             authentication: authService,
