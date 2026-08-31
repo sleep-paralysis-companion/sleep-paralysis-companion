@@ -128,7 +128,7 @@ struct SleepSessionView: View {
         Button {
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                model.performSleepSessionAudioAction(audioAction, presentSession: false)
+                _ = model.performSleepSessionAudioAction(audioAction, presentSession: false)
             }
         } label: {
             HStack(spacing: 12) {
