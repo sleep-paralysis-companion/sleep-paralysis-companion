@@ -110,23 +110,9 @@ final class NavigationStateTests: XCTestCase {
         let store = IntegratedPhase1Store(
             location: LocalStoreLocation(namespace: "test-oauth-cb-\(UUID().uuidString)")
         )
-        let database = try store.databaseInstance()
-        let profile = try await database.activateAuthenticatedProfile(
-            userID: user,
-            provider: .apple,
-            sessionExpiresAt: session.expiresAt,
-            now: Date()
-        )
-        _ = try await database.completeQuestionnaireDraft(
-            profileID: profile.id,
-            authenticatedUserID: user,
-            calculatedAt: Date()
-        )
-        try await database.markIntegratedOnboardingComplete(
-            profileID: profile.id,
-            userID: user,
-            completedAt: Date()
-        )
+        let snapshot = try await store.resume(session: session)
+        _ = try await store.completeQuestionnaire(profileID: snapshot.profile.id, userID: user)
+        _ = try await store.saveSchedule(SleepSchedule.defaultValue, profileID: snapshot.profile.id, userID: user)
 
         let authService = ScriptedOAuthSessionService(result: .success(session))
         let signedInModel = makeTestAppModel(authService: authService, store: store)
