@@ -61,7 +61,7 @@ actor ScriptedSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating {
 }
 
 actor ScriptedOAuthSessionService: OAuthSessionServicing {
-    var isConfigured: Bool
+    nonisolated let isConfigured: Bool
     private var result: Result<AuthenticationSessionMaterial, any Error>
 
     init(isConfigured: Bool = true, result: Result<AuthenticationSessionMaterial, any Error>) {
