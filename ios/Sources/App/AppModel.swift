@@ -12,7 +12,7 @@ import UIKit
 final class AppModel {
     private(set) var launchDestination = LaunchDestination.loading
     var path: [AppRoute] = []
-    var selectedTab = AppTab.home
+    var selectedTab = AppTab.sleep
     var isMorningCheckInPresented = false
     private(set) var presentedSheet: AppSheet?
     var feedbackMessage: String?
@@ -218,30 +218,28 @@ final class AppModel {
             path = []
 
             switch requestedRoute {
-            case "sleep":
+            case "sleep", "home":
                 selectedTab = .sleep
             case "journal":
                 selectedTab = .journal
-            case "home":
-                selectedTab = .home
             case "activity":
                 selectedTab = .activity
             case "me":
                 selectedTab = .me
             case "grounding":
-                selectedTab = .home
+                selectedTab = .sleep
                 path = [.grounding]
             case "audio-library":
-                selectedTab = .home
+                selectedTab = .sleep
                 path = [.audioLibrary]
             case "audio-player", "player":
-                selectedTab = .home
+                selectedTab = .sleep
                 path = [.audioPlayer]
             case "curated-audio-library":
                 selectedTab = .me
                 path = [.curatedAudioLibrary]
             case "sleep-schedule":
-                selectedTab = .home
+                selectedTab = .sleep
                 path = [.sleepSchedule]
             case "morning-check-in":
                 selectedTab = .sleep
@@ -1415,7 +1413,7 @@ final class AppModel {
     }
 
     private func resetNavigation() {
-        selectedTab = .home
+        selectedTab = .sleep
         path = []
         presentedSheet = nil
         isMorningCheckInPresented = false

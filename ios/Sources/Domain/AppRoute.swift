@@ -3,13 +3,14 @@ import Foundation
 nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
     case sleep
     case journal
-    case home
     case activity
     case me
 
     init(from decoder: any Decoder) throws {
         let rawValue = try decoder.singleValueContainer().decode(String.self)
         switch rawValue {
+        case "home":
+            self = .sleep
         case "history":
             self = .journal
         case "report":

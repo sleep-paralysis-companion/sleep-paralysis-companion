@@ -116,6 +116,17 @@ final class NavigationStateTests: XCTestCase {
         )
         let store = makeTestPhase1Store(namespace: "test-oauth-cb-\(UUID().uuidString)")
         let snapshot = try await store.resume(session: session)
+        let now = Date()
+        let draft = QuestionnaireDraft(
+            profileID: snapshot.profile.id,
+            accountUserID: user,
+            episodeFrequency: .rarely,
+            postEpisodeFeeling: .shakeItOff,
+            calmingPersonContext: .alone,
+            createdAt: now,
+            updatedAt: now
+        )
+        try await store.saveDraft(draft)
         _ = try await store.completeQuestionnaire(profileID: snapshot.profile.id, userID: user)
         _ = try await store.saveSchedule(SleepSchedule.defaultValue, profileID: snapshot.profile.id, userID: user)
 

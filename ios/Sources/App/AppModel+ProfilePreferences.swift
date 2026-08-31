@@ -128,7 +128,7 @@ extension AppModel {
 
     func completeMorningCheckIn() {
         isMorningCheckInPresented = false
-        selectedTab = .home
+        selectedTab = .sleep
         path = []
     }
 }

@@ -4,41 +4,34 @@ struct AppTabShellView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        TabView(
-            selection: Binding(
-                get: { model.selectedTab },
-                set: { model.selectTab($0) }
-            )
-        ) {
-            ZStack {
-                HomeView(model: model, showsSleepSessionAction: true)
-                if model.isMorningCheckInPresented {
-                    MorningCheckInFlowView(model: model)
+        ZStack {
+            switch model.selectedTab {
+            case .sleep:
+                ZStack {
+                    HomeView(model: model, showsSleepSessionAction: true)
+                    if model.isMorningCheckInPresented {
+                        MorningCheckInFlowView(model: model)
+                    }
                 }
+            case .journal:
+                ComingSoonView(
+                    title: "Journal",
+                    message: "Your private journal is coming soon.",
+                    systemImage: "book.closed"
+                )
+            case .home:
+                HomeView(model: model)
+            case .activity:
+                ComingSoonView(
+                    title: "Activity",
+                    message: "Activity tracking is coming soon.",
+                    systemImage: "chart.line.uptrend.xyaxis"
+                )
+            case .me:
+                SettingsView(model: model)
             }
-            .tag(AppTab.sleep)
-
-            ComingSoonView(
-                title: "Journal",
-                message: "Your private journal is coming soon.",
-                systemImage: "book.closed"
-            )
-            .tag(AppTab.journal)
-
-            HomeView(model: model)
-                .tag(AppTab.home)
-
-            ComingSoonView(
-                title: "Activity",
-                message: "Activity tracking is coming soon.",
-                systemImage: "chart.line.uptrend.xyaxis"
-            )
-            .tag(AppTab.activity)
-
-            SettingsView(model: model)
-                .tag(AppTab.me)
         }
-        .toolbar(.hidden, for: .tabBar)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             AppTabBar(selection: Binding(
                 get: { model.selectedTab },
