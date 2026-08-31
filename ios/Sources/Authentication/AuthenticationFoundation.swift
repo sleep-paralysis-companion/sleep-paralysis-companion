@@ -1,6 +1,7 @@
 import CryptoKit
 import Foundation
 import Security
+
 nonisolated enum SessionKeychainIdentity {
     static let service = "app.sleepcompanion.spc.authentication"
     static let account = "supabase-session"

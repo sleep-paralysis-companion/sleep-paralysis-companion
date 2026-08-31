@@ -326,9 +326,9 @@ final class AppModel {
             } catch AuthenticationError.externalProviderUnavailable {
                 authenticationState = .failed
                 feedbackMessage = "Sign-in did not finish. Check the provider configuration and try again."
-            // Thrown by store.resume(session:) / LocalDatabase.activateAuthenticatedProfile when
-            // the signed-in account does not match the protected local profile already linked on this device.
             } catch AuthenticationError.wrongAccount {
+                // Thrown by store.resume(session:) / LocalDatabase.activateAuthenticatedProfile when
+                // the signed-in account does not match the protected local profile already linked on this device.
                 accountAccessState = .wrongAccount
                 authenticationState = .failed
                 feedbackMessage = "This account does not match the protected profile on this device."

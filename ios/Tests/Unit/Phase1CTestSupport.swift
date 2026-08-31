@@ -160,6 +160,3 @@ func makeTestAppModel(
         logger: NoOpPrivacySafeLogger()
     )
 }
-
-
-
