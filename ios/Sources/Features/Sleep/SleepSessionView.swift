@@ -353,7 +353,7 @@ private struct SleepSessionBackground: View {
                 )
 
                 ForEach(Array(Self.stars.enumerated()), id: \.offset) { index, star in
-                    let isSpecialStar = (index % 3 == 0)
+                    let isSpecialStar = index.isMultiple(of: 3)
                     let starOpacity = isSpecialStar
                         ? (isTwinkling ? star.opacity * 0.6 : star.opacity * 0.2)
                         : star.opacity * 0.3

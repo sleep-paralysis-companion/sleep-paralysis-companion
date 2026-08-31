@@ -79,32 +79,59 @@ struct SleepParalysisCompanionManualEpisodeWidget: Widget {
 struct SleepSessionLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SleepSessionAttributes.self) { context in
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
                     Image(systemName: "moon.stars.fill")
+                        .font(.subheadline)
                         .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
                     Text("Sleep session active")
-                        .font(.headline)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
                     Spacer()
                     if context.state.audioStatus != .ready {
-                        Label(context.state.audioStatus.statusLabel, systemImage: context.state.audioStatus.statusIcon)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color(red: 0.52, green: 0.67, blue: 1))
-                            .labelStyle(.iconOnly)
-                            .accessibilityLabel(context.state.audioStatus.statusLabel)
+                        HStack(spacing: 4) {
+                            Image(systemName: context.state.audioStatus.statusIcon)
+                                .font(.caption2.weight(.bold))
+                            Text(context.state.audioStatus == .playing ? "Playing" : "Paused")
+                                .font(.caption2.weight(.medium))
+                        }
+                        .foregroundStyle(Color(red: 0.75, green: 0.83, blue: 1))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(Color(red: 0.20, green: 0.25, blue: 0.48).opacity(0.6))
+                        )
+                        .accessibilityLabel(context.state.audioStatus.statusLabel)
                     }
                 }
 
                 Button(intent: ManualEpisodeIntent(action: context.state.audioStatus.action)) {
-                    Label(context.state.audioStatus.buttonTitle, systemImage: context.state.audioStatus.buttonIcon)
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
+                    HStack(spacing: 8) {
+                        Image(systemName: context.state.audioStatus.buttonIcon)
+                            .font(.subheadline.weight(.bold))
+                        Text(context.state.audioStatus.buttonTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color(red: 0.32, green: 0.41, blue: 0.78))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
+                    )
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color(red: 0.32, green: 0.41, blue: 0.78))
+                .buttonStyle(.plain)
                 .accessibilityHint(context.state.audioStatus.foregroundActionHint)
             }
-            .padding(.vertical, 4)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .activityBackgroundTint(Color(red: 0.05, green: 0.02, blue: 0.19))
             .activitySystemActionForegroundColor(.white)
             .widgetURL(URL(string: "spc://sleep-session"))
