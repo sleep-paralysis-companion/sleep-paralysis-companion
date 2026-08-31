@@ -64,7 +64,10 @@ actor ScriptedOAuthSessionService: OAuthSessionServicing {
     var isConfigured: Bool
     private var result: Result<AuthenticationSessionMaterial, any Error>
 
-    init(isConfigured: Bool = true, result: Result<AuthenticationSessionMaterial, any Error>) {
+    init(
+        isConfigured: Bool = true,
+        result: Result<AuthenticationSessionMaterial, any Error>
+    ) {
         self.isConfigured = isConfigured
         self.result = result
     }
@@ -73,7 +76,9 @@ actor ScriptedOAuthSessionService: OAuthSessionServicing {
         self.result = result
     }
 
-    func restore() async throws -> SessionRestoreResult? { nil }
+    func restore() async throws -> SessionRestoreResult? {
+        nil
+    }
 
     func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
         _ = provider
@@ -85,7 +90,9 @@ actor ScriptedOAuthSessionService: OAuthSessionServicing {
         }
     }
 
-    func signOut() async throws {}
+    func signOut() async throws {
+    }
+
     func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
         throw AuthenticationError.cancelled
     }
@@ -196,7 +203,6 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        // Must produce NO failure log noise — only the initial start event is recorded
         let loggedEvents = spyLogger.entries
         XCTAssertEqual(loggedEvents.count, 1)
         XCTAssertEqual(loggedEvents[0].event, .signInStarted)
@@ -474,11 +480,16 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
 
     func testKeychainWriteFailureThrowsKeychainFailureAndLogsEvent() async throws {
         final class FailingKeychain: KeychainClient {
-            func read(service _: String, account _: String) throws -> Data? { nil }
+            func read(service _: String, account _: String) throws -> Data? {
+                nil
+            }
+
             func write(_: Data, service _: String, account _: String) throws {
                 throw AuthenticationError.keychainFailure
             }
-            func delete(service _: String, account _: String) throws {}
+
+            func delete(service _: String, account _: String) throws {
+            }
         }
 
         let store = KeychainSessionStore(keychain: FailingKeychain())
@@ -574,7 +585,10 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         )
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: ASWebAuthenticationSessionErrorDomain, code: ASWebAuthenticationSessionError.canceledLogin.rawValue)
+                NSError(
+                    domain: ASWebAuthenticationSessionErrorDomain,
+                    code: ASWebAuthenticationSessionError.canceledLogin.rawValue
+                )
             ),
             .cancelled
         )
@@ -634,13 +648,21 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         )
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "Custom", code: 0, userInfo: [NSLocalizedDescriptionKey: "access_denied by provider"])
+                NSError(
+                    domain: "Custom",
+                    code: 0,
+                    userInfo: [NSLocalizedDescriptionKey: "access_denied by provider"]
+                )
             ),
             .serverRejected
         )
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "Custom", code: 0, userInfo: [NSLocalizedDescriptionKey: "invalid_grant error"])
+                NSError(
+                    domain: "Custom",
+                    code: 0,
+                    userInfo: [NSLocalizedDescriptionKey: "invalid_grant error"]
+                )
             ),
             .serverRejected
         )
@@ -669,7 +691,11 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         )
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "UnknownDomain", code: 999, userInfo: [NSLocalizedDescriptionKey: "Unexpected internal fault"])
+                NSError(
+                    domain: "UnknownDomain",
+                    code: 999,
+                    userInfo: [NSLocalizedDescriptionKey: "Unexpected internal fault"]
+                )
             ),
             .externalProviderUnavailable
         )

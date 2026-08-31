@@ -299,11 +299,15 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             return .networkUnavailable
         }
 
-        let nsError = error as NSError
+        let isHTTPCode = nsError.code >= 400 && nsError.code < 600 &&
+            nsError.domain != NSPOSIXErrorDomain &&
+            nsError.domain != NSURLErrorDomain &&
+            nsError.domain != (kCFErrorDomainCFNetwork as String) &&
+            nsError.domain != "kCFErrorDomainCFNetwork"
         let statusCode = (nsError.userInfo["statusCode"] as? Int)
             ?? (nsError.userInfo["status"] as? Int)
             ?? (nsError.userInfo["HTTPStatusCode"] as? Int)
-            ?? ((nsError.code >= 400 && nsError.code < 600 && nsError.domain != NSPOSIXErrorDomain && nsError.domain != NSURLErrorDomain && nsError.domain != (kCFErrorDomainCFNetwork as String) && nsError.domain != "kCFErrorDomainCFNetwork") ? nsError.code : nil)
+            ?? (isHTTPCode ? nsError.code : nil)
 
         let description = String(describing: error).lowercased()
         let rejectionKeywords = [
