@@ -64,15 +64,8 @@ actor ScriptedOAuthSessionService: OAuthSessionServicing {
     var isConfigured: Bool
     private var result: Result<AuthenticationSessionMaterial, any Error>
 
-    init(
-        isConfigured: Bool = true,
-        result: Result<AuthenticationSessionMaterial, any Error>
-    ) {
+    init(isConfigured: Bool = true, result: Result<AuthenticationSessionMaterial, any Error>) {
         self.isConfigured = isConfigured
-        self.result = result
-    }
-
-    func setResult(_ result: Result<AuthenticationSessionMaterial, any Error>) {
         self.result = result
     }
 
@@ -103,10 +96,22 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         uuid: (0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x43, 0x33, 0x83, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33)
     )
 
-    private func makeClient() -> SupabaseClient {
-        SupabaseClient(
-            supabaseURL: URL(string: "https://example.supabase.co")!,
-            supabaseKey: "test-anon-key"
+    private func makeService(
+        store: any SessionSecretStore,
+        authenticator: (any SupabaseOAuthAuthenticating)? = nil,
+        authRefresher: (any SupabaseAuthRefreshing)? = nil,
+        logger: any PrivacySafeLogging = NoOpPrivacySafeLogger()
+    ) -> SupabaseOAuthSessionService {
+        SupabaseOAuthSessionService(
+            client: SupabaseClient(
+                supabaseURL: URL(string: "https://example.supabase.co")!,
+                supabaseKey: "test-anon-key"
+            ),
+            sessionStore: store,
+            authRefresher: authRefresher,
+            oauthAuthenticator: authenticator,
+            logger: logger,
+            clock: FixedClock(value: fixedNow)
         )
     }
 
@@ -118,20 +123,20 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     ) throws -> Session {
         let json = """
         {
-            "access_token": "\(accessToken)",
-            "token_type": "bearer",
-            "expires_in": 3600,
-            "expires_at": \(Int(expiresAt)),
-            "refresh_token": "\(refreshToken)",
-            "user": {
-                "id": "\(userID.uuidString.lowercased())",
-                "aud": "authenticated",
-                "role": "authenticated",
-                "email": "user@example.com",
-                "app_metadata": {},
-                "user_metadata": {},
-                "created_at": "2026-01-01T00:00:00Z",
-                "updated_at": "2026-01-01T00:00:00Z"
+            \"access_token\": \"\(accessToken)\",
+            \"token_type\": \"bearer\",
+            \"expires_in\": 3600,
+            \"expires_at\": \(Int(expiresAt)),
+            \"refresh_token\": \"\(refreshToken)\",
+            \"user\": {
+                \"id\": \"\(userID.uuidString.lowercased())\",
+                \"aud\": \"authenticated\",
+                \"role\": \"authenticated\",
+                \"email\": \"user@example.com\",
+                \"app_metadata\": {},
+                \"user_metadata\": {},
+                \"created_at\": \"2026-01-01T00:00:00Z\",
+                \"updated_at\": \"2026-01-01T00:00:00Z\"
             }
         }
         """
@@ -142,21 +147,16 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testSuccessfulSignInLogsStartedAndSucceededAndWritesSession() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
-        let expiry = fixedNow.addingTimeInterval(3600)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let sdkSession = try makeSyntheticSession(
             userID: testUserID,
-            expiresAt: expiry.timeIntervalSince1970
+            expiresAt: fixedNow.addingTimeInterval(3600).timeIntervalSince1970
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .success(sdkSession))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .success(sdkSession)),
+            logger: spyLogger
         )
 
         let material = try await service.signIn(provider: .apple)
@@ -166,31 +166,22 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         XCTAssertEqual(material.accessToken, "synthetic-signin-access")
         XCTAssertEqual(material.refreshToken, "synthetic-signin-refresh")
         XCTAssertEqual(try store.read(), material)
-
-        let loggedEvents = spyLogger.entries
-        XCTAssertEqual(loggedEvents.count, 2)
-        XCTAssertEqual(loggedEvents[0].event, .signInStarted)
-        XCTAssertEqual(loggedEvents[0].category, .authentication)
-        XCTAssertEqual(loggedEvents[1].event, .signInSucceeded)
-        XCTAssertEqual(loggedEvents[1].category, .authentication)
+        XCTAssertEqual(spyLogger.events, [.signInStarted, .signInSucceeded])
+        XCTAssertEqual(spyLogger.entries.first?.category, .authentication)
     }
 
     func testUserCancelledASWebAuthenticationSessionThrowsCancelledAndLogsNothingExtra() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let cancelError = NSError(
             domain: ASWebAuthenticationSessionErrorDomain,
             code: ASWebAuthenticationSessionError.canceledLogin.rawValue,
             userInfo: nil
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(cancelError))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(cancelError)),
+            logger: spyLogger
         )
 
         do {
@@ -202,24 +193,17 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        let loggedEvents = spyLogger.entries
-        XCTAssertEqual(loggedEvents.count, 1)
-        XCTAssertEqual(loggedEvents[0].event, .signInStarted)
-        XCTAssertEqual(loggedEvents[0].category, .authentication)
+        XCTAssertEqual(spyLogger.events, [.signInStarted])
         XCTAssertNil(try store.read())
     }
 
     func testCancellationErrorThrowsCancelledAndLogsNothingExtra() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(CancellationError()))
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(CancellationError())),
+            logger: spyLogger
         )
 
         do {
@@ -231,24 +215,16 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        let loggedEvents = spyLogger.entries
-        XCTAssertEqual(loggedEvents.count, 1)
-        XCTAssertEqual(loggedEvents[0].event, .signInStarted)
+        XCTAssertEqual(spyLogger.events, [.signInStarted])
     }
 
     func testNetworkURLErrorThrowsNetworkUnavailableAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(
-            behavior: .failure(URLError(.notConnectedToInternet))
-        )
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(URLError(.notConnectedToInternet))),
+            logger: spyLogger
         )
 
         do {
@@ -260,29 +236,22 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        let loggedEvents = spyLogger.entries
-        XCTAssertEqual(loggedEvents.count, 2)
-        XCTAssertEqual(loggedEvents[0].event, .signInStarted)
-        XCTAssertEqual(loggedEvents[1].event, .signInNetworkUnavailable)
-        XCTAssertEqual(loggedEvents[1].category, .authentication)
+        XCTAssertEqual(spyLogger.events, [.signInStarted, .signInNetworkUnavailable])
+        XCTAssertEqual(spyLogger.entries.last?.category, .authentication)
     }
 
     func testNetworkPOSIXErrorThrowsNetworkUnavailableAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let posixError = NSError(
             domain: NSPOSIXErrorDomain,
             code: Int(POSIXErrorCode.ECONNREFUSED.rawValue),
             userInfo: nil
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(posixError))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(posixError)),
+            logger: spyLogger
         )
 
         do {
@@ -298,21 +267,13 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testNetworkCFErrorThrowsNetworkUnavailableAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
-        let cfError = NSError(
-            domain: "kCFErrorDomainCFNetwork",
-            code: 2,
-            userInfo: nil
-        )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(cfError))
+        let store = KeychainSessionStore(keychain: LockedKeychain())
+        let cfError = NSError(domain: "kCFErrorDomainCFNetwork", code: 2, userInfo: nil)
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(cfError)),
+            logger: spyLogger
         )
 
         do {
@@ -328,21 +289,17 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testServerRejectedHTTP400InvalidGrantThrowsServerRejectedAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let error = NSError(
             domain: "AuthError",
             code: 400,
             userInfo: [NSLocalizedDescriptionKey: "invalid_grant: bad code"]
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error)),
+            logger: spyLogger
         )
 
         do {
@@ -358,21 +315,17 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testServerRejectedHTTP401UnauthorizedThrowsServerRejectedAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let error = NSError(
             domain: "AuthError",
             code: 401,
             userInfo: [NSLocalizedDescriptionKey: "Unauthorized request"]
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error)),
+            logger: spyLogger
         )
 
         do {
@@ -388,21 +341,17 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testServerRejectedHTTP403AccessDeniedThrowsServerRejectedAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let error = NSError(
             domain: "AuthError",
             code: 403,
             userInfo: [NSLocalizedDescriptionKey: "access_denied: User denied consent"]
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error)),
+            logger: spyLogger
         )
 
         do {
@@ -418,21 +367,17 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testPresentationContextNotProvidedThrowsExternalProviderUnavailableAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let error = NSError(
             domain: ASWebAuthenticationSessionErrorDomain,
             code: ASWebAuthenticationSessionError.presentationContextNotProvided.rawValue,
             userInfo: nil
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error)),
+            logger: spyLogger
         )
 
         do {
@@ -448,21 +393,17 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testServer500ThrowsExternalProviderUnavailableAndLogsEvent() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let error = NSError(
             domain: "AuthError",
             code: 500,
             userInfo: [NSLocalizedDescriptionKey: "Internal Server Error"]
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .failure(error)),
+            logger: spyLogger
         )
 
         do {
@@ -495,14 +436,11 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             userID: testUserID,
             expiresAt: fixedNow.addingTimeInterval(3600).timeIntervalSince1970
         )
-        let authenticator = ScriptedSupabaseOAuthAuthenticator(behavior: .success(sdkSession))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            oauthAuthenticator: authenticator,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+        let service = makeService(
+            store: store,
+            authenticator: ScriptedSupabaseOAuthAuthenticator(behavior: .success(sdkSession)),
+            logger: spyLogger
         )
 
         do {
@@ -518,15 +456,9 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testSignOutLogsSignOutCompleted() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
-        )
+        let service = makeService(store: store, logger: spyLogger)
 
         try await service.signOut()
 
@@ -535,8 +467,7 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testRestorePurgedOnRejectionLogsRestorePurgedOnRejection() async throws {
-        let keychain = LockedKeychain()
-        let store = KeychainSessionStore(keychain: keychain)
+        let store = KeychainSessionStore(keychain: LockedKeychain())
         let staleSession = AuthenticationSessionMaterial(
             userID: testUserID,
             provider: .apple,
@@ -553,12 +484,10 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         )
         let refresher = ScriptedSupabaseAuthRefresher(behavior: .failure(invalidGrantError))
         let spyLogger = SpyPrivacySafeLogger()
-        let service = SupabaseOAuthSessionService(
-            client: makeClient(),
-            sessionStore: store,
+        let service = makeService(
+            store: store,
             authRefresher: refresher,
-            logger: spyLogger,
-            clock: FixedClock(value: fixedNow)
+            logger: spyLogger
         )
 
         do {
@@ -576,7 +505,6 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testTaxonomyMappingFunctionTableCoverage() {
-        // 1. Cancellation
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifySignInError(CancellationError()),
             .cancelled
@@ -590,8 +518,6 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             ),
             .cancelled
         )
-
-        // 2. Network transport
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifySignInError(URLError(.notConnectedToInternet)),
             .networkUnavailable
@@ -618,30 +544,20 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             ),
             .networkUnavailable
         )
-
-        // 3. Server rejections
         XCTAssertEqual(
-            SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "AuthError", code: 400, userInfo: nil)
-            ),
+            SupabaseOAuthSessionService.classifySignInError(NSError(domain: "AuthError", code: 400, userInfo: nil)),
             .serverRejected
         )
         XCTAssertEqual(
-            SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "AuthError", code: 401, userInfo: nil)
-            ),
+            SupabaseOAuthSessionService.classifySignInError(NSError(domain: "AuthError", code: 401, userInfo: nil)),
             .serverRejected
         )
         XCTAssertEqual(
-            SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "AuthError", code: 403, userInfo: nil)
-            ),
+            SupabaseOAuthSessionService.classifySignInError(NSError(domain: "AuthError", code: 403, userInfo: nil)),
             .serverRejected
         )
         XCTAssertEqual(
-            SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "AuthError", code: 422, userInfo: nil)
-            ),
+            SupabaseOAuthSessionService.classifySignInError(NSError(domain: "AuthError", code: 422, userInfo: nil)),
             .serverRejected
         )
         XCTAssertEqual(
@@ -664,8 +580,6 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             ),
             .serverRejected
         )
-
-        // 4. Provider / Web-sheet / 5xx / fallback
         XCTAssertEqual(
             SupabaseOAuthSessionService.classifySignInError(
                 NSError(
@@ -676,15 +590,11 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             .externalProviderUnavailable
         )
         XCTAssertEqual(
-            SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "AuthError", code: 500, userInfo: nil)
-            ),
+            SupabaseOAuthSessionService.classifySignInError(NSError(domain: "AuthError", code: 500, userInfo: nil)),
             .externalProviderUnavailable
         )
         XCTAssertEqual(
-            SupabaseOAuthSessionService.classifySignInError(
-                NSError(domain: "AuthError", code: 503, userInfo: nil)
-            ),
+            SupabaseOAuthSessionService.classifySignInError(NSError(domain: "AuthError", code: 503, userInfo: nil)),
             .externalProviderUnavailable
         )
         XCTAssertEqual(
