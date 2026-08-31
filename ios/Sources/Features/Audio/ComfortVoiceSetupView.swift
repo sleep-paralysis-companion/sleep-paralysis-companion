@@ -393,13 +393,13 @@ struct PersonalAudioSetupView: View {
                 DynamicAudioWaveform(
                     progress: progress,
                     isPlaying: isPlaying(clip),
-                    onSeekChanged: { p in
+                    onSeekChanged: { progressValue in
                         isSeeking = true
-                        seekProgress = p
+                        seekProgress = progressValue
                     },
-                    onSeekEnded: { p in
+                    onSeekEnded: { progressValue in
                         isSeeking = false
-                        let target = p * duration
+                        let target = progressValue * duration
                         if isPlaying(clip) {
                             model.seekPlayback(to: target)
                         } else {
