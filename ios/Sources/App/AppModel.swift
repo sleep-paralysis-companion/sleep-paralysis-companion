@@ -317,13 +317,22 @@ final class AppModel {
                 authenticationState = .ready
             } catch AuthenticationError.cancelled {
                 authenticationState = .cancelled
+            } catch AuthenticationError.networkUnavailable {
+                authenticationState = .failed
+                feedbackMessage = "Network connection is unavailable. Check your connection and try again."
+            } catch AuthenticationError.serverRejected {
+                authenticationState = .failed
+                feedbackMessage = "Sign-in was rejected by the server. Try again later."
+            } catch AuthenticationError.externalProviderUnavailable {
+                authenticationState = .failed
+                feedbackMessage = "Sign-in did not finish. Check the provider configuration and try again."
             } catch AuthenticationError.wrongAccount {
                 accountAccessState = .wrongAccount
                 authenticationState = .failed
                 feedbackMessage = "This account does not match the protected profile on this device."
             } catch {
                 authenticationState = .failed
-                feedbackMessage = "Sign-in did not finish. Check the provider configuration and try again."
+                feedbackMessage = "Sign-in could not be completed. Try again later."
             }
         }
     }

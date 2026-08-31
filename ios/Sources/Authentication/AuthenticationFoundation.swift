@@ -78,6 +78,8 @@ nonisolated enum AuthenticationError: Error, Equatable, Sendable {
     case revoked
     case keychainFailure
     case externalProviderUnavailable
+    case networkUnavailable
+    case serverRejected
 }
 
 nonisolated enum AuthenticationProviderPolicy {

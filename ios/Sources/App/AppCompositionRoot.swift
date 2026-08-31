@@ -33,7 +33,8 @@ enum AppCompositionRoot {
                     let client = configuration.makeClient()
                     authentication = SupabaseOAuthSessionService(
                         client: client,
-                        sessionStore: keychain
+                        sessionStore: keychain,
+                        logger: logger
                     )
                     accountDeletionGateway = SupabaseAccountDeletionGateway(client: client)
                     remote = SupabaseRemoteMutationGateway(
@@ -54,7 +55,8 @@ enum AppCompositionRoot {
                 let client = configuration.makeClient()
                 authentication = SupabaseOAuthSessionService(
                     client: client,
-                    sessionStore: keychain
+                    sessionStore: keychain,
+                    logger: logger
                 )
                 accountDeletionGateway = SupabaseAccountDeletionGateway(client: client)
                 remote = SupabaseRemoteMutationGateway(

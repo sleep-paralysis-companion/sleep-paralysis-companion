@@ -102,6 +102,27 @@ actor DefaultSupabaseAuthRefresher: SupabaseAuthRefreshing {
     }
 }
 
+nonisolated protocol SupabaseOAuthAuthenticating: Sendable {
+    func signInWithOAuth(provider: AuthenticationProvider) async throws -> Session
+}
+
+actor DefaultSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func signInWithOAuth(provider: AuthenticationProvider) async throws -> Session {
+        switch provider {
+        case .apple:
+            try await client.auth.signInWithOAuth(provider: .apple)
+        case .google:
+            try await client.auth.signInWithOAuth(provider: .google)
+        }
+    }
+}
+
 nonisolated enum SessionRefreshErrorClassification: Equatable, Sendable {
     case network
     case definitiveRejection
@@ -114,17 +135,23 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
     private let client: SupabaseClient
     private let sessionStore: any SessionSecretStore
     private let authRefresher: any SupabaseAuthRefreshing
+    private let oauthAuthenticator: any SupabaseOAuthAuthenticating
+    private let logger: any PrivacySafeLogging
     private let clock: any Phase1BClock
 
     init(
         client: SupabaseClient,
         sessionStore: any SessionSecretStore,
         authRefresher: (any SupabaseAuthRefreshing)? = nil,
+        oauthAuthenticator: (any SupabaseOAuthAuthenticating)? = nil,
+        logger: any PrivacySafeLogging = NoOpPrivacySafeLogger(),
         clock: any Phase1BClock = SystemPhase1BClock()
     ) {
         self.client = client
         self.sessionStore = sessionStore
         self.authRefresher = authRefresher ?? DefaultSupabaseAuthRefresher(client: client)
+        self.oauthAuthenticator = oauthAuthenticator ?? DefaultSupabaseOAuthAuthenticator(client: client)
+        self.logger = logger
         self.clock = clock
     }
 
@@ -145,6 +172,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
                 return .preservedOffline(stored, classification: classification)
             case .definitiveRejection:
                 try? sessionStore.delete()
+                logger.record(.restorePurgedOnRejection, category: .authentication)
                 throw AuthenticationError.expired
             }
         }
@@ -158,22 +186,18 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         }
     }
 
-    /// Refresh-failure classification (S1 contract):
-    /// - URLError / NSURLErrorDomain / CFNetwork / POSIX → .network: preserve stored session (offline or transient).
-    /// - Keywords ("invalid_grant", "session_not_found", …) → .definitiveRejection: purge session; throw .expired.
-    /// - Bare HTTP 401, 403, 400 → .definitiveRejection: purge session; throw .expired; endpoint rejected token.
-    /// - Bare HTTP 404, 422, 429, 5xx, decoding / other → .unclassified: preserve stored session (fail-safe).
-    nonisolated static func classifyRefreshError(_ error: any Error) -> SessionRefreshErrorClassification {
+    /// Determines if an error represents an unreachable host or transport failure.
+    nonisolated static func isNetworkError(_ error: any Error) -> Bool {
         if error is URLError {
-            return .network
+            return true
         }
 
         let nsError = error as NSError
         if nsError.domain == NSURLErrorDomain {
-            return .network
+            return true
         }
         if nsError.domain == (kCFErrorDomainCFNetwork as String) || nsError.domain == "kCFErrorDomainCFNetwork" {
-            return .network
+            return true
         }
         if nsError.domain == NSPOSIXErrorDomain {
             let networkPOSIXCodes: Set<Int32> = [
@@ -186,10 +210,23 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
                 POSIXErrorCode.ENOTCONN.rawValue,
             ]
             if networkPOSIXCodes.contains(Int32(nsError.code)) {
-                return .network
+                return true
             }
         }
+        return false
+    }
 
+    /// Refresh-failure classification (S1 contract):
+    /// - URLError / NSURLErrorDomain / CFNetwork / POSIX → .network: preserve stored session (offline or transient).
+    /// - Keywords ("invalid_grant", "session_not_found", …) → .definitiveRejection: purge session; throw .expired.
+    /// - Bare HTTP 401, 403, 400 → .definitiveRejection: purge session; throw .expired; endpoint rejected token.
+    /// - Bare HTTP 404, 422, 429, 5xx, decoding / other → .unclassified: preserve stored session (fail-safe).
+    nonisolated static func classifyRefreshError(_ error: any Error) -> SessionRefreshErrorClassification {
+        if isNetworkError(error) {
+            return .network
+        }
+
+        let nsError = error as NSError
         let statusCode = (nsError.userInfo["statusCode"] as? Int)
             ?? (nsError.userInfo["status"] as? Int)
             ?? (nsError.userInfo["HTTPStatusCode"] as? Int)
@@ -233,25 +270,116 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         return .unclassified
     }
 
+    /// Sign-in failure classification (S2 contract):
+    /// - CancellationError / ASWebAuthenticationSessionError.canceledLogin → .cancelled.
+    /// - URLError / NSURLErrorDomain / CFNetwork / POSIX → .networkUnavailable.
+    /// - HTTP 400..499, AuthError keywords ("access_denied", "invalid_grant", …) → .serverRejected.
+    /// - Presentation context failures / 5xx / remaining network-less → .externalProviderUnavailable.
+    nonisolated static func classifySignInError(_ error: any Error) -> AuthenticationError {
+        if error is CancellationError {
+            return .cancelled
+        }
+
+        if let asError = error as? ASWebAuthenticationSessionError {
+            switch asError.code {
+            case .canceledLogin:
+                return .cancelled
+            case .presentationContextNotProvided, .presentationContextInvalid:
+                return .externalProviderUnavailable
+            @unknown default:
+                return .externalProviderUnavailable
+            }
+        }
+
+        if let authError = error as? AuthenticationError {
+            return authError
+        }
+
+        if isNetworkError(error) {
+            return .networkUnavailable
+        }
+
+        let nsError = error as NSError
+        let statusCode = (nsError.userInfo["statusCode"] as? Int)
+            ?? (nsError.userInfo["status"] as? Int)
+            ?? (nsError.userInfo["HTTPStatusCode"] as? Int)
+            ?? ((nsError.code >= 400 && nsError.code < 600 && nsError.domain != NSPOSIXErrorDomain && nsError.domain != NSURLErrorDomain && nsError.domain != (kCFErrorDomainCFNetwork as String) && nsError.domain != "kCFErrorDomainCFNetwork") ? nsError.code : nil)
+
+        let description = String(describing: error).lowercased()
+        let rejectionKeywords = [
+            "invalid_grant",
+            "invalid_request",
+            "invalid_token",
+            "invalid_client",
+            "unauthorized_client",
+            "unsupported_grant_type",
+            "access_denied",
+            "unauthorized",
+            "forbidden",
+            "user_not_found",
+            "oauth_error",
+            "bad_oauth_callback",
+            "server_error",
+            "bad_jwt",
+            "session_not_found",
+            "revoked",
+        ]
+
+        for keyword in rejectionKeywords where description.contains(keyword) {
+            return .serverRejected
+        }
+
+        if let statusCode, statusCode >= 400 && statusCode < 500 {
+            return .serverRejected
+        }
+
+        return .externalProviderUnavailable
+    }
+
     func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
+        logger.record(.signInStarted, category: .authentication)
         do {
             let material = try await authenticate(provider: provider)
-            try sessionStore.write(material)
+            do {
+                try sessionStore.write(material)
+            } catch {
+                let mapped = AuthenticationError.keychainFailure
+                logSignInOutcome(for: mapped)
+                throw mapped
+            }
+            logger.record(.signInSucceeded, category: .authentication)
             return material
-        } catch is CancellationError {
-            throw AuthenticationError.cancelled
-        } catch let error as ASWebAuthenticationSessionError
-            where error.code == .canceledLogin
-        {
-            throw AuthenticationError.cancelled
+        } catch let error as AuthenticationError {
+            logSignInOutcome(for: error)
+            throw error
         } catch {
-            throw AuthenticationError.externalProviderUnavailable
+            let mapped = Self.classifySignInError(error)
+            logSignInOutcome(for: mapped)
+            throw mapped
+        }
+    }
+
+    private func logSignInOutcome(for error: AuthenticationError) {
+        switch error {
+        case .cancelled:
+            // Canceled login produces no log noise.
+            break
+        case .networkUnavailable:
+            logger.record(.signInNetworkUnavailable, category: .authentication)
+        case .externalProviderUnavailable:
+            logger.record(.signInProviderUnavailable, category: .authentication)
+        case .serverRejected:
+            logger.record(.signInServerRejected, category: .authentication)
+        case .keychainFailure, .invalidState, .invalidNonce, .missingChallenge,
+             .unsupportedProvider, .providerCollision, .wrongAccount, .expired, .revoked:
+            logger.record(.signInFailedUnclassified, category: .authentication)
         }
     }
 
     func signOut() async throws {
         try await client.auth.signOut()
         try sessionStore.delete()
+        logger.record(.signOutCompleted, category: .authentication)
     }
 
     func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
@@ -267,7 +395,11 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
                 try? sessionStore.write(stored)
                 throw AuthenticationError.wrongAccount
             }
-            try sessionStore.write(refreshed)
+            do {
+                try sessionStore.write(refreshed)
+            } catch {
+                throw AuthenticationError.keychainFailure
+            }
             return ReauthenticatedSession(
                 session: refreshed,
                 proof: RecentReauthentication(
@@ -276,28 +408,17 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
                     authenticatedAt: Date()
                 )
             )
-        } catch is CancellationError {
-            throw AuthenticationError.cancelled
         } catch let error as AuthenticationError {
             throw error
-        } catch let error as ASWebAuthenticationSessionError
-            where error.code == .canceledLogin
-        {
-            throw AuthenticationError.cancelled
         } catch {
-            throw AuthenticationError.externalProviderUnavailable
+            throw Self.classifySignInError(error)
         }
     }
 
     private func authenticate(
         provider: AuthenticationProvider
     ) async throws -> AuthenticationSessionMaterial {
-        let session: Session = switch provider {
-        case .apple:
-            try await client.auth.signInWithOAuth(provider: .apple)
-        case .google:
-            try await client.auth.signInWithOAuth(provider: .google)
-        }
+        let session = try await oauthAuthenticator.signInWithOAuth(provider: provider)
         return Self.material(from: session, provider: provider)
     }
 

@@ -28,14 +28,13 @@ final class LoggingRedactionTests: XCTestCase {
     }
 
     func testLogEventsContainOnlyFixedCodes() {
-        let codes = [
-            AppLogEvent.appActivated.rawValue,
-            AppLogEvent.appDeactivated.rawValue,
-            AppLogEvent.configurationUnavailable.rawValue,
-            AppLogEvent.routeChanged.rawValue,
-        ]
+        let codes = AppLogEvent.allCases.map(\.rawValue)
 
         XCTAssertEqual(Set(codes).count, codes.count)
         XCTAssertTrue(codes.allSatisfy { $0.range(of: "^[a-z_]+$", options: .regularExpression) != nil })
+
+        let categories = AppLogCategory.allCases.map(\.rawValue)
+        XCTAssertEqual(Set(categories).count, categories.count)
+        XCTAssertTrue(categories.allSatisfy { $0.range(of: "^[a-z_]+$", options: .regularExpression) != nil })
     }
 }
