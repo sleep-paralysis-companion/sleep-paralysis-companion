@@ -77,6 +77,12 @@ final class NavigationStateTests: XCTestCase {
         )
     }
 
+    func testLegacyHomeTabDecodesToSleepTab() throws {
+        let json = "\"home\"".data(using: .utf8)!
+        let tab = try JSONDecoder().decode(AppTab.self, from: json)
+        XCTAssertEqual(tab, .sleep)
+    }
+
     @MainActor
     func testOAuthCallbackDeepLinkProducesNoNavigationOrFeedback() async throws {
         let resolver = DeepLinkResolver()
@@ -94,14 +100,14 @@ final class NavigationStateTests: XCTestCase {
         signedOutModel.continueFromSplash()
         signedOutModel.skipIntroduction()
         XCTAssertEqual(signedOutModel.launchDestination, .authentication)
-        XCTAssertEqual(signedOutModel.selectedTab, .home)
+        XCTAssertEqual(signedOutModel.selectedTab, .sleep)
         XCTAssertEqual(signedOutModel.path, [])
         XCTAssertNil(signedOutModel.feedbackMessage)
 
         signedOutModel.openDeepLink(callbackURL)
 
         XCTAssertEqual(signedOutModel.launchDestination, .authentication)
-        XCTAssertEqual(signedOutModel.selectedTab, .home)
+        XCTAssertEqual(signedOutModel.selectedTab, .sleep)
         XCTAssertEqual(signedOutModel.path, [])
         XCTAssertNil(signedOutModel.feedbackMessage)
 

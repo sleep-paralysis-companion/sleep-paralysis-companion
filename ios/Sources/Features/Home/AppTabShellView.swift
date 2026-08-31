@@ -120,7 +120,7 @@ private extension AppTab {
         switch self {
         case .sleep: "moon.stars.fill"
         case .journal: "book.closed"
-        case .home: "house"
+        case .home: "house.fill"
         case .activity: "chart.line.uptrend.xyaxis"
         case .me: "person.crop.circle"
         }

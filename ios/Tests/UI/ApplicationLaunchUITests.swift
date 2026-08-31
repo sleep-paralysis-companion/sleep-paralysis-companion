@@ -286,7 +286,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Activity tracking is coming soon."].exists)
         capture("16-activity-tab", app: app)
 
-        app.buttons["Home"].tap()
+        app.buttons["Sleep"].tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         capture("17-home-tab", app: app)
 
