@@ -490,7 +490,7 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertThrowsError(try LocalDatabase(path: path)) { error in
             XCTAssertEqual(
                 error as? LocalDatabaseError,
-                .unsupportedNewerSchema(found: 99, supported: 6)
+                .unsupportedNewerSchema(found: 99, supported: 10)
             )
         }
         let preserved = try queue.read {
@@ -508,27 +508,27 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), bytes)
     }
 
-    func testMigrationFromCommittedV1ToV6() async throws {
+    func testMigrationFromCommittedV1ToV10() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v1_core_local_data")
 
         let migrated = try LocalDatabase(path: path)
         let version = try await migrated.schemaVersion()
-        XCTAssertEqual(version, 6)
+        XCTAssertEqual(version, 10)
     }
 
-    func testMigrationFromCommittedV2ToV6() async throws {
+    func testMigrationFromCommittedV2ToV10() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v2_sync_security_foundation")
 
         let migrated = try LocalDatabase(path: path)
         let version = try await migrated.schemaVersion()
-        XCTAssertEqual(version, 6)
+        XCTAssertEqual(version, 10)
     }
 
-    func testMigrationFromCommittedV3ToV6PreservesNoFabricatedPersonaData() async throws {
+    func testMigrationFromCommittedV3ToV10PreservesNoFabricatedPersonaData() async throws {
         let path = temporaryDatabasePath()
         let queue = try DatabaseQueue(path: path)
         try LocalSchema.migrator().migrate(queue, upTo: "v3_persona_and_local_personal_audio")
@@ -544,7 +544,7 @@ final class LocalDatabaseTests: XCTestCase {
             profileID: Phase1BFixture.profileID,
             authenticatedUserID: Phase1BFixture.userID
         )
-        XCTAssertEqual(version, 6)
+        XCTAssertEqual(version, 10)
         XCTAssertNil(persona)
     }
 
