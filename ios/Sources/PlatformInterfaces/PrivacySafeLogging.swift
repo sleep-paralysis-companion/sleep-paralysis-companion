@@ -40,11 +40,9 @@ nonisolated protocol PrivacySafeLogging: Sendable {
 }
 
 nonisolated struct NoOpPrivacySafeLogger: PrivacySafeLogging {
-    init() {
-    }
+    init() {}
 
-    func record(_: AppLogEvent, category _: AppLogCategory) {
-    }
+    func record(_: AppLogEvent, category _: AppLogCategory) {}
 }
 
 nonisolated struct ApplePrivacySafeLogger: PrivacySafeLogging {

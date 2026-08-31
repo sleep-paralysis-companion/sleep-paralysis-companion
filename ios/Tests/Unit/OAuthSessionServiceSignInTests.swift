@@ -90,8 +90,7 @@ actor ScriptedOAuthSessionService: OAuthSessionServicing {
         }
     }
 
-    func signOut() async throws {
-    }
+    func signOut() async throws {}
 
     func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
         throw AuthenticationError.cancelled
@@ -488,8 +487,7 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
                 throw AuthenticationError.keychainFailure
             }
 
-            func delete(service _: String, account _: String) throws {
-            }
+            func delete(service _: String, account _: String) throws {}
         }
 
         let store = KeychainSessionStore(keychain: FailingKeychain())

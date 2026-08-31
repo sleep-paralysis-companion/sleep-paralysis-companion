@@ -333,7 +333,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             return .serverRejected
         }
 
-        if let statusCode, statusCode >= 400 && statusCode < 500 {
+        if let statusCode, statusCode >= 400, statusCode < 500 {
             return .serverRejected
         }
 
