@@ -825,11 +825,13 @@ final class AppModel {
 
     var activeTrackTitle: String {
         if case let .personalClip(id) = recoveryAudioDefault,
-           let clip = personalClips.first(where: { $0.id == id }) {
+           let clip = personalClips.first(where: { $0.id == id })
+        {
             return "Personal Voice Guide"
         }
         if case let .catalogItem(id) = recoveryAudioDefault,
-           let item = providedAudio.first(where: { $0.id == id }) {
+           let item = providedAudio.first(where: { $0.id == id })
+        {
             return item.title
         }
         if !personalClips.isEmpty {
@@ -840,11 +842,13 @@ final class AppModel {
 
     var activeTrackSubtitle: String {
         if case let .personalClip(id) = recoveryAudioDefault,
-           let _ = personalClips.first(where: { $0.id == id }) {
+           let _ = personalClips.first(where: { $0.id == id })
+        {
             return "Private recording on this device"
         }
         if case let .catalogItem(id) = recoveryAudioDefault,
-           let item = providedAudio.first(where: { $0.id == id }) {
+           let item = providedAudio.first(where: { $0.id == id })
+        {
             return item.detail
         }
         if !personalClips.isEmpty {

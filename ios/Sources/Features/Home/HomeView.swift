@@ -346,7 +346,7 @@ private struct HomeHeroCard: View {
                                 LinearGradient(
                                     colors: [
                                         HomeScreenPalette.accent,
-                                        HomeScreenPalette.iconTint
+                                        HomeScreenPalette.iconTint,
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
