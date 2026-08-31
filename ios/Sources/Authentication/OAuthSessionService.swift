@@ -348,9 +348,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             do {
                 try sessionStore.write(material)
             } catch {
-                let mapped = AuthenticationError.keychainFailure
-                logSignInOutcome(for: mapped)
-                throw mapped
+                throw AuthenticationError.keychainFailure
             }
             logger.record(.signInSucceeded, category: .authentication)
             return material
