@@ -153,7 +153,7 @@ struct AudioPlayerView: View {
                     LinearGradient(
                         colors: [
                             HomeScreenPalette.accent.opacity(isPlaying ? 0.45 : 0.15),
-                            HomeScreenPalette.iconTint.opacity(isPlaying ? 0.35 : 0.10)
+                            HomeScreenPalette.iconTint.opacity(isPlaying ? 0.35 : 0.10),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -172,7 +172,7 @@ struct AudioPlayerView: View {
                     LinearGradient(
                         colors: [
                             HomeScreenPalette.card.opacity(0.95),
-                            HomeScreenPalette.iconBackground.opacity(0.85)
+                            HomeScreenPalette.iconBackground.opacity(0.85),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -304,7 +304,7 @@ struct AudioPlayerView: View {
                             LinearGradient(
                                 colors: [
                                     HomeScreenPalette.accent,
-                                    HomeScreenPalette.iconTint
+                                    HomeScreenPalette.iconTint,
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
