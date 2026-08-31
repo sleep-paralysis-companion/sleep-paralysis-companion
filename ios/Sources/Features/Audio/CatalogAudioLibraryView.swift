@@ -546,6 +546,7 @@ struct CatalogAudioLibraryView: View {
                         .font(AppTypographyRole.body)
                 }
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("catalogAudio.loading")
         case .empty:
             NightCard {
@@ -558,6 +559,7 @@ struct CatalogAudioLibraryView: View {
                 .font(AppTypographyRole.body)
                 .foregroundStyle(.white.opacity(0.68))
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("catalogAudio.empty")
         case let .failed(message):
             NightCard {
@@ -571,6 +573,7 @@ struct CatalogAudioLibraryView: View {
                 }
                 .buttonStyle(AppPrimaryButtonStyle())
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("catalogAudio.error")
         case .ready:
             EmptyView()
