@@ -208,7 +208,8 @@ struct PersonalAudioSetupView: View {
                         )
                         .frame(width: 126, height: 126)
                         .shadow(
-                            color: (model.isRecording ? ComfortVoiceStyle.destructive : ComfortVoiceStyle.micEnd).opacity(0.4),
+                            color: (model.isRecording ? ComfortVoiceStyle.destructive : ComfortVoiceStyle.micEnd)
+                                .opacity(0.4),
                             radius: 24
                         )
                         .overlay {
@@ -307,7 +308,8 @@ struct PersonalAudioSetupView: View {
             if isScriptExpanded {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(
-                        "\"You're safe. You're dreaming. Take a slow breath and let go — I'm right here, and you're going to be okay.\""
+                        "\"You're safe. You're dreaming. Take a slow breath and let go — "
+                            + "I'm right here, and you're going to be okay.\""
                     )
                     .font(AppFont.inter(size: 17, relativeTo: .title3, weight: .medium))
                     .lineSpacing(5)
@@ -526,7 +528,7 @@ private struct DynamicAudioWaveform: View {
     let onSeekChanged: (Double) -> Void
     let onSeekEnded: (Double) -> Void
 
-    // Normalized pattern of relative bar heights (0.15 to 1.0)
+    /// Normalized pattern of relative bar heights (0.15 to 1.0)
     private let normalizedPattern: [CGFloat] = [
         0.30, 0.50, 0.40, 0.68, 0.80, 0.70, 0.54, 0.38, 0.65, 0.90,
         0.52, 0.35, 0.44, 0.54, 0.74, 0.88, 0.56, 0.84, 1.00, 0.78,
@@ -671,4 +673,3 @@ private struct ComfortVoiceConstellation: View {
         }
     }
 }
-
