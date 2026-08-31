@@ -77,10 +77,10 @@ final class NavigationStateTests: XCTestCase {
         )
     }
 
-    func testLegacyHomeTabDecodesToSleepTab() throws {
-        let json = "\"home\"".data(using: .utf8)!
+    func testHomeTabDecodesFromJSON() throws {
+        let json = Data("\"home\"".utf8)
         let tab = try JSONDecoder().decode(AppTab.self, from: json)
-        XCTAssertEqual(tab, .sleep)
+        XCTAssertEqual(tab, .home)
     }
 
     @MainActor
