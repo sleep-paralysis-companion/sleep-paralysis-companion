@@ -124,6 +124,7 @@ nonisolated struct RouteRestorationCodec: Sendable {
 }
 
 nonisolated struct DeepLinkResolver: Sendable {
+    // swiftlint:disable:next cyclomatic_complexity
     func route(for url: URL) -> AppRoute? {
         guard url.scheme?.lowercased() == "spc" else { return nil }
         return switch url.host?.lowercased() {

@@ -842,7 +842,7 @@ final class AppModel {
 
     var activeTrackSubtitle: String {
         if case let .personalClip(id) = recoveryAudioDefault,
-           let _ = personalClips.first(where: { $0.id == id })
+           personalClips.contains(where: { $0.id == id })
         {
             return "Private recording on this device"
         }
