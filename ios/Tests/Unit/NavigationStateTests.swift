@@ -124,6 +124,7 @@ final class NavigationStateTests: XCTestCase {
         let snapshot = try await store.resume(session: session)
         let now = Date()
         let draft = QuestionnaireDraft(
+            id: UUID(),
             profileID: snapshot.profile.id,
             accountUserID: user,
             episodeFrequency: .rarely,
