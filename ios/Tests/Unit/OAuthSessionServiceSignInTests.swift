@@ -679,9 +679,7 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
             refreshToken: "refresh-b",
             expiresAt: Date().addingTimeInterval(3600)
         )
-        let store = IntegratedPhase1Store(
-            location: LocalStoreLocation(namespace: "test-mismatch-\(UUID().uuidString)")
-        )
+        let store = makeTestPhase1Store(namespace: "test-mismatch-\(UUID().uuidString)")
         // Seed store with initial profile linked to User A
         _ = try await store.resume(session: sessionA)
 

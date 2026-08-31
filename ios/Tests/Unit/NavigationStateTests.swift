@@ -85,6 +85,11 @@ final class NavigationStateTests: XCTestCase {
 
         // 1. Signed-out state: openDeepLink produces no navigation change, no feedback banner
         let signedOutModel = makeTestAppModel()
+        signedOutModel.prepare()
+        await waitForAppModel {
+            signedOutModel.launchDestination == .splash
+        }
+        signedOutModel.start()
         signedOutModel.skipIntroduction()
         XCTAssertEqual(signedOutModel.launchDestination, .authentication)
         XCTAssertEqual(signedOutModel.selectedTab, .home)
@@ -107,9 +112,7 @@ final class NavigationStateTests: XCTestCase {
             refreshToken: "test-refresh",
             expiresAt: Date().addingTimeInterval(3600)
         )
-        let store = IntegratedPhase1Store(
-            location: LocalStoreLocation(namespace: "test-oauth-cb-\(UUID().uuidString)")
-        )
+        let store = makeTestPhase1Store(namespace: "test-oauth-cb-\(UUID().uuidString)")
         let snapshot = try await store.resume(session: session)
         _ = try await store.completeQuestionnaire(profileID: snapshot.profile.id, userID: user)
         _ = try await store.saveSchedule(SleepSchedule.defaultValue, profileID: snapshot.profile.id, userID: user)

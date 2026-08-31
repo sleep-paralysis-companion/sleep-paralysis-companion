@@ -144,14 +144,19 @@ actor ScriptedOAuthSessionService: OAuthSessionServicing {
     }
 }
 
+func makeTestPhase1Store(namespace: String = "test-\(UUID().uuidString)") -> IntegratedPhase1Store {
+    IntegratedPhase1Store(
+        location: LocalStoreLocation(namespace: namespace),
+        preferences: AccountBoundPreferencesStore(keychain: LockedKeychain())
+    )
+}
+
 @MainActor
 func makeTestAppModel(
     authService: any OAuthSessionServicing = UnavailableOAuthSessionService(),
     store: IntegratedPhase1Store? = nil
 ) -> AppModel {
-    let resolvedStore = store ?? IntegratedPhase1Store(
-        location: LocalStoreLocation(namespace: "test-auth-\(UUID().uuidString)")
-    )
+    let resolvedStore = store ?? makeTestPhase1Store(namespace: "test-auth-\(UUID().uuidString)")
     return AppModel(
         environment: .development,
         accessPolicy: AccessPolicy(),
