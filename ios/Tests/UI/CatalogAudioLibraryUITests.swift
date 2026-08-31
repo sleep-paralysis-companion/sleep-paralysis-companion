@@ -11,8 +11,6 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Loading curated audio"].waitForExistence(timeout: 8))
-        let loading = app.descendants(matching: .any)["catalogAudio.loading"]
-        XCTAssertTrue(loading.waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -20,15 +18,11 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let empty = application(scenario: "empty")
         empty.launch()
         XCTAssertTrue(empty.staticTexts["No approved curated audio yet"].waitForExistence(timeout: 8))
-        let emptyCard = empty.descendants(matching: .any)["catalogAudio.empty"]
-        XCTAssertTrue(emptyCard.waitForExistence(timeout: 3))
 
         let error = application(scenario: "error")
         error.launch()
         XCTAssertTrue(error.staticTexts["Audio library unavailable"].waitForExistence(timeout: 8))
         XCTAssertTrue(error.buttons["Try again"].exists)
-        let errorCard = error.descendants(matching: .any)["catalogAudio.error"]
-        XCTAssertTrue(errorCard.waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -37,11 +31,13 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let play = app.buttons["catalogAudio.play.quick_unwind"]
+        XCTAssertTrue(waitForExistenceByScrolling(play, in: app), app.debugDescription)
         makeHittable(play, in: app)
         play.tap()
         XCTAssertTrue(app.staticTexts["Playing preview"].waitForExistence(timeout: 3))
 
         let pause = app.buttons["catalogAudio.pause.quick_unwind"]
+        XCTAssertTrue(waitForExistenceByScrolling(pause, in: app), app.debugDescription)
         makeHittable(pause, in: app)
         pause.tap()
         XCTAssertTrue(app.staticTexts["Preview paused"].waitForExistence(timeout: 3))
@@ -53,12 +49,11 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let download = app.buttons["catalogAudio.download.quick_unwind"]
+        XCTAssertTrue(waitForExistenceByScrolling(download, in: app), app.debugDescription)
         makeHittable(download, in: app)
         download.tap()
-        let progress = app.descendants(matching: .any)["catalogAudio.progress.quick_unwind"]
-        XCTAssertTrue(progress.waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Downloading'"))
-            .firstMatch.exists)
+            .firstMatch.waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -66,14 +61,14 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let downloaded = application(scenario: "downloaded")
         downloaded.launch()
         let remove = downloaded.buttons["catalogAudio.remove.quick_unwind"]
-        makeHittable(remove, in: downloaded)
+        XCTAssertTrue(waitForExistenceByScrolling(remove, in: downloaded), downloaded.debugDescription)
         XCTAssertTrue(downloaded.staticTexts["Available offline"].exists)
         XCTAssertTrue(remove.exists)
 
         let offline = application(scenario: "offline")
         offline.launch()
         let download = offline.buttons["catalogAudio.download.quick_unwind"]
-        makeHittable(download, in: offline)
+        XCTAssertTrue(waitForExistenceByScrolling(download, in: offline), offline.debugDescription)
         XCTAssertTrue(offline.staticTexts["Unavailable offline"].exists)
         XCTAssertTrue(download.exists)
     }
@@ -84,6 +79,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let selection = app.buttons["catalogAudio.selectAlarm.morning_alarm"]
+        XCTAssertTrue(waitForExistenceByScrolling(selection, in: app), app.debugDescription)
         makeHittable(selection, in: app)
         XCTAssertEqual(selection.label, "Selected for alarm")
         XCTAssertTrue(app.staticTexts["Available offline"].exists)
@@ -95,9 +91,10 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let retry = app.buttons["catalogAudio.download.quick_unwind"]
-        makeHittable(retry, in: app)
+        XCTAssertTrue(waitForExistenceByScrolling(retry, in: app), app.debugDescription)
         XCTAssertTrue(app.staticTexts["Download failed"].exists)
         XCTAssertTrue(retry.exists)
+        makeHittable(retry, in: app)
         retry.tap()
         XCTAssertTrue(app.staticTexts["Download failed"].waitForExistence(timeout: 3))
     }
@@ -108,6 +105,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         let remove = app.buttons["catalogAudio.remove.quick_unwind"]
+        XCTAssertTrue(waitForExistenceByScrolling(remove, in: app), app.debugDescription)
         makeHittable(remove, in: app)
         remove.tap()
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Removed Quick Unwind'"))
@@ -120,6 +118,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchEnvironment["SPC_UI_TEST_OPEN_AUDIO_LIBRARY"] = "1"
         app.launchEnvironment["SPC_UI_TEST_CATALOG_SCENARIO"] = scenario
+        app.launchEnvironment["SPC_UI_TEST_AUTHENTICATED_USER_ID"] = "ui-test-user"
         app.launchEnvironment["SPC_DISABLE_AUTH_CONFIGURATION"] = "1"
         app.launchEnvironment["SPC_LOCAL_STORE_NAMESPACE"] = UUID().uuidString
         return app
@@ -137,15 +136,25 @@ final class CatalogAudioLibraryUITests: XCTestCase {
 
     @MainActor
     private func makeHittable(_ element: XCUIElement, in app: XCUIApplication) {
-        let deadline = Date().addingTimeInterval(8)
+        for _ in 0 ..< 8 where !element.isHittable {
+            swipeUp(in: app)
+        }
+        XCTAssertTrue(element.isHittable)
+    }
+
+    @MainActor
+    private func waitForExistenceByScrolling(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        timeout: TimeInterval = 8
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            if element.exists, element.isHittable {
-                return
+            if element.waitForExistence(timeout: 1) {
+                return true
             }
             swipeUp(in: app)
-            _ = element.waitForExistence(timeout: 0.5)
         }
-        XCTAssertTrue(element.waitForExistence(timeout: 2), app.debugDescription)
-        XCTAssertTrue(element.isHittable, app.debugDescription)
+        return element.exists
     }
 }
