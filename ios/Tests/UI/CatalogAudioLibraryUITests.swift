@@ -11,7 +11,8 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Loading curated audio"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.descendants(matching: .any)["catalogAudio.loading"].waitForExistence(timeout: 3))
+        let loading = app.descendants(matching: .any)["catalogAudio.loading"]
+        XCTAssertTrue(loading.waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -19,13 +20,15 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let empty = application(scenario: "empty")
         empty.launch()
         XCTAssertTrue(empty.staticTexts["No approved curated audio yet"].waitForExistence(timeout: 8))
-        XCTAssertTrue(empty.descendants(matching: .any)["catalogAudio.empty"].waitForExistence(timeout: 3))
+        let emptyCard = empty.descendants(matching: .any)["catalogAudio.empty"]
+        XCTAssertTrue(emptyCard.waitForExistence(timeout: 3))
 
         let error = application(scenario: "error")
         error.launch()
         XCTAssertTrue(error.staticTexts["Audio library unavailable"].waitForExistence(timeout: 8))
         XCTAssertTrue(error.buttons["Try again"].exists)
-        XCTAssertTrue(error.descendants(matching: .any)["catalogAudio.error"].waitForExistence(timeout: 3))
+        let errorCard = error.descendants(matching: .any)["catalogAudio.error"]
+        XCTAssertTrue(errorCard.waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -52,7 +55,8 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let download = app.buttons["catalogAudio.download.quick_unwind"]
         makeHittable(download, in: app)
         download.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["catalogAudio.progress.quick_unwind"].waitForExistence(timeout: 3))
+        let progress = app.descendants(matching: .any)["catalogAudio.progress.quick_unwind"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Downloading'"))
             .firstMatch.exists)
     }
@@ -135,7 +139,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
     private func makeHittable(_ element: XCUIElement, in app: XCUIApplication) {
         let deadline = Date().addingTimeInterval(8)
         while Date() < deadline {
-            if element.exists && element.isHittable {
+            if element.exists, element.isHittable {
                 return
             }
             swipeUp(in: app)
