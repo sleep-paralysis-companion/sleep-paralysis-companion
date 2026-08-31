@@ -631,7 +631,7 @@ actor LocalDatabase {
     func deleteAllLocalData() throws {
         try write { database in
             try database.execute(sql: "DELETE FROM local_profiles")
-            try database.execute(sql: "DELETE FROM audio_cache")
+            try database.execute(sql: "DELETE FROM audio_cache_v2")
             try database.execute(sql: "DELETE FROM audio_catalog")
         }
     }
