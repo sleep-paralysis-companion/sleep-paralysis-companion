@@ -97,7 +97,7 @@ struct AudioPlayerView: View {
         HStack {
             Button {
                 if !model.path.isEmpty {
-                    model.pop()
+                    model.setPath(Array(model.path.dropLast()))
                 } else {
                     dismiss()
                 }
