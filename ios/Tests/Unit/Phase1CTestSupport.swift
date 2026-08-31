@@ -117,14 +117,20 @@ func waitForAppModel(
 actor ScriptedOAuthSessionService: OAuthSessionServicing {
     nonisolated let isConfigured: Bool
     private var result: Result<AuthenticationSessionMaterial, any Error>
+    private var restoreResult: SessionRestoreResult?
 
-    init(isConfigured: Bool = true, result: Result<AuthenticationSessionMaterial, any Error>) {
+    init(
+        isConfigured: Bool = true,
+        result: Result<AuthenticationSessionMaterial, any Error> = .failure(AuthenticationError.cancelled),
+        restoreResult: SessionRestoreResult? = nil
+    ) {
         self.isConfigured = isConfigured
         self.result = result
+        self.restoreResult = restoreResult
     }
 
     func restore() async throws -> SessionRestoreResult? {
-        nil
+        restoreResult
     }
 
     func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {

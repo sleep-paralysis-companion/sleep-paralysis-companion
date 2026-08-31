@@ -137,9 +137,11 @@ final class NavigationStateTests: XCTestCase {
         _ = try await store.completeQuestionnaire(profileID: snapshot.profile.id, userID: user)
         _ = try await store.saveSchedule(SleepSchedule.defaultValue, profileID: snapshot.profile.id, userID: user)
 
-        let authService = ScriptedOAuthSessionService(result: .success(session))
+        let authService = ScriptedOAuthSessionService(
+            restoreResult: SessionRestoreResult(session: session, requiresReauthentication: false)
+        )
         let signedInModel = makeTestAppModel(authService: authService, store: store)
-        signedInModel.signIn(provider: .apple)
+        signedInModel.activate()
 
         await waitForAppModel {
             signedInModel.launchDestination == .home
