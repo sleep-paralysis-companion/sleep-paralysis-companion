@@ -11,7 +11,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.staticTexts["Loading curated audio"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.otherElements["catalogAudio.loading"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["catalogAudio.loading"].waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -19,13 +19,13 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let empty = application(scenario: "empty")
         empty.launch()
         XCTAssertTrue(empty.staticTexts["No approved curated audio yet"].waitForExistence(timeout: 8))
-        XCTAssertTrue(empty.otherElements["catalogAudio.empty"].exists)
+        XCTAssertTrue(empty.descendants(matching: .any)["catalogAudio.empty"].waitForExistence(timeout: 3))
 
         let error = application(scenario: "error")
         error.launch()
         XCTAssertTrue(error.staticTexts["Audio library unavailable"].waitForExistence(timeout: 8))
         XCTAssertTrue(error.buttons["Try again"].exists)
-        XCTAssertTrue(error.otherElements["catalogAudio.error"].exists)
+        XCTAssertTrue(error.descendants(matching: .any)["catalogAudio.error"].waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -52,7 +52,7 @@ final class CatalogAudioLibraryUITests: XCTestCase {
         let download = app.buttons["catalogAudio.download.quick_unwind"]
         makeHittable(download, in: app)
         download.tap()
-        XCTAssertTrue(app.otherElements["catalogAudio.progress.quick_unwind"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.descendants(matching: .any)["catalogAudio.progress.quick_unwind"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Downloading'"))
             .firstMatch.exists)
     }
@@ -122,11 +122,26 @@ final class CatalogAudioLibraryUITests: XCTestCase {
     }
 
     @MainActor
-    private func makeHittable(_ element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0 ..< 10 where !element.isHittable {
+    private func swipeUp(in app: XCUIApplication) {
+        let scrollView = app.scrollViews.firstMatch
+        if scrollView.exists {
+            scrollView.swipeUp()
+        } else {
             app.swipeUp()
         }
-        XCTAssertTrue(element.waitForExistence(timeout: 8), app.debugDescription)
+    }
+
+    @MainActor
+    private func makeHittable(_ element: XCUIElement, in app: XCUIApplication) {
+        let deadline = Date().addingTimeInterval(8)
+        while Date() < deadline {
+            if element.exists && element.isHittable {
+                return
+            }
+            swipeUp(in: app)
+            _ = element.waitForExistence(timeout: 0.5)
+        }
+        XCTAssertTrue(element.waitForExistence(timeout: 2), app.debugDescription)
         XCTAssertTrue(element.isHittable, app.debugDescription)
     }
 }
