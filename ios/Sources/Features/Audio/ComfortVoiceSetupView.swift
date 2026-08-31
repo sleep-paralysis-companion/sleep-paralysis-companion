@@ -158,7 +158,7 @@ struct PersonalAudioSetupView: View {
                 .accessibilityAddTraits(.isHeader)
 
             Text("This voice will play automatically during an\nepisode to calm and guide you back.")
-                .font(AppFont.inter(size: 16, relativeTo: .callout, weight: .normal))
+                .font(AppFont.inter(size: 16, relativeTo: .callout, weight: .regular))
                 .lineSpacing(3)
                 .foregroundStyle(ComfortVoiceStyle.secondaryText)
                 .padding(.top, 10)
