@@ -71,7 +71,9 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             }
         }
         """
-        return try JSONDecoder().decode(Session.self, from: Data(json.utf8))
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(Session.self, from: Data(json.utf8))
     }
 
     func testNoStoredSessionReturnsNil() async throws {
