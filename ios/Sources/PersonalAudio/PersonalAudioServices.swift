@@ -450,6 +450,24 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
         }
     }
 
+    var currentTime: TimeInterval {
+        player?.currentTime ?? 0
+    }
+
+    var duration: TimeInterval {
+        player?.duration ?? 0
+    }
+
+    func seek(to time: TimeInterval) {
+        guard let player else { return }
+        player.currentTime = max(0, min(time, player.duration))
+    }
+
+    func skip(by seconds: TimeInterval) {
+        guard let player else { return }
+        seek(to: player.currentTime + seconds)
+    }
+
     func stopPlayback() {
         player?.stop()
         player = nil

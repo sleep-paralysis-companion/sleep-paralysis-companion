@@ -27,9 +27,15 @@ struct HomeView: View {
                         .padding(.horizontal, 24)
                         .padding(.top, 28)
 
-                    HomeHeroCard {
-                        model.beginManualGrounding()
-                    }
+                    HomeHeroCard(
+                        playbackState: model.playbackState,
+                        onPlayPause: {
+                            model.toggleHeroPlayback()
+                        },
+                        onOpenPlayer: {
+                            model.open(.audioPlayer)
+                        }
+                    )
                     .padding(.top, 16)
                     .padding(.bottom, -12)
 
@@ -44,7 +50,7 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
-                    .padding(.bottom, 18)
+                    .padding(.bottom, 84)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -291,40 +297,78 @@ private struct HomeBackground: View {
 }
 
 private struct HomeHeroCard: View {
-    let action: () -> Void
+    let playbackState: GroundingPlaybackState
+    let onPlayPause: () -> Void
+    let onOpenPlayer: () -> Void
+
+    private var isPlaying: Bool {
+        if case .playing = playbackState {
+            return true
+        }
+        return false
+    }
 
     var body: some View {
-        ZStack {
-            Image("HomeHero")
-                .resizable()
-                .scaledToFit()
-                .accessibilityHidden(true)
+        Button(action: onOpenPlayer) {
+            ZStack {
+                Image("HomeHero")
+                    .resizable()
+                    .scaledToFit()
+                    .accessibilityHidden(true)
 
-            VStack(spacing: 10) {
-                Text("I just had an episode")
-                    .font(AppFont.latoBold(size: 24, relativeTo: .title2))
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 10) {
+                    Text("I just had an episode")
+                        .font(AppFont.latoBold(size: 24, relativeTo: .title2))
+                        .multilineTextAlignment(.center)
 
-                Text("You’re Safe! Play Recovery Audio")
-                    .font(AppFont.inter(size: 17, relativeTo: .body))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-                    .multilineTextAlignment(.center)
+                    Text("You’re Safe! Play Recovery Audio")
+                        .font(AppFont.inter(size: 17, relativeTo: .body))
+                        .foregroundStyle(HomeScreenPalette.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 52)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 52)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .aspectRatio(860.0 / 586.0, contentMode: .fit)
+            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
-        .aspectRatio(860.0 / 586.0, contentMode: .fit)
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open full screen audio player")
+        .accessibilityHint("Opens audio player and controls.")
+        .accessibilityIdentifier("home.heroCard")
         .overlay {
             GeometryReader { proxy in
-                Button(action: action) {
-                    Color.clear
-                        .frame(width: 76, height: 76)
-                        .contentShape(Circle())
+                Button(action: onPlayPause) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        HomeScreenPalette.accent,
+                                        HomeScreenPalette.iconTint
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 58, height: 58)
+                            .shadow(
+                                color: HomeScreenPalette.accent.opacity(isPlaying ? 0.6 : 0.25),
+                                radius: isPlaying ? 10 : 4
+                            )
+
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundStyle(.white)
+                            .offset(x: isPlaying ? 0 : 2)
+                    }
+                    .frame(width: 76, height: 76)
+                    .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Play recovery audio")
-                .accessibilityHint("Starts your selected recovery audio.")
+                .accessibilityLabel(isPlaying ? "Pause recovery audio" : "Play recovery audio")
+                .accessibilityHint("Plays or pauses your selected recovery audio.")
                 .accessibilityIdentifier("home.manualEpisode")
                 .position(
                     x: proxy.size.width * 0.790,

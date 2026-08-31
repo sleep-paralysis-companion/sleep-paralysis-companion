@@ -40,6 +40,8 @@ final class AppModel {
     private(set) var exportURL: URL?
     private(set) var audioExportURL: URL?
     private(set) var selectedCheckInID: UUID?
+    private(set) var sleepTimerRemaining: TimeInterval?
+    @ObservationIgnored private var sleepTimerTask: Task<Void, Never>?
     var profile: LocalProfile?
     var settings: AppSettings?
 
@@ -232,6 +234,9 @@ final class AppModel {
             case "audio-library":
                 selectedTab = .home
                 path = [.audioLibrary]
+            case "audio-player", "player":
+                selectedTab = .home
+                path = [.audioPlayer]
             case "curated-audio-library":
                 selectedTab = .me
                 path = [.curatedAudioLibrary]
@@ -818,7 +823,92 @@ final class AppModel {
         updateSleepSessionLiveActivityForPlayback()
     }
 
+    var activeTrackTitle: String {
+        if case let .personalClip(id) = recoveryAudioDefault,
+           let clip = personalClips.first(where: { $0.id == id }) {
+            return "Personal Voice Guide"
+        }
+        if case let .catalogItem(id) = recoveryAudioDefault,
+           let item = providedAudio.first(where: { $0.id == id }) {
+            return item.title
+        }
+        if !personalClips.isEmpty {
+            return "Personal Voice Guide"
+        }
+        return "Felt Dawn"
+    }
+
+    var activeTrackSubtitle: String {
+        if case let .personalClip(id) = recoveryAudioDefault,
+           let _ = personalClips.first(where: { $0.id == id }) {
+            return "Private recording on this device"
+        }
+        if case let .catalogItem(id) = recoveryAudioDefault,
+           let item = providedAudio.first(where: { $0.id == id }) {
+            return item.detail
+        }
+        if !personalClips.isEmpty {
+            return "Private recording on this device"
+        }
+        return "Calming Grounding Meditation"
+    }
+
+    var playbackCurrentTime: TimeInterval {
+        audioController.currentTime
+    }
+
+    var playbackDuration: TimeInterval {
+        audioController.duration
+    }
+
+    func seekPlayback(to time: TimeInterval) {
+        audioController.seek(to: time)
+    }
+
+    func skipPlayback(by seconds: TimeInterval) {
+        audioController.skip(by: seconds)
+    }
+
+    func toggleHeroPlayback() {
+        switch playbackState {
+        case .playing:
+            togglePlayback()
+        case .paused:
+            togglePlayback()
+        default:
+            playSelectedRecoveryAudio()
+        }
+    }
+
+    func setSleepTimer(minutes: Int) {
+        sleepTimerTask?.cancel()
+        guard minutes > 0 else {
+            sleepTimerRemaining = nil
+            return
+        }
+        var secondsRemaining = TimeInterval(minutes * 60)
+        sleepTimerRemaining = secondsRemaining
+
+        sleepTimerTask = Task { @MainActor [weak self] in
+            while secondsRemaining > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                secondsRemaining -= 1
+                self?.sleepTimerRemaining = secondsRemaining
+            }
+            self?.sleepTimerRemaining = nil
+            self?.stopPlayback()
+        }
+    }
+
+    func cancelSleepTimer() {
+        sleepTimerTask?.cancel()
+        sleepTimerTask = nil
+        sleepTimerRemaining = nil
+    }
+
     func stopPlayback() {
+        cancelSleepTimer()
         audioController.stopPlayback()
         playbackState = .idle
         updateSleepSessionLiveActivityForPlayback()

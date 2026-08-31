@@ -137,6 +137,8 @@ private struct AppRouteDestinationView: View {
             GroundingView(model: model)
         case .audioLibrary:
             PersonalAudioSetupView(model: model)
+        case .audioPlayer:
+            AudioPlayerView(model: model)
         case .curatedAudioLibrary:
             CatalogAudioLibraryView(service: model.catalogAudioService) {
                 model.open(.audioLibrary)

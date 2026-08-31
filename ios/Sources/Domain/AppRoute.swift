@@ -36,6 +36,7 @@ nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
 nonisolated enum AppRoute: String, CaseIterable, Codable, Hashable, Sendable {
     case grounding
     case audioLibrary
+    case audioPlayer
     case curatedAudioLibrary
     case sleepSchedule
     case alarmHistory
@@ -128,6 +129,7 @@ nonisolated struct DeepLinkResolver: Sendable {
         return switch url.host?.lowercased() {
         case "grounding", "episode": .grounding
         case "audio": .audioLibrary
+        case "player", "audio-player": .audioPlayer
         case "catalog", "curated-audio": .curatedAudioLibrary
         case "schedule", "schedules", "alarm-history": .alarmHistory
         case "checkin": .morningCheckIn

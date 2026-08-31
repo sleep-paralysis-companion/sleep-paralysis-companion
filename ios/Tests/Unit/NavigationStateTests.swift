@@ -9,6 +9,8 @@ final class NavigationStateTests: XCTestCase {
             ("spc://grounding", .grounding),
             ("spc://episode", .grounding),
             ("spc://audio", .audioLibrary),
+            ("spc://player", .audioPlayer),
+            ("spc://audio-player", .audioPlayer),
             ("spc://catalog", .curatedAudioLibrary),
             ("spc://schedule", .alarmHistory),
             ("spc://checkin", .morningCheckIn),
@@ -85,11 +87,11 @@ final class NavigationStateTests: XCTestCase {
 
         // 1. Signed-out state: openDeepLink produces no navigation change, no feedback banner
         let signedOutModel = makeTestAppModel()
-        signedOutModel.prepare()
+        signedOutModel.activate()
         await waitForAppModel {
             signedOutModel.launchDestination == .splash
         }
-        signedOutModel.start()
+        signedOutModel.continueFromSplash()
         signedOutModel.skipIntroduction()
         XCTAssertEqual(signedOutModel.launchDestination, .authentication)
         XCTAssertEqual(signedOutModel.selectedTab, .home)
