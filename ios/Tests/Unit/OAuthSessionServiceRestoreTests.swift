@@ -196,11 +196,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         final class WriteFailingKeychain: KeychainClient {
             private let underlying = LockedKeychain()
             init(initialSession: AuthenticationSessionMaterial) throws {
-                try underlying.write(
-                    JSONEncoder().encode(initialSession),
-                    service: "app.sleepcompanion.spc.phase1.session",
-                    account: "current"
-                )
+                try KeychainSessionStore(keychain: underlying).write(initialSession)
             }
 
             func read(service: String, account: String) throws -> Data? {
