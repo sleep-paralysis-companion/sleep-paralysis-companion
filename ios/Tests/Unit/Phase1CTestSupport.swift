@@ -113,3 +113,53 @@ func waitForAppModel(
     }
     XCTFail("Timed out waiting for app state.", file: file, line: line)
 }
+
+actor ScriptedOAuthSessionService: OAuthSessionServicing {
+    nonisolated let isConfigured: Bool
+    private var result: Result<AuthenticationSessionMaterial, any Error>
+
+    init(isConfigured: Bool = true, result: Result<AuthenticationSessionMaterial, any Error>) {
+        self.isConfigured = isConfigured
+        self.result = result
+    }
+
+    func restore() async throws -> SessionRestoreResult? {
+        nil
+    }
+
+    func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
+        _ = provider
+        switch result {
+        case let .success(material):
+            return material
+        case let .failure(error):
+            throw error
+        }
+    }
+
+    func signOut() async throws {}
+
+    func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
+        throw AuthenticationError.cancelled
+    }
+}
+
+@MainActor
+func makeTestAppModel(
+    authService: any OAuthSessionServicing = UnavailableOAuthSessionService(),
+    store: IntegratedPhase1Store? = nil
+) -> AppModel {
+    let resolvedStore = store ?? IntegratedPhase1Store(
+        location: LocalStoreLocation(namespace: "test-auth-\(UUID().uuidString)")
+    )
+    return AppModel(
+        environment: .development,
+        accessPolicy: AccessPolicy(),
+        store: resolvedStore,
+        authentication: authService,
+        logger: NoOpPrivacySafeLogger()
+    )
+}
+
+
+

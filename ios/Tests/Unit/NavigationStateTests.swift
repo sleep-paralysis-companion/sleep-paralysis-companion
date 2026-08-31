@@ -74,4 +74,80 @@ final class NavigationStateTests: XCTestCase {
             ).canSubmit
         )
     }
+
+    @MainActor
+    func testOAuthCallbackDeepLinkProducesNoNavigationOrFeedback() async throws {
+        let resolver = DeepLinkResolver()
+        let callbackURL = try XCTUnwrap(URL(string: "spc://auth/callback?code=abc&state=xyz"))
+
+        // Resolver must reject unrouted OAuth callback URL
+        XCTAssertNil(resolver.route(for: callbackURL))
+
+        // 1. Signed-out state: openDeepLink produces no navigation change, no feedback banner
+        let signedOutModel = makeTestAppModel()
+        signedOutModel.skipIntroduction()
+        XCTAssertEqual(signedOutModel.launchDestination, .authentication)
+        XCTAssertEqual(signedOutModel.selectedTab, .home)
+        XCTAssertEqual(signedOutModel.path, [])
+        XCTAssertNil(signedOutModel.feedbackMessage)
+
+        signedOutModel.openDeepLink(callbackURL)
+
+        XCTAssertEqual(signedOutModel.launchDestination, .authentication)
+        XCTAssertEqual(signedOutModel.selectedTab, .home)
+        XCTAssertEqual(signedOutModel.path, [])
+        XCTAssertNil(signedOutModel.feedbackMessage)
+
+        // 2. Signed-in state: openDeepLink produces no navigation change, no feedback banner
+        let user = UUID()
+        let session = AuthenticationSessionMaterial(
+            userID: user,
+            provider: .apple,
+            accessToken: "test-token",
+            refreshToken: "test-refresh",
+            expiresAt: Date().addingTimeInterval(3600)
+        )
+        let store = IntegratedPhase1Store(
+            location: LocalStoreLocation(namespace: "test-oauth-cb-\(UUID().uuidString)")
+        )
+        let database = try store.databaseInstance()
+        let profile = try await database.activateAuthenticatedProfile(
+            userID: user,
+            provider: .apple,
+            sessionExpiresAt: session.expiresAt,
+            now: Date()
+        )
+        _ = try await database.completeQuestionnaireDraft(
+            profileID: profile.id,
+            authenticatedUserID: user,
+            calculatedAt: Date()
+        )
+        try await database.markIntegratedOnboardingComplete(
+            profileID: profile.id,
+            userID: user,
+            completedAt: Date()
+        )
+
+        let authService = ScriptedOAuthSessionService(result: .success(session))
+        let signedInModel = makeTestAppModel(authService: authService, store: store)
+        signedInModel.signIn(provider: .apple)
+
+        await waitForAppModel {
+            signedInModel.launchDestination == .home
+        }
+        XCTAssertEqual(signedInModel.launchDestination, .home)
+
+        signedInModel.selectTab(.me)
+        signedInModel.open(.helpLegal)
+        XCTAssertEqual(signedInModel.selectedTab, .me)
+        XCTAssertEqual(signedInModel.path, [.helpLegal])
+        XCTAssertNil(signedInModel.feedbackMessage)
+
+        signedInModel.openDeepLink(callbackURL)
+
+        XCTAssertEqual(signedInModel.launchDestination, .home)
+        XCTAssertEqual(signedInModel.selectedTab, .me)
+        XCTAssertEqual(signedInModel.path, [.helpLegal])
+        XCTAssertNil(signedInModel.feedbackMessage)
+    }
 }

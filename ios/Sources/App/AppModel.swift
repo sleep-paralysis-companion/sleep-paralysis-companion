@@ -326,6 +326,8 @@ final class AppModel {
             } catch AuthenticationError.externalProviderUnavailable {
                 authenticationState = .failed
                 feedbackMessage = "Sign-in did not finish. Check the provider configuration and try again."
+            // Thrown by store.resume(session:) / LocalDatabase.activateAuthenticatedProfile when
+            // the signed-in account does not match the protected local profile already linked on this device.
             } catch AuthenticationError.wrongAccount {
                 accountAccessState = .wrongAccount
                 authenticationState = .failed
@@ -1204,6 +1206,9 @@ final class AppModel {
             presentActiveSleepSession()
             return
         }
+        // ASWebAuthenticationSession consumes OAuth callbacks (e.g. spc://auth/callback);
+        // unrouted URLs are ignored safely (verified in
+        // NavigationStateTests.testOAuthCallbackDeepLinkProducesNoNavigationOrFeedback).
         guard let route = deepLinkResolver.route(for: url) else { return }
         if launchDestination == .home {
             if route == .grounding {

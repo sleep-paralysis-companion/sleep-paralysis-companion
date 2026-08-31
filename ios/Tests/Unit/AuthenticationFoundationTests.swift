@@ -410,6 +410,31 @@ final class AuthenticationFoundationTests: XCTestCase {
         }
     }
 
+    func testKeychainSessionStoreDefaultConstantsRoundTrip() throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        let sample = Phase1BFixture.session()
+
+        XCTAssertNil(try store.read())
+        try store.write(sample)
+
+        let rawData = try keychain.read(
+            service: SessionKeychainIdentity.service,
+            account: SessionKeychainIdentity.account
+        )
+        XCTAssertNotNil(rawData)
+        XCTAssertEqual(try store.read(), sample)
+
+        try store.delete()
+        XCTAssertNil(try store.read())
+        XCTAssertNil(
+            try keychain.read(
+                service: SessionKeychainIdentity.service,
+                account: SessionKeychainIdentity.account
+            )
+        )
+    }
+
     private func makeCoordinator(
         gateway: ScriptedAuthenticationGateway
     ) -> AuthenticationCoordinator {

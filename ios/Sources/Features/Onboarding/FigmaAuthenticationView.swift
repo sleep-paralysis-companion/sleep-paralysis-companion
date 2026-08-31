@@ -193,8 +193,12 @@ private struct AuthenticationReferenceLayout: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .frame(width: 350, height: 62)
+            .opacity(isProcessing ? 0.72 : 1)
+            .disabled(isProcessing)
             .position(x: 215, y: 731)
             .accessibilityIdentifier("authentication.createAccount")
+            .accessibilityLabel("Create account")
+            .accessibilityAddTraits(.isButton)
 
             policyLine
                 .position(x: 215, y: 789)
@@ -209,8 +213,12 @@ private struct AuthenticationReferenceLayout: View {
                 .font(AppFont.inter(size: 15, relativeTo: .subheadline))
             }
             .buttonStyle(.plain)
+            .disabled(isProcessing)
             .position(x: 215, y: 834)
             .accessibilityIdentifier("authentication.goToLogin")
+            .accessibilityLabel("Already have an account? Log in")
+            .accessibilityHint("Switches to log in")
+            .accessibilityAddTraits(.isButton)
         }
     }
 
@@ -247,7 +255,11 @@ private struct AuthenticationReferenceLayout: View {
                     .font(AppFont.inter(size: 16, relativeTo: .body))
                     .foregroundStyle(AuthenticationPalette.link)
                     .buttonStyle(.plain)
+                    .disabled(isProcessing)
                     .accessibilityIdentifier("authentication.goToCreateAccount")
+                    .accessibilityLabel("Don't have an account? Sign up")
+                    .accessibilityHint("Switches to sign up")
+                    .accessibilityAddTraits(.isButton)
             }
             .frame(width: 300)
             .position(x: 215, y: 702)
@@ -282,11 +294,15 @@ private struct AuthenticationReferenceLayout: View {
             Link("Terms", destination: LegalSupport.termsURL)
                 .foregroundStyle(AuthenticationPalette.link)
                 .accessibilityIdentifier("authentication.terms")
+                .accessibilityLabel("Terms of Service")
+                .accessibilityAddTraits(.isLink)
             Text("and")
                 .foregroundStyle(AuthenticationPalette.secondaryText)
             Link("Privacy Policy", destination: LegalSupport.privacyURL)
                 .foregroundStyle(AuthenticationPalette.link)
                 .accessibilityIdentifier("authentication.privacy")
+                .accessibilityLabel("Privacy Policy")
+                .accessibilityAddTraits(.isLink)
         }
         .font(AppFont.inter(size: 13, relativeTo: .footnote))
         .buttonStyle(.plain)
@@ -325,6 +341,8 @@ private struct AuthenticationProviderButton: View {
         .disabled(isProcessing)
         .accessibilityIdentifier("authentication.\(provider.rawValue)")
         .accessibilityLabel("Continue with \(provider == .google ? "Google" : "Apple")")
+        .accessibilityHint("Signs in with \(provider == .google ? "Google" : "Apple")")
+        .accessibilityAddTraits(.isButton)
     }
 
     @ViewBuilder

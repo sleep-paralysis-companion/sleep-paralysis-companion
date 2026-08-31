@@ -60,36 +60,6 @@ actor ScriptedSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating {
     }
 }
 
-actor ScriptedOAuthSessionService: OAuthSessionServicing {
-    nonisolated let isConfigured: Bool
-    private var result: Result<AuthenticationSessionMaterial, any Error>
-
-    init(isConfigured: Bool = true, result: Result<AuthenticationSessionMaterial, any Error>) {
-        self.isConfigured = isConfigured
-        self.result = result
-    }
-
-    func restore() async throws -> SessionRestoreResult? {
-        nil
-    }
-
-    func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial {
-        _ = provider
-        switch result {
-        case let .success(material):
-            return material
-        case let .failure(error):
-            throw error
-        }
-    }
-
-    func signOut() async throws {}
-
-    func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
-        throw AuthenticationError.cancelled
-    }
-}
-
 final class OAuthSessionServiceSignInTests: XCTestCase {
     private let fixedNow = Date(timeIntervalSince1970: 1_753_660_800)
     private let testUserID = UUID(
@@ -692,16 +662,48 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     @MainActor
-    private func makeAppModel(authService: any OAuthSessionServicing) -> AppModel {
+    func testAppModelSignInProtectedProfileMismatchPropagatesWrongAccountState() async throws {
+        let userA = UUID()
+        let userB = UUID()
+        let sessionA = AuthenticationSessionMaterial(
+            userID: userA,
+            provider: .apple,
+            accessToken: "token-a",
+            refreshToken: "refresh-a",
+            expiresAt: Date().addingTimeInterval(3600)
+        )
+        let sessionB = AuthenticationSessionMaterial(
+            userID: userB,
+            provider: .apple,
+            accessToken: "token-b",
+            refreshToken: "refresh-b",
+            expiresAt: Date().addingTimeInterval(3600)
+        )
         let store = IntegratedPhase1Store(
-            location: LocalStoreLocation(namespace: "test-auth-\(UUID().uuidString)")
+            location: LocalStoreLocation(namespace: "test-mismatch-\(UUID().uuidString)")
         )
-        return AppModel(
-            environment: .development,
-            accessPolicy: AccessPolicy(),
-            store: store,
-            authentication: authService,
-            logger: NoOpPrivacySafeLogger()
+        // Seed store with initial profile linked to User A
+        _ = try await store.resume(session: sessionA)
+
+        // Sign in succeeds at OAuth level for User B, but store.resume throws wrongAccount
+        let authService = ScriptedOAuthSessionService(result: .success(sessionB))
+        let model = makeAppModel(authService: authService, store: store)
+        model.signIn(provider: .apple)
+
+        await waitForAppModel {
+            model.authenticationState == .failed && model.accountAccessState == .wrongAccount
+        }
+        XCTAssertEqual(
+            model.feedbackMessage,
+            "This account does not match the protected profile on this device."
         )
+    }
+
+    @MainActor
+    private func makeAppModel(
+        authService: any OAuthSessionServicing,
+        store: IntegratedPhase1Store? = nil
+    ) -> AppModel {
+        makeTestAppModel(authService: authService, store: store)
     }
 }

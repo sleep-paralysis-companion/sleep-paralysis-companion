@@ -9,8 +9,8 @@ enum AppCompositionRoot {
         let namespace = ProcessInfo.processInfo.environment["SPC_LOCAL_STORE_NAMESPACE"] ?? "primary"
         let keychain = KeychainSessionStore(
             keychain: SystemKeychainClient(),
-            service: "app.sleepcompanion.spc.authentication",
-            account: "supabase-session"
+            service: SessionKeychainIdentity.service,
+            account: SessionKeychainIdentity.account
         )
 
         let authentication: any OAuthSessionServicing

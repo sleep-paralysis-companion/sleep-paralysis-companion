@@ -68,7 +68,7 @@ struct SleepSessionView: View {
 
         return ZStack(alignment: .topLeading) {
             SleepSessionClock()
-                .frame(width: 190 * scale, height: 156 * scale)
+                .frame(width: canvasSize.width - 40 * scale, height: 156 * scale)
                 .position(x: canvasSize.width / 2, y: 238 * scale)
 
             Image("SleepSessionMoon")
@@ -82,11 +82,17 @@ struct SleepSessionView: View {
                 .frame(width: 329 * scale, height: 120 * scale)
                 .position(x: canvasSize.width / 2, y: 673 * scale)
 
-            Text("No unlock required")
-                .font(AppTypographyRole.footnote)
-                .foregroundStyle(.white.opacity(0.5))
-                .frame(width: 180 * scale)
-                .position(x: canvasSize.width / 2, y: 762 * scale)
+            HStack(spacing: 6) {
+                Image(systemName: "lock.open.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.45))
+                Text("No unlock required")
+                    .font(AppTypographyRole.footnote)
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            .accessibilityHidden(true)
+            .frame(width: 220 * scale)
+            .position(x: canvasSize.width / 2, y: 762 * scale)
         }
         .frame(width: canvasSize.width, height: canvasSize.height)
         .position(x: size.width / 2, y: size.height / 2)
@@ -103,9 +109,14 @@ struct SleepSessionView: View {
                     .accessibilityHidden(true)
                 episodeButton
                     .frame(maxWidth: 329, minHeight: 120)
-                Text("Authenticate when requested")
-                    .font(AppTypographyRole.footnote)
-                    .foregroundStyle(.white.opacity(0.6))
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.open.fill")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+                    Text("Authenticate when requested")
+                        .font(AppTypographyRole.footnote)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
             }
             .padding(.horizontal, AppSpacing.screen)
             .padding(.vertical, 72)
@@ -115,7 +126,10 @@ struct SleepSessionView: View {
 
     private var episodeButton: some View {
         Button {
-            model.performSleepSessionAudioAction(audioAction, presentSession: false)
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                model.performSleepSessionAudioAction(audioAction, presentSession: false)
+            }
         } label: {
             HStack(spacing: 12) {
                 episodeButtonIcon
@@ -123,9 +137,10 @@ struct SleepSessionView: View {
                     .font(AppTypographyRole.screenTitle)
                     .lineSpacing(0)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 205)
+                    .frame(maxWidth: 210)
+                    .contentTransition(.interpolate)
             }
-            .padding(.horizontal, 48)
+            .padding(.horizontal, 40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
                 LinearGradient(
@@ -138,9 +153,14 @@ struct SleepSessionView: View {
                 )
             }
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .shadow(
+                color: Color(red: 90.0 / 255.0, green: 71.0 / 255.0, blue: 180.0 / 255.0).opacity(0.35),
+                radius: 18,
+                y: 6
+            )
             .shadow(color: .black.opacity(0.25), radius: 25, y: 25)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SleepSessionActionButtonStyle())
         .accessibilityLabel(audioButtonTitle.replacingOccurrences(of: "\n", with: " "))
         .accessibilityHint(audioButtonHint)
         .accessibilityIdentifier("sleepSession.episode")
@@ -188,6 +208,7 @@ struct SleepSessionView: View {
 
     private var minimizeControl: some View {
         Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             model.minimizeSleepSession()
         } label: {
             Image(systemName: "chevron.down")
@@ -213,17 +234,23 @@ struct SleepSessionView: View {
     }
 
     private var endSessionControl: some View {
-        Button("End sleep session", systemImage: "xmark") {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             model.endSleepSession()
-        }
-        .font(AppTypographyRole.control)
-        .foregroundStyle(.white.opacity(0.9))
-        .padding(.horizontal, 20)
-        .frame(minHeight: 50)
-        .background(.clear)
-        .overlay {
-            Capsule()
-                .stroke(.white.opacity(0.62), lineWidth: 1.5)
+        } label: {
+            Label("End sleep session", systemImage: "xmark")
+                .font(AppTypographyRole.control)
+                .foregroundStyle(.white.opacity(0.92))
+                .padding(.horizontal, 20)
+                .frame(minHeight: 50)
+                .background {
+                    Capsule()
+                        .fill(Color.white.opacity(0.08))
+                        .overlay {
+                            Capsule()
+                                .strokeBorder(.white.opacity(0.35), lineWidth: 1)
+                        }
+                }
         }
         .buttonStyle(.plain)
         .accessibilityHint("Stops grounding audio and removes the Lock Screen companion.")
@@ -245,19 +272,29 @@ struct SleepSessionView: View {
     }
 }
 
+private struct SleepSessionActionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .opacity(configuration.isPressed ? 0.88 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
 private struct SleepSessionClock: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { context in
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 Text(context.date.formatted(date: .omitted, time: .shortened))
                     .font(AppFont.inter(size: 72, relativeTo: .largeTitle).weight(.bold))
-                    .tracking(-1.8)
+                    .tracking(-1.5)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .minimumScaleFactor(0.65)
+                    .shadow(color: .white.opacity(0.12), radius: 16, x: 0, y: 0)
                 Text(context.date.formatted(.dateTime.weekday(.wide).month(.wide).day()))
                     .font(AppFont.inter(size: 20, relativeTo: .title3))
                     .tracking(0.5)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(.white.opacity(0.65))
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
@@ -271,6 +308,8 @@ private struct SleepSessionClock: View {
 }
 
 private struct SleepSessionBackground: View {
+    @State private var isTwinkling = false
+
     private static let stars: [SleepSessionStar] = [
         .init(xPosition: 150.87, yPosition: 332.93, size: 4.01, opacity: 0.20),
         .init(xPosition: 61.36, yPosition: 829.94, size: 5.31, opacity: 0.45),
@@ -313,9 +352,14 @@ private struct SleepSessionBackground: View {
                     endPoint: .bottom
                 )
 
-                ForEach(Array(Self.stars.enumerated()), id: \.offset) { _, star in
+                ForEach(Array(Self.stars.enumerated()), id: \.offset) { index, star in
+                    let isSpecialStar = (index % 3 == 0)
+                    let starOpacity = isSpecialStar
+                        ? (isTwinkling ? star.opacity * 0.6 : star.opacity * 0.2)
+                        : star.opacity * 0.3
+
                     Circle()
-                        .fill(.white.opacity(star.opacity * 0.3))
+                        .fill(.white.opacity(starOpacity))
                         .frame(
                             width: star.size * proxy.size.width / 393,
                             height: star.size * proxy.size.width / 393
@@ -324,8 +368,19 @@ private struct SleepSessionBackground: View {
                             x: star.xPosition / 393 * proxy.size.width,
                             y: star.yPosition / 932 * proxy.size.height
                         )
+                        .animation(
+                            isSpecialStar
+                                ? .easeInOut(
+                                    duration: Double(2.5 + Double(index % 4) * 0.8)
+                                ).repeatForever(autoreverses: true)
+                                : nil,
+                            value: isTwinkling
+                        )
                 }
             }
+        }
+        .onAppear {
+            isTwinkling = true
         }
         .accessibilityHidden(true)
     }
