@@ -43,7 +43,6 @@ struct HomeView: View {
                         if showsSleepSessionAction {
                             sleepSessionAction
                         }
-                        scheduleLink
                         scheduleSummary
                         editScheduleLink
                         quickActions
@@ -129,43 +128,19 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var scheduleLink: some View {
+    private var scheduleSummary: some View {
         Button {
             model.open(.alarmHistory)
         } label: {
-            HStack(spacing: 16) {
-                HomeIconBadge(systemImage: "clock")
-
-                Text("Tonight's sleep schedule")
-                    .font(AppFont.inter(size: 18, relativeTo: .callout))
-                    .minimumScaleFactor(0.8)
-                    .lineLimit(1)
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 21, weight: .medium))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-            }
-            .padding(.horizontal, 20)
-            .frame(maxWidth: .infinity, minHeight: 72)
-            .background(HomeScreenPalette.card)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(HomeScreenPalette.cardBorder, lineWidth: 1.2)
-            }
+            HomeScheduleSummary(
+                sleep: time(hour: model.sleepSchedule.sleepHour, minute: model.sleepSchedule.sleepMinute),
+                wake: time(hour: model.sleepSchedule.wakeHour, minute: model.sleepSchedule.wakeMinute)
+            )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Tonight's sleep schedule")
-        .accessibilityIdentifier("home.sleepSchedule")
-    }
-
-    private var scheduleSummary: some View {
-        HomeScheduleSummary(
-            sleep: time(hour: model.sleepSchedule.sleepHour, minute: model.sleepSchedule.sleepMinute),
-            wake: time(hour: model.sleepSchedule.wakeHour, minute: model.sleepSchedule.wakeMinute)
-        )
+        .accessibilityLabel("Sleep schedule summary")
+        .accessibilityHint("Opens schedule manager")
+        .accessibilityIdentifier("home.scheduleSummary")
     }
 
     private var editScheduleLink: some View {

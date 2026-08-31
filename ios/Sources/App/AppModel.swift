@@ -825,7 +825,7 @@ final class AppModel {
 
     var activeTrackTitle: String {
         if case let .personalClip(id) = recoveryAudioDefault,
-           let clip = personalClips.first(where: { $0.id == id })
+           personalClips.contains(where: { $0.id == id })
         {
             return "Personal Voice Guide"
         }

@@ -230,7 +230,7 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 12))
         capture("12-home", app: app)
-        app.buttons["home.sleepSchedule"].tap()
+        app.buttons["home.scheduleSummary"].tap()
         XCTAssertTrue(app.otherElements["schedule.alarmHistory"].waitForExistence(timeout: 8))
         capture("12a-alarm-history", app: app)
         app.buttons["schedule.history.back"].tap()
@@ -257,7 +257,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.buttons["Sleep"].tap()
         XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["home.manualEpisode"].exists)
-        XCTAssertTrue(app.buttons["home.sleepSchedule"].exists)
+        XCTAssertTrue(app.buttons["home.scheduleSummary"].exists)
         XCTAssertTrue(app.buttons["home.editSchedule"].exists)
         capture("15-sleep-tab", app: app)
         app.buttons["sleepSession.start"].tap()
