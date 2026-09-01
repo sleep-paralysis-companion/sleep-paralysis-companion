@@ -7,12 +7,7 @@ struct AppTabShellView: View {
         ZStack {
             switch model.selectedTab {
             case .sleep:
-                ZStack {
-                    HomeView(model: model, showsSleepSessionAction: true)
-                    if model.isMorningCheckInPresented {
-                        MorningCheckInFlowView(model: model)
-                    }
-                }
+                HomeView(model: model, showsSleepSessionAction: true)
             case .journal:
                 ComingSoonView(
                     title: "Journal",
@@ -29,6 +24,10 @@ struct AppTabShellView: View {
                 )
             case .me:
                 SettingsView(model: model)
+            }
+
+            if model.isMorningCheckInPresented {
+                MorningCheckInFlowView(model: model)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
