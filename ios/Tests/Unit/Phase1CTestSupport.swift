@@ -150,6 +150,24 @@ actor ScriptedOAuthSessionService: OAuthSessionServicing {
     }
 }
 
+actor NoOpReminderScheduler: ReminderNotificationScheduling {
+    func authorizationState() async -> ReminderAuthorizationState {
+        .authorized
+    }
+
+    func requestAuthorization() async throws -> Bool {
+        true
+    }
+
+    func pendingIdentifiers() async -> [String] {
+        []
+    }
+
+    func remove(identifiers: [String]) async {}
+
+    func add(_ plan: SleepReminderPlan) async throws {}
+}
+
 func makeTestPhase1Store(namespace: String = "test-\(UUID().uuidString)") -> IntegratedPhase1Store {
     IntegratedPhase1Store(
         location: LocalStoreLocation(namespace: namespace),
@@ -160,14 +178,17 @@ func makeTestPhase1Store(namespace: String = "test-\(UUID().uuidString)") -> Int
 @MainActor
 func makeTestAppModel(
     authService: any OAuthSessionServicing = UnavailableOAuthSessionService(),
-    store: IntegratedPhase1Store? = nil
+    store: IntegratedPhase1Store? = nil,
+    reminders: SleepReminderService? = nil
 ) -> AppModel {
     let resolvedStore = store ?? makeTestPhase1Store(namespace: "test-auth-\(UUID().uuidString)")
+    let resolvedReminders = reminders ?? SleepReminderService(scheduler: NoOpReminderScheduler())
     return AppModel(
         environment: .development,
         accessPolicy: AccessPolicy(),
         store: resolvedStore,
         authentication: authService,
+        reminders: resolvedReminders,
         logger: NoOpPrivacySafeLogger()
     )
 }
