@@ -3,28 +3,41 @@ import Foundation
 import Supabase
 import XCTest
 
-actor ScriptedSupabaseAuthRefresher: SupabaseAuthRefreshing {
-    enum Behavior {
+final class ScriptedSupabaseAuthRefresher: SupabaseAuthRefreshing, @unchecked Sendable {
+    enum Behavior: Sendable {
         case success(Session)
         case failure(any Error)
     }
 
-    private var behavior: Behavior
-    private(set) var refreshCallCount = 0
-    private(set) var lastRefreshTokenPassed: String?
+    private let queue = DispatchQueue(label: "app.sleepcompanion.test.ScriptedSupabaseAuthRefresher")
+    private var _behavior: Behavior
+    private var _refreshCallCount = 0
+    private var _lastRefreshTokenPassed: String?
 
     init(behavior: Behavior) {
-        self.behavior = behavior
+        self._behavior = behavior
+    }
+
+    var refreshCallCount: Int {
+        queue.sync { _refreshCallCount }
+    }
+
+    var lastRefreshTokenPassed: String? {
+        queue.sync { _lastRefreshTokenPassed }
     }
 
     func setBehavior(_ behavior: Behavior) {
-        self.behavior = behavior
+        queue.sync { _behavior = behavior }
     }
 
     func refreshSession(refreshToken: String) async throws -> Session {
-        refreshCallCount += 1
-        lastRefreshTokenPassed = refreshToken
-        switch behavior {
+        let current = queue.sync { () -> Behavior in
+            _refreshCallCount += 1
+            _lastRefreshTokenPassed = refreshToken
+            return _behavior
+        }
+
+        switch current {
         case let .success(session):
             return session
         case let .failure(error):
@@ -92,7 +105,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
 
         let result = try await service.restore()
         XCTAssertNil(result)
-        let callCount = await refresher.refreshCallCount
+        let callCount = refresher.refreshCallCount
         XCTAssertEqual(callCount, 0)
     }
 
@@ -123,7 +136,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         }
         XCTAssertEqual(material.userID, testUserID)
         XCTAssertEqual(material.provider, .apple)
-        let callCount = await refresher.refreshCallCount
+        let callCount = refresher.refreshCallCount
         XCTAssertEqual(callCount, 0)
         XCTAssertEqual(try store.readIdentity(), freshIdentity)
     }
@@ -154,7 +167,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        let callCount = await refresher.refreshCallCount
+        let callCount = refresher.refreshCallCount
 
         XCTAssertEqual(callCount, 1)
         guard case let .refreshed(updatedMaterial)? = result else {
@@ -196,7 +209,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        let callCount = await refresher.refreshCallCount
+        let callCount = refresher.refreshCallCount
 
         XCTAssertEqual(callCount, 1)
         guard case let .preservedOffline(material, classification)? = result else {
@@ -306,7 +319,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        let callCount = await refresher.refreshCallCount
+        let callCount = refresher.refreshCallCount
         XCTAssertEqual(callCount, 1)
         XCTAssertNil(try store.readIdentity())
     }
@@ -548,7 +561,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        let callCount = await refresher.refreshCallCount
+        let callCount = refresher.refreshCallCount
         XCTAssertEqual(callCount, 1)
         XCTAssertNil(try store.readIdentity())
     }

@@ -30,28 +30,41 @@ final class SpyPrivacySafeLogger: PrivacySafeLogging, @unchecked Sendable {
     }
 }
 
-actor ScriptedSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating {
-    enum Behavior {
+final class ScriptedSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating, @unchecked Sendable {
+    enum Behavior: Sendable {
         case success(Session)
         case failure(any Error)
     }
 
-    private var behavior: Behavior
-    private(set) var callCount = 0
-    private(set) var lastProviderPassed: AuthenticationProvider?
+    private let queue = DispatchQueue(label: "app.sleepcompanion.test.ScriptedSupabaseOAuthAuthenticator")
+    private var _behavior: Behavior
+    private var _callCount = 0
+    private var _lastProviderPassed: AuthenticationProvider?
 
     init(behavior: Behavior) {
-        self.behavior = behavior
+        self._behavior = behavior
+    }
+
+    var callCount: Int {
+        queue.sync { _callCount }
+    }
+
+    var lastProviderPassed: AuthenticationProvider? {
+        queue.sync { _lastProviderPassed }
     }
 
     func setBehavior(_ behavior: Behavior) {
-        self.behavior = behavior
+        queue.sync { _behavior = behavior }
     }
 
     func signInWithOAuth(provider: AuthenticationProvider) async throws -> Session {
-        callCount += 1
-        lastProviderPassed = provider
-        switch behavior {
+        let current = queue.sync { () -> Behavior in
+            _callCount += 1
+            _lastProviderPassed = provider
+            return _behavior
+        }
+
+        switch current {
         case let .success(session):
             return session
         case let .failure(error):

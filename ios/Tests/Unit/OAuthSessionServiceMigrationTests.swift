@@ -85,8 +85,8 @@ final class OAuthSessionServiceMigrationTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        let callCount = await refresher.refreshCallCount
-        let passedToken = await refresher.lastRefreshTokenPassed
+        let callCount = refresher.refreshCallCount
+        let passedToken = refresher.lastRefreshTokenPassed
 
         XCTAssertEqual(callCount, 1)
         XCTAssertEqual(passedToken, "legacy-refresh-token")
