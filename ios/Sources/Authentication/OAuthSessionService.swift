@@ -526,7 +526,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
     }
 
     private func currentSDKSession() async -> Session? {
-        await client.auth.session
+        try? await client.auth.session
     }
 
     private func authenticate(
