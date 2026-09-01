@@ -10,7 +10,8 @@ enum AppCompositionRoot {
         let keychain = KeychainSessionStore(
             keychain: SystemKeychainClient(),
             service: SessionKeychainIdentity.service,
-            account: SessionKeychainIdentity.account
+            identityAccount: SessionKeychainIdentity.identityAccount,
+            legacyAccount: SessionKeychainIdentity.legacyAccount
         )
 
         let authentication: any OAuthSessionServicing
@@ -30,7 +31,13 @@ enum AppCompositionRoot {
                 if !disablesAuthentication,
                    let configuration = SupabasePublicConfiguration.load(from: .main)
                 {
-                    let client = configuration.makeClient()
+                    let authStorage = SupabaseKeychainLocalStorage(
+                        keychain: SystemKeychainClient(),
+                        service: SupabaseKeychainLocalStorage.service(
+                            projectRef: configuration.projectRef
+                        )
+                    )
+                    let client = configuration.makeClient(storage: authStorage)
                     authentication = SupabaseOAuthSessionService(
                         client: client,
                         sessionStore: keychain,
@@ -52,7 +59,13 @@ enum AppCompositionRoot {
             if !disablesAuthentication,
                let configuration = SupabasePublicConfiguration.load(from: .main)
             {
-                let client = configuration.makeClient()
+                let authStorage = SupabaseKeychainLocalStorage(
+                    keychain: SystemKeychainClient(),
+                    service: SupabaseKeychainLocalStorage.service(
+                        projectRef: configuration.projectRef
+                    )
+                )
+                let client = configuration.makeClient(storage: authStorage)
                 authentication = SupabaseOAuthSessionService(
                     client: client,
                     sessionStore: keychain,

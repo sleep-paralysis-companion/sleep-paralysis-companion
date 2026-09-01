@@ -4,7 +4,33 @@ import Security
 
 nonisolated enum SessionKeychainIdentity {
     static let service = "app.sleepcompanion.spc.authentication"
-    static let account = "supabase-session"
+    static let account = "supabase-identity"
+    static let identityAccount = "supabase-identity"
+    static let legacyAccount = "supabase-session"
+}
+
+nonisolated struct AuthenticationIdentityRecord: Equatable, Codable, Sendable {
+    let userID: UUID
+    let provider: AuthenticationProvider
+    let expiresAt: Date
+
+    init(
+        userID: UUID,
+        provider: AuthenticationProvider,
+        expiresAt: Date
+    ) {
+        self.userID = userID
+        self.provider = provider
+        self.expiresAt = expiresAt
+    }
+
+    init(session: AuthenticationSessionMaterial) {
+        self.init(
+            userID: session.userID,
+            provider: session.provider,
+            expiresAt: session.expiresAt
+        )
+    }
 }
 
 nonisolated struct AuthenticationSessionMaterial: Equatable, Codable, Sendable {
@@ -159,8 +185,10 @@ nonisolated protocol AuthenticationGateway: Sendable {
 }
 
 nonisolated protocol SessionSecretStore: Sendable {
-    func read() throws -> AuthenticationSessionMaterial?
-    func write(_ session: AuthenticationSessionMaterial) throws
+    func readIdentity() throws -> AuthenticationIdentityRecord?
+    func writeIdentity(_ identity: AuthenticationIdentityRecord) throws
+    func readLegacyMaterial() throws -> AuthenticationSessionMaterial?
+    func deleteLegacyMaterial() throws
     func delete() throws
 }
 
@@ -213,7 +241,7 @@ actor AuthenticationCoordinator {
             throw AuthenticationError.wrongAccount
         }
         do {
-            try sessionStore.write(session)
+            try sessionStore.writeIdentity(AuthenticationIdentityRecord(session: session))
         } catch {
             try? await gateway.signOut(session)
             throw AuthenticationError.keychainFailure
@@ -223,15 +251,28 @@ actor AuthenticationCoordinator {
     }
 
     func refresh(now: Date) async throws -> AuthenticationSessionMaterial {
-        guard let stored = try sessionStore.read() else {
+        guard let stored = try sessionStore.readIdentity() else {
             throw AuthenticationError.expired
         }
         try Task.checkCancellation()
         if stored.expiresAt > now.addingTimeInterval(60) {
-            return stored
+            return AuthenticationSessionMaterial(
+                userID: stored.userID,
+                provider: stored.provider,
+                accessToken: "",
+                refreshToken: "",
+                expiresAt: stored.expiresAt
+            )
         }
-        let refreshed = try await gateway.refresh(stored)
-        try sessionStore.write(refreshed)
+        let material = AuthenticationSessionMaterial(
+            userID: stored.userID,
+            provider: stored.provider,
+            accessToken: "",
+            refreshToken: "",
+            expiresAt: stored.expiresAt
+        )
+        let refreshed = try await gateway.refresh(material)
+        try sessionStore.writeIdentity(AuthenticationIdentityRecord(session: refreshed))
         return refreshed
     }
 
@@ -266,7 +307,7 @@ actor AuthenticationCoordinator {
             throw AuthenticationError.wrongAccount
         }
         do {
-            try sessionStore.write(refreshed)
+            try sessionStore.writeIdentity(AuthenticationIdentityRecord(session: refreshed))
         } catch {
             try? await gateway.signOut(refreshed)
             throw AuthenticationError.keychainFailure
@@ -285,18 +326,18 @@ actor AuthenticationCoordinator {
     func signOut(
         providerRevocationCredential: ProviderGrantCredential?
     ) async throws -> SignOutAuthenticationResult {
-        let session = try sessionStore.read()
+        let identity = try sessionStore.readIdentity()
         var providerRevocationFailed = false
-        if let session {
+        if let identity {
             if let providerRevocationCredential {
-                guard providerRevocationCredential.provider == session.provider else {
+                guard providerRevocationCredential.provider == identity.provider else {
                     throw AuthenticationError.providerCollision
                 }
                 do {
                     try await gateway.revokeProviderGrant(
                         ProviderGrantRevocationRequest(
-                            userID: session.userID,
-                            provider: session.provider,
+                            userID: identity.userID,
+                            provider: identity.provider,
                             credential: providerRevocationCredential
                         )
                     )
@@ -304,7 +345,14 @@ actor AuthenticationCoordinator {
                     providerRevocationFailed = true
                 }
             }
-            try await gateway.signOut(session)
+            let material = AuthenticationSessionMaterial(
+                userID: identity.userID,
+                provider: identity.provider,
+                accessToken: "",
+                refreshToken: "",
+                expiresAt: identity.expiresAt
+            )
+            try await gateway.signOut(material)
         }
         do {
             try sessionStore.delete()

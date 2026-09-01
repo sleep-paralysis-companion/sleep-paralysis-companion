@@ -117,7 +117,8 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
     }
 
     func testSuccessfulSignInLogsStartedAndSucceededAndWritesSession() async throws {
-        let store = KeychainSessionStore(keychain: LockedKeychain())
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
         let sdkSession = try makeSyntheticSession(
             userID: testUserID,
             expiresAt: fixedNow.addingTimeInterval(3600).timeIntervalSince1970
@@ -135,7 +136,21 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         XCTAssertEqual(material.provider, .apple)
         XCTAssertEqual(material.accessToken, "synthetic-signin-access")
         XCTAssertEqual(material.refreshToken, "synthetic-signin-refresh")
-        XCTAssertEqual(try store.read(), material)
+
+        let storedIdentity = try store.readIdentity()
+        XCTAssertEqual(storedIdentity?.userID, testUserID)
+        XCTAssertEqual(storedIdentity?.provider, .apple)
+
+        // Verify tokens are NOT in app-side Keychain store at rest
+        let rawData = try keychain.read(
+            service: SessionKeychainIdentity.service,
+            account: SessionKeychainIdentity.identityAccount
+        )
+        let rawDataUnwrapped = try XCTUnwrap(rawData)
+        let rawString = String(decoding: rawDataUnwrapped, as: UTF8.self)
+        XCTAssertFalse(rawString.contains("synthetic-signin-access"))
+        XCTAssertFalse(rawString.contains("synthetic-signin-refresh"))
+
         XCTAssertEqual(spyLogger.events, [.signInStarted, .signInSucceeded])
         XCTAssertEqual(spyLogger.entries.first?.category, .authentication)
     }
@@ -164,7 +179,7 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
         }
 
         XCTAssertEqual(spyLogger.events, [.signInStarted])
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
     }
 
     func testCancellationErrorThrowsCancelledAndLogsNothingExtra() async throws {
@@ -438,14 +453,12 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
 
     func testRestorePurgedOnRejectionLogsRestorePurgedOnRejection() async throws {
         let store = KeychainSessionStore(keychain: LockedKeychain())
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let invalidGrantError = NSError(
             domain: "AuthError",
@@ -471,7 +484,7 @@ final class OAuthSessionServiceSignInTests: XCTestCase {
 
         XCTAssertEqual(spyLogger.events, [.restorePurgedOnRejection])
         XCTAssertEqual(spyLogger.entries.first?.category, .authentication)
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
     }
 
     func testTaxonomyMappingFunctionTableCoverage() {

@@ -156,34 +156,121 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
     }
 
     func restore() async throws -> SessionRestoreResult? {
-        guard let stored = try sessionStore.read() else { return nil }
-        let now = clock.now()
-        if stored.expiresAt > now.addingTimeInterval(60) {
-            return .fresh(stored)
-        }
+        if let stored = try sessionStore.readIdentity() {
+            let now = clock.now()
+            if stored.expiresAt > now.addingTimeInterval(60) {
+                let sdkSession = await currentSDKSession()
+                if let sdkSession, sdkSession.user.id == stored.userID {
+                    let material = Self.material(from: sdkSession, provider: stored.provider)
+                    return .fresh(material)
+                }
+                let fallback = AuthenticationSessionMaterial(
+                    userID: stored.userID,
+                    provider: stored.provider,
+                    accessToken: sdkSession?.accessToken ?? "",
+                    refreshToken: sdkSession?.refreshToken ?? "",
+                    expiresAt: stored.expiresAt
+                )
+                return .fresh(fallback)
+            }
 
-        let session: Session
-        do {
-            session = try await authRefresher.refreshSession(refreshToken: stored.refreshToken)
-        } catch {
-            let classification = Self.classifyRefreshError(error)
-            switch classification {
-            case .network, .unclassified:
-                return .preservedOffline(stored, classification: classification)
-            case .definitiveRejection:
+            let sdkSession = await currentSDKSession()
+            let refreshToken = sdkSession?.refreshToken
+
+            let session: Session
+            do {
+                if let refreshToken {
+                    session = try await authRefresher.refreshSession(refreshToken: refreshToken)
+                } else {
+                    session = try await client.auth.refreshSession()
+                }
+            } catch {
+                let classification = Self.classifyRefreshError(error)
+                switch classification {
+                case .network, .unclassified:
+                    if let sdkSession {
+                        let material = Self.material(from: sdkSession, provider: stored.provider)
+                        return .preservedOffline(material, classification: classification)
+                    } else {
+                        let fallback = AuthenticationSessionMaterial(
+                            userID: stored.userID,
+                            provider: stored.provider,
+                            accessToken: "",
+                            refreshToken: "",
+                            expiresAt: stored.expiresAt
+                        )
+                        return .preservedOffline(fallback, classification: classification)
+                    }
+                case .definitiveRejection:
+                    try? sessionStore.delete()
+                    try? await client.auth.signOut()
+                    logger.record(.restorePurgedOnRejection, category: .authentication)
+                    throw AuthenticationError.expired
+                }
+            }
+
+            guard session.user.id == stored.userID else {
                 try? sessionStore.delete()
-                logger.record(.restorePurgedOnRejection, category: .authentication)
-                throw AuthenticationError.expired
+                try? await client.auth.signOut()
+                throw AuthenticationError.wrongAccount
+            }
+
+            let updatedIdentity = AuthenticationIdentityRecord(
+                userID: session.user.id,
+                provider: stored.provider,
+                expiresAt: Date(timeIntervalSince1970: TimeInterval(session.expiresAt))
+            )
+            do {
+                try sessionStore.writeIdentity(updatedIdentity)
+                let material = Self.material(from: session, provider: stored.provider)
+                return .refreshed(material)
+            } catch {
+                let material = Self.material(from: session, provider: stored.provider)
+                return .preservedOffline(material, classification: .unclassified)
             }
         }
 
-        let material = Self.material(from: session, provider: stored.provider)
-        do {
-            try sessionStore.write(material)
+        if let legacy = try sessionStore.readLegacyMaterial() {
+            let session: Session
+            do {
+                session = try await authRefresher.refreshSession(refreshToken: legacy.refreshToken)
+            } catch {
+                let classification = Self.classifyRefreshError(error)
+                switch classification {
+                case .network, .unclassified:
+                    return .preservedOffline(legacy, classification: classification)
+                case .definitiveRejection:
+                    try? sessionStore.delete()
+                    try? await client.auth.signOut()
+                    logger.record(.restorePurgedOnRejection, category: .authentication)
+                    throw AuthenticationError.expired
+                }
+            }
+
+            guard session.user.id == legacy.userID else {
+                try? sessionStore.delete()
+                try? await client.auth.signOut()
+                throw AuthenticationError.wrongAccount
+            }
+
+            let newIdentity = AuthenticationIdentityRecord(
+                userID: session.user.id,
+                provider: legacy.provider,
+                expiresAt: Date(timeIntervalSince1970: TimeInterval(session.expiresAt))
+            )
+            do {
+                try sessionStore.writeIdentity(newIdentity)
+                try sessionStore.deleteLegacyMaterial()
+            } catch {
+                let material = Self.material(from: session, provider: legacy.provider)
+                return .refreshed(material)
+            }
+
+            let material = Self.material(from: session, provider: legacy.provider)
             return .refreshed(material)
-        } catch {
-            return .preservedOffline(stored, classification: .unclassified)
         }
+
+        return nil
     }
 
     /// Determines if an error represents an unreachable host or transport failure.
@@ -345,9 +432,12 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         logger.record(.signInStarted, category: .authentication)
         do {
             let material = try await authenticate(provider: provider)
+            let identity = AuthenticationIdentityRecord(session: material)
             do {
-                try sessionStore.write(material)
+                try sessionStore.writeIdentity(identity)
+                try? sessionStore.deleteLegacyMaterial()
             } catch {
+                try? await client.auth.signOut()
                 throw AuthenticationError.keychainFailure
             }
             logger.record(.signInSucceeded, category: .authentication)
@@ -386,20 +476,30 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
     }
 
     func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
-        guard let stored = try sessionStore.read() else {
+        let storedProvider: AuthenticationProvider
+        let storedUserID: UUID
+        if let stored = try sessionStore.readIdentity() {
+            storedProvider = stored.provider
+            storedUserID = stored.userID
+        } else if let legacy = try sessionStore.readLegacyMaterial() {
+            storedProvider = legacy.provider
+            storedUserID = legacy.userID
+        } else {
             throw AuthenticationError.expired
         }
+
         do {
-            let refreshed = try await authenticate(provider: stored.provider)
-            guard refreshed.userID == stored.userID,
-                  refreshed.provider == stored.provider
+            let refreshed = try await authenticate(provider: storedProvider)
+            guard refreshed.userID == storedUserID,
+                  refreshed.provider == storedProvider
             else {
                 try? await client.auth.signOut()
-                try? sessionStore.write(stored)
                 throw AuthenticationError.wrongAccount
             }
+            let identity = AuthenticationIdentityRecord(session: refreshed)
             do {
-                try sessionStore.write(refreshed)
+                try sessionStore.writeIdentity(identity)
+                try? sessionStore.deleteLegacyMaterial()
             } catch {
                 throw AuthenticationError.keychainFailure
             }
@@ -416,6 +516,10 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         } catch {
             throw Self.classifySignInError(error)
         }
+    }
+
+    private func currentSDKSession() async -> Session? {
+        await client.auth.session
     }
 
     private func authenticate(

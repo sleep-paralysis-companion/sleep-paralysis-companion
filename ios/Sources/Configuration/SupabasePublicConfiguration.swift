@@ -30,12 +30,30 @@ nonisolated struct SupabasePublicConfiguration: Sendable {
         )
     }
 
-    func makeClient() -> SupabaseClient {
-        SupabaseClient(
+    var projectRef: String {
+        guard let host = url.host(percentEncoded: false) ?? url.host else {
+            return "default"
+        }
+        return host.split(separator: ".").first.map(String.init) ?? host
+    }
+
+    func makeClient(storage: (any AuthLocalStorage)? = nil) -> SupabaseClient {
+        let authOptions: SupabaseClientOptions.AuthOptions
+        if let storage {
+            authOptions = SupabaseClientOptions.AuthOptions(
+                storage: storage,
+                redirectToURL: oauthRedirectURL
+            )
+        } else {
+            authOptions = SupabaseClientOptions.AuthOptions(
+                redirectToURL: oauthRedirectURL
+            )
+        }
+        return SupabaseClient(
             supabaseURL: url,
             supabaseKey: publishableKey,
             options: SupabaseClientOptions(
-                auth: .init(redirectToURL: oauthRedirectURL)
+                auth: authOptions
             )
         )
     }

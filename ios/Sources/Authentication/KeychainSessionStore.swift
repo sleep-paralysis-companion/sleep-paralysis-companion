@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import Supabase
 
 nonisolated protocol KeychainClient: Sendable {
     func read(service: String, account: String) throws -> Data?
@@ -57,23 +58,90 @@ nonisolated struct SystemKeychainClient: KeychainClient {
     }
 }
 
+nonisolated struct SupabaseKeychainLocalStorage: AuthLocalStorage, Sendable {
+    private let keychain: any KeychainClient
+    private let service: String
+
+    init(
+        keychain: any KeychainClient = SystemKeychainClient(),
+        service: String
+    ) {
+        self.keychain = keychain
+        self.service = service
+    }
+
+    static func service(
+        bundleIdentifier: String = "app.sleepcompanion.spc",
+        projectRef: String
+    ) -> String {
+        "\(bundleIdentifier).supabase.auth.\(projectRef)"
+    }
+
+    func store(key: String, value: Data) throws {
+        do {
+            try keychain.write(value, service: service, account: key)
+        } catch {
+            throw AuthenticationError.keychainFailure
+        }
+    }
+
+    func retrieve(key: String) throws -> Data? {
+        do {
+            return try keychain.read(service: service, account: key)
+        } catch {
+            throw AuthenticationError.keychainFailure
+        }
+    }
+
+    func remove(key: String) throws {
+        do {
+            try keychain.delete(service: service, account: key)
+        } catch {
+            throw AuthenticationError.keychainFailure
+        }
+    }
+}
+
 nonisolated struct KeychainSessionStore: SessionSecretStore {
     private let keychain: any KeychainClient
     private let service: String
-    private let account: String
+    private let identityAccount: String
+    private let legacyAccount: String
 
     init(
         keychain: any KeychainClient,
         service: String = SessionKeychainIdentity.service,
-        account: String = SessionKeychainIdentity.account
+        identityAccount: String = SessionKeychainIdentity.identityAccount,
+        legacyAccount: String = SessionKeychainIdentity.legacyAccount
     ) {
         self.keychain = keychain
         self.service = service
-        self.account = account
+        self.identityAccount = identityAccount
+        self.legacyAccount = legacyAccount
     }
 
-    func read() throws -> AuthenticationSessionMaterial? {
-        guard let data = try keychain.read(service: service, account: account) else {
+    func readIdentity() throws -> AuthenticationIdentityRecord? {
+        guard let data = try keychain.read(service: service, account: identityAccount) else {
+            return nil
+        }
+        do {
+            return try JSONDecoder().decode(AuthenticationIdentityRecord.self, from: data)
+        } catch {
+            throw AuthenticationError.keychainFailure
+        }
+    }
+
+    func writeIdentity(_ identity: AuthenticationIdentityRecord) throws {
+        do {
+            let data = try JSONEncoder().encode(identity)
+            try keychain.write(data, service: service, account: identityAccount)
+        } catch {
+            throw AuthenticationError.keychainFailure
+        }
+    }
+
+    func readLegacyMaterial() throws -> AuthenticationSessionMaterial? {
+        guard let data = try keychain.read(service: service, account: legacyAccount) else {
             return nil
         }
         do {
@@ -83,16 +151,12 @@ nonisolated struct KeychainSessionStore: SessionSecretStore {
         }
     }
 
-    func write(_ session: AuthenticationSessionMaterial) throws {
-        do {
-            let data = try JSONEncoder().encode(session)
-            try keychain.write(data, service: service, account: account)
-        } catch {
-            throw AuthenticationError.keychainFailure
-        }
+    func deleteLegacyMaterial() throws {
+        try keychain.delete(service: service, account: legacyAccount)
     }
 
     func delete() throws {
-        try keychain.delete(service: service, account: account)
+        try keychain.delete(service: service, account: identityAccount)
+        try keychain.delete(service: service, account: legacyAccount)
     }
 }

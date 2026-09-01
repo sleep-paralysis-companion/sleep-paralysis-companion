@@ -137,7 +137,9 @@ final class AuthenticationFoundationTests: XCTestCase {
         )
 
         XCTAssertEqual(session, Phase1BFixture.session())
-        XCTAssertEqual(try store.read(), session)
+        let storedIdentity = try store.readIdentity()
+        XCTAssertEqual(storedIdentity?.userID, session.userID)
+        XCTAssertEqual(storedIdentity?.provider, session.provider)
     }
 
     func testWrongFormerAccountIsRejectedWithoutSessionPersistence() async throws {
@@ -162,7 +164,7 @@ final class AuthenticationFoundationTests: XCTestCase {
                 expectedFormerUserID: Phase1BFixture.profileID
             )
         }
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
         let signOutCount = await gateway.signOutCount
         XCTAssertEqual(signOutCount, 1)
     }
@@ -214,16 +216,13 @@ final class AuthenticationFoundationTests: XCTestCase {
     func testRefreshUsesStoredRefreshTokenOnlyWhenExpiring() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        var expiring = Phase1BFixture.session()
-        expiring = AuthenticationSessionMaterial(
-            userID: expiring.userID,
-            provider: expiring.provider,
-            accessToken: expiring.accessToken,
-            refreshToken: expiring.refreshToken,
+        let expiring = AuthenticationIdentityRecord(
+            userID: Phase1BFixture.userID,
+            provider: .apple,
             expiresAt: Phase1BFixture.now.addingTimeInterval(10)
         )
-        try store.write(expiring)
-        let gateway = ScriptedAuthenticationGateway(behavior: .success(expiring))
+        try store.writeIdentity(expiring)
+        let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
         let coordinator = AuthenticationCoordinator(
             challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 1)),
             gateway: gateway,
@@ -239,7 +238,7 @@ final class AuthenticationFoundationTests: XCTestCase {
     func testSignOutUsesProviderCredentialAndSeparatelyCleansSupabaseSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        try store.write(Phase1BFixture.session())
+        try store.writeIdentity(AuthenticationIdentityRecord(session: Phase1BFixture.session()))
         let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
         let coordinator = AuthenticationCoordinator(
             challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 2)),
@@ -253,7 +252,7 @@ final class AuthenticationFoundationTests: XCTestCase {
         let revokeCount = await gateway.revokeCount
         let signOutCount = await gateway.signOutCount
         let revokedProvider = await gateway.revokedProvider
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
         XCTAssertEqual(revokeCount, 1)
         XCTAssertEqual(signOutCount, 1)
         XCTAssertEqual(revokedProvider, .apple)
@@ -263,7 +262,7 @@ final class AuthenticationFoundationTests: XCTestCase {
     func testSignOutWithoutProviderCredentialSkipsRevocationAndStillSignsOut() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        try store.write(Phase1BFixture.session())
+        try store.writeIdentity(AuthenticationIdentityRecord(session: Phase1BFixture.session()))
         let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
         let coordinator = AuthenticationCoordinator(
             challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 2)),
@@ -274,7 +273,7 @@ final class AuthenticationFoundationTests: XCTestCase {
         let result = try await coordinator.signOut(providerRevocationCredential: nil)
 
         XCTAssertEqual(result, .signedOut)
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
         let revokeCount = await gateway.revokeCount
         let signOutCount = await gateway.signOutCount
         XCTAssertEqual(revokeCount, 0)
@@ -284,7 +283,7 @@ final class AuthenticationFoundationTests: XCTestCase {
     func testProviderRevocationFailureStillSignsOutAndPreservesGuestUsability() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        try store.write(Phase1BFixture.session())
+        try store.writeIdentity(AuthenticationIdentityRecord(session: Phase1BFixture.session()))
         let gateway = ScriptedAuthenticationGateway(
             behavior: .success(Phase1BFixture.session()),
             revokeFailure: .externalProviderUnavailable
@@ -300,7 +299,7 @@ final class AuthenticationFoundationTests: XCTestCase {
         )
 
         XCTAssertEqual(result, .signedOutProviderGrantNotRevoked)
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
         let revokeCount = await gateway.revokeCount
         let signOutCount = await gateway.signOutCount
         XCTAssertEqual(revokeCount, 1)
@@ -310,7 +309,8 @@ final class AuthenticationFoundationTests: XCTestCase {
     func testProviderCredentialMustMatchSignedInProvider() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        try store.write(Phase1BFixture.session())
+        let identity = AuthenticationIdentityRecord(session: Phase1BFixture.session())
+        try store.writeIdentity(identity)
         let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
         let coordinator = AuthenticationCoordinator(
             challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 2)),
@@ -323,7 +323,7 @@ final class AuthenticationFoundationTests: XCTestCase {
                 providerRevocationCredential: .googleOAuthAccessToken("ephemeral-proof")
             )
         }
-        XCTAssertEqual(try store.read(), Phase1BFixture.session())
+        XCTAssertEqual(try store.readIdentity(), identity)
         let revokeCount = await gateway.revokeCount
         let signOutCount = await gateway.signOutCount
         XCTAssertEqual(revokeCount, 0)
@@ -333,7 +333,7 @@ final class AuthenticationFoundationTests: XCTestCase {
     func testRecentReauthenticationRequiresMatchingAccountAndProvider() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        try store.write(Phase1BFixture.session())
+        try store.writeIdentity(AuthenticationIdentityRecord(session: Phase1BFixture.session()))
         let gateway = ScriptedAuthenticationGateway(behavior: .success(Phase1BFixture.session()))
         let coordinator = AuthenticationCoordinator(
             challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 6)),
@@ -361,7 +361,8 @@ final class AuthenticationFoundationTests: XCTestCase {
     func testWrongAccountReauthenticationStopsWithoutReplacingStoredSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        try store.write(Phase1BFixture.session())
+        let identity = AuthenticationIdentityRecord(session: Phase1BFixture.session())
+        try store.writeIdentity(identity)
         let different = Phase1BFixture.session(
             userID: Phase1BFixture.uuid("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
         )
@@ -386,7 +387,7 @@ final class AuthenticationFoundationTests: XCTestCase {
             )
         }
 
-        XCTAssertEqual(try store.read(), Phase1BFixture.session())
+        XCTAssertEqual(try store.readIdentity(), identity)
         let signOutCount = await gateway.signOutCount
         XCTAssertEqual(signOutCount, 1)
     }
@@ -410,29 +411,91 @@ final class AuthenticationFoundationTests: XCTestCase {
         }
     }
 
-    func testKeychainSessionStoreDefaultConstantsRoundTrip() throws {
+    func testKeychainSessionStoreIdentityRecordRoundTrip() throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let sample = Phase1BFixture.session()
+        let identity = AuthenticationIdentityRecord(
+            userID: Phase1BFixture.userID,
+            provider: .apple,
+            expiresAt: Phase1BFixture.now
+        )
 
-        XCTAssertNil(try store.read())
-        try store.write(sample)
+        XCTAssertNil(try store.readIdentity())
+        try store.writeIdentity(identity)
 
         let rawData = try keychain.read(
             service: SessionKeychainIdentity.service,
-            account: SessionKeychainIdentity.account
+            account: SessionKeychainIdentity.identityAccount
         )
-        XCTAssertNotNil(rawData)
-        XCTAssertEqual(try store.read(), sample)
+        let rawDataUnwrapped = try XCTUnwrap(rawData)
+        let rawString = String(decoding: rawDataUnwrapped, as: UTF8.self)
+
+        // Verify tokens are absent from stored identity bytes.
+        XCTAssertFalse(rawString.contains("accessToken"))
+        XCTAssertFalse(rawString.contains("refreshToken"))
+        XCTAssertTrue(rawString.contains("userID"))
+        XCTAssertTrue(rawString.contains("provider"))
+
+        XCTAssertEqual(try store.readIdentity(), identity)
 
         try store.delete()
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
         XCTAssertNil(
             try keychain.read(
                 service: SessionKeychainIdentity.service,
-                account: SessionKeychainIdentity.account
+                account: SessionKeychainIdentity.identityAccount
             )
         )
+    }
+
+    func testSupabaseKeychainLocalStorageRoundTrip() throws {
+        let keychain = LockedKeychain()
+        let storage = SupabaseKeychainLocalStorage(
+            keychain: keychain,
+            service: SupabaseKeychainLocalStorage.service(projectRef: "nfzvlvukbeapcnlmyecf")
+        )
+
+        XCTAssertNil(try storage.retrieve(key: "supabase.auth.token"))
+
+        let sampleData = Data("sample-session-token-bytes".utf8)
+        try storage.store(key: "supabase.auth.token", value: sampleData)
+
+        let retrieved = try storage.retrieve(key: "supabase.auth.token")
+        XCTAssertEqual(retrieved, sampleData)
+
+        try storage.remove(key: "supabase.auth.token")
+        XCTAssertNil(try storage.retrieve(key: "supabase.auth.token"))
+
+        // Removing non-existent key is idempotent
+        XCTAssertNoThrow(try storage.remove(key: "supabase.auth.token"))
+    }
+
+    func testSupabaseKeychainLocalStorageServiceNaming() {
+        let service = SupabaseKeychainLocalStorage.service(
+            bundleIdentifier: "app.sleepcompanion.spc",
+            projectRef: "proj123"
+        )
+        XCTAssertEqual(service, "app.sleepcompanion.spc.supabase.auth.proj123")
+    }
+
+    func testKeychainSessionStoreLegacyMigrationCleanup() throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        let legacy = Phase1BFixture.session()
+
+        // Manually write legacy format to legacy account
+        let legacyData = try JSONEncoder().encode(legacy)
+        try keychain.write(
+            legacyData,
+            service: SessionKeychainIdentity.service,
+            account: SessionKeychainIdentity.legacyAccount
+        )
+
+        XCTAssertEqual(try store.readLegacyMaterial(), legacy)
+        XCTAssertNil(try store.readIdentity())
+
+        try store.deleteLegacyMaterial()
+        XCTAssertNil(try store.readLegacyMaterial())
     }
 
     private func makeCoordinator(

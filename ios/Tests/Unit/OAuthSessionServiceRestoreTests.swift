@@ -99,14 +99,12 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
     func testFreshSessionRestoresWithoutNetworkOrKeychainModification() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let freshSession = AuthenticationSessionMaterial(
+        let freshIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(3600) // > now + 60s
         )
-        try store.write(freshSession)
+        try store.writeIdentity(freshIdentity)
 
         let refresher = ScriptedSupabaseAuthRefresher(
             behavior: .failure(URLError(.notConnectedToInternet))
@@ -119,24 +117,26 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        XCTAssertEqual(result, .fresh(freshSession))
-        XCTAssertEqual(result?.session, freshSession)
+        guard case let .fresh(material)? = result else {
+            XCTFail("Expected .fresh result, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(material.provider, .apple)
         let callCount = await refresher.refreshCallCount
         XCTAssertEqual(callCount, 0)
-        XCTAssertEqual(try store.read(), freshSession)
+        XCTAssertEqual(try store.readIdentity(), freshIdentity)
     }
 
     func testStaleSessionSuccessfulRefreshWritesBackAndReturnsUpdatedMaterial() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .google,
-            accessToken: "old-access",
-            refreshToken: "old-refresh",
             expiresAt: fixedNow.addingTimeInterval(30) // <= now + 60s
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let updatedExpiry = fixedNow.addingTimeInterval(7200)
         let refreshedSDKSession = try makeSyntheticSession(
@@ -155,10 +155,8 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
 
         let result = try await service.restore()
         let callCount = await refresher.refreshCallCount
-        let passedToken = await refresher.lastRefreshTokenPassed
 
         XCTAssertEqual(callCount, 1)
-        XCTAssertEqual(passedToken, "old-refresh")
         guard case let .refreshed(updatedMaterial)? = result else {
             XCTFail("Expected .refreshed result, got \(String(describing: result))")
             return
@@ -172,73 +170,163 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             Double(Int(updatedExpiry.timeIntervalSince1970))
         )
 
-        let storedInKeychain = try store.read()
-        XCTAssertEqual(storedInKeychain, updatedMaterial)
+        let storedIdentity = try store.readIdentity()
+        XCTAssertEqual(storedIdentity?.userID, testUserID)
+        XCTAssertEqual(storedIdentity?.provider, .google)
     }
 
-    func testStaleSessionSuccessfulRefreshWithKeychainWriteFailurePreservesStoredSessionOffline() async throws {
-        let staleSession = AuthenticationSessionMaterial(
+    func testLegacySessionMaterialMigrationSuccess() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        let legacySession = AuthenticationSessionMaterial(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
-            expiresAt: fixedNow.addingTimeInterval(-10)
+            accessToken: "legacy-access",
+            refreshToken: "legacy-refresh-token",
+            expiresAt: fixedNow.addingTimeInterval(300)
         )
+
+        // Populate legacy account
+        let legacyData = try JSONEncoder().encode(legacySession)
+        try keychain.write(
+            legacyData,
+            service: SessionKeychainIdentity.service,
+            account: SessionKeychainIdentity.legacyAccount
+        )
+
+        XCTAssertNotNil(try store.readLegacyMaterial())
+        XCTAssertNil(try store.readIdentity())
+
+        let updatedExpiry = fixedNow.addingTimeInterval(7200)
         let refreshedSDKSession = try makeSyntheticSession(
             userID: testUserID,
-            accessToken: "new-access",
-            refreshToken: "new-refresh",
-            expiresAt: fixedNow.addingTimeInterval(3600).timeIntervalSince1970
+            accessToken: "migrated-access",
+            refreshToken: "migrated-refresh",
+            expiresAt: updatedExpiry.timeIntervalSince1970
         )
         let refresher = ScriptedSupabaseAuthRefresher(behavior: .success(refreshedSDKSession))
-
-        // The store below reads the initially stored session and fails on write.
-        final class WriteFailingKeychain: KeychainClient {
-            private let underlying = LockedKeychain()
-            init(initialSession: AuthenticationSessionMaterial) throws {
-                try KeychainSessionStore(keychain: underlying).write(initialSession)
-            }
-
-            func read(service: String, account: String) throws -> Data? {
-                try underlying.read(service: service, account: account)
-            }
-
-            func write(_: Data, service _: String, account _: String) throws {
-                throw AuthenticationError.keychainFailure
-            }
-
-            func delete(service: String, account: String) throws {
-                try underlying.delete(service: service, account: account)
-            }
-        }
-
-        let store = try KeychainSessionStore(keychain: WriteFailingKeychain(initialSession: staleSession))
-        let serviceWithFailingWrite = SupabaseOAuthSessionService(
+        let service = SupabaseOAuthSessionService(
             client: makeClient(),
             sessionStore: store,
             authRefresher: refresher,
             clock: FixedClock(value: fixedNow)
         )
 
-        let result = try await serviceWithFailingWrite.restore()
+        let result = try await service.restore()
         let callCount = await refresher.refreshCallCount
+        let passedToken = await refresher.lastRefreshTokenPassed
 
         XCTAssertEqual(callCount, 1)
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .unclassified))
-        XCTAssertEqual(result?.session, staleSession)
+        XCTAssertEqual(passedToken, "legacy-refresh-token")
+
+        guard case let .refreshed(material)? = result else {
+            XCTFail("Expected .refreshed result from migration, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(material.provider, .apple)
+        XCTAssertEqual(material.accessToken, "migrated-access")
+        XCTAssertEqual(material.refreshToken, "migrated-refresh")
+
+        // Assert legacy entry deleted and identity record written
+        XCTAssertNil(try store.readLegacyMaterial())
+        let savedIdentity = try store.readIdentity()
+        XCTAssertEqual(savedIdentity?.userID, testUserID)
+        XCTAssertEqual(savedIdentity?.provider, .apple)
+    }
+
+    func testLegacySessionMaterialMigrationOfflinePreservesLegacyMaterial() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        let legacySession = AuthenticationSessionMaterial(
+            userID: testUserID,
+            provider: .apple,
+            accessToken: "legacy-access",
+            refreshToken: "legacy-refresh-token",
+            expiresAt: fixedNow.addingTimeInterval(300)
+        )
+
+        let legacyData = try JSONEncoder().encode(legacySession)
+        try keychain.write(
+            legacyData,
+            service: SessionKeychainIdentity.service,
+            account: SessionKeychainIdentity.legacyAccount
+        )
+
+        let refresher = ScriptedSupabaseAuthRefresher(
+            behavior: .failure(URLError(.notConnectedToInternet))
+        )
+        let service = SupabaseOAuthSessionService(
+            client: makeClient(),
+            sessionStore: store,
+            authRefresher: refresher,
+            clock: FixedClock(value: fixedNow)
+        )
+
+        let result = try await service.restore()
+        XCTAssertEqual(result, .preservedOffline(legacySession, classification: .network))
+
+        // Assert legacy material is preserved for next launch
+        XCTAssertEqual(try store.readLegacyMaterial(), legacySession)
+        XCTAssertNil(try store.readIdentity())
+    }
+
+    func testLegacySessionMaterialMigrationPurgedOnDefinitiveRejection() async throws {
+        let keychain = LockedKeychain()
+        let store = KeychainSessionStore(keychain: keychain)
+        let legacySession = AuthenticationSessionMaterial(
+            userID: testUserID,
+            provider: .apple,
+            accessToken: "legacy-access",
+            refreshToken: "legacy-refresh-token",
+            expiresAt: fixedNow.addingTimeInterval(300)
+        )
+
+        let legacyData = try JSONEncoder().encode(legacySession)
+        try keychain.write(
+            legacyData,
+            service: SessionKeychainIdentity.service,
+            account: SessionKeychainIdentity.legacyAccount
+        )
+
+        let invalidGrantError = NSError(
+            domain: "AuthError",
+            code: 400,
+            userInfo: [NSLocalizedDescriptionKey: "invalid_grant: refresh token expired"]
+        )
+        let refresher = ScriptedSupabaseAuthRefresher(behavior: .failure(invalidGrantError))
+        let logger = SpyPrivacySafeLogger()
+        let service = SupabaseOAuthSessionService(
+            client: makeClient(),
+            sessionStore: store,
+            authRefresher: refresher,
+            logger: logger,
+            clock: FixedClock(value: fixedNow)
+        )
+
+        do {
+            _ = try await service.restore()
+            XCTFail("Expected AuthenticationError.expired to be thrown")
+        } catch let error as AuthenticationError {
+            XCTAssertEqual(error, .expired)
+        } catch {
+            XCTFail("Unexpected error thrown: \(error)")
+        }
+
+        XCTAssertNil(try store.readLegacyMaterial())
+        XCTAssertNil(try store.readIdentity())
+        XCTAssertTrue(logger.events.contains(.restorePurgedOnRejection))
     }
 
     func testStaleSessionURLErrorPreservesKeychainAndReturnsStoredSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100) // expired
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let refresher = ScriptedSupabaseAuthRefresher(
             behavior: .failure(URLError(.notConnectedToInternet))
@@ -254,22 +342,24 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         let callCount = await refresher.refreshCallCount
 
         XCTAssertEqual(callCount, 1)
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .network))
-        XCTAssertEqual(result?.session, staleSession)
-        XCTAssertEqual(try store.read(), staleSession)
+        guard case let .preservedOffline(material, classification)? = result else {
+            XCTFail("Expected .preservedOffline, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(classification, .network)
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(try store.readIdentity(), staleIdentity)
     }
 
     func testStaleSessionPOSIXNetworkErrorPreservesKeychainAndReturnsStoredSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let networkError = NSError(
             domain: NSPOSIXErrorDomain,
@@ -285,21 +375,24 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .network))
-        XCTAssertEqual(try store.read(), staleSession)
+        guard case let .preservedOffline(material, classification)? = result else {
+            XCTFail("Expected .preservedOffline, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(classification, .network)
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(try store.readIdentity(), staleIdentity)
     }
 
     func testStaleSessionCFNetworkErrorPreservesKeychainAndReturnsStoredSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let cfError = NSError(
             domain: "kCFErrorDomainCFNetwork",
@@ -315,21 +408,24 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .network))
-        XCTAssertEqual(try store.read(), staleSession)
+        guard case let .preservedOffline(material, classification)? = result else {
+            XCTFail("Expected .preservedOffline, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(classification, .network)
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(try store.readIdentity(), staleIdentity)
     }
 
     func testStaleSessionDefinitiveRejectionInvalidGrantPurgesKeychainAndThrowsExpired() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let invalidGrantError = NSError(
             domain: "AuthError",
@@ -355,20 +451,18 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
 
         let callCount = await refresher.refreshCallCount
         XCTAssertEqual(callCount, 1)
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
     }
 
     func testStaleSessionDefinitiveRejectionUnauthorized401PurgesKeychainAndThrowsExpired() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let unauthorizedError = NSError(
             domain: "AuthError",
@@ -392,20 +486,18 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
     }
 
     func testStaleSessionDefinitiveRejectionForbidden403PurgesKeychainAndThrowsExpired() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let forbiddenError = NSError(
             domain: "AuthError",
@@ -429,20 +521,18 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
             XCTFail("Unexpected error thrown: \(error)")
         }
 
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
     }
 
     func testStaleSessionUnclassifiedServerErrorPreservesKeychainAndReturnsStoredSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let server500Error = NSError(
             domain: "AuthError",
@@ -458,21 +548,24 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .unclassified))
-        XCTAssertEqual(try store.read(), staleSession)
+        guard case let .preservedOffline(material, classification)? = result else {
+            XCTFail("Expected .preservedOffline, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(classification, .unclassified)
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(try store.readIdentity(), staleIdentity)
     }
 
     func testStaleSessionUnclassifiedRateLimitPreservesKeychainAndReturnsStoredSession() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let rateLimitError = NSError(
             domain: "AuthError",
@@ -488,21 +581,24 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .unclassified))
-        XCTAssertEqual(try store.read(), staleSession)
+        guard case let .preservedOffline(material, classification)? = result else {
+            XCTFail("Expected .preservedOffline, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(classification, .unclassified)
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(try store.readIdentity(), staleIdentity)
     }
 
     func testStaleSessionUnclassifiedBare404PreservesKeychainAndReturnsStoredSessionOffline() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let notFound404Error = NSError(
             domain: "AuthError",
@@ -521,22 +617,24 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .unclassified))
-        XCTAssertEqual(result?.session, staleSession)
-        XCTAssertEqual(try store.read(), staleSession)
+        guard case let .preservedOffline(material, classification)? = result else {
+            XCTFail("Expected .preservedOffline, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(classification, .unclassified)
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(try store.readIdentity(), staleIdentity)
     }
 
     func testStaleSessionUnclassifiedBare422PreservesStoredSessionOffline() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let unprocessable422Error = NSError(
             domain: "AuthError",
@@ -552,22 +650,24 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
         )
 
         let result = try await service.restore()
-        XCTAssertEqual(result, .preservedOffline(staleSession, classification: .unclassified))
-        XCTAssertEqual(result?.session, staleSession)
-        XCTAssertEqual(try store.read(), staleSession)
+        guard case let .preservedOffline(material, classification)? = result else {
+            XCTFail("Expected .preservedOffline, got \(String(describing: result))")
+            return
+        }
+        XCTAssertEqual(classification, .unclassified)
+        XCTAssertEqual(material.userID, testUserID)
+        XCTAssertEqual(try store.readIdentity(), staleIdentity)
     }
 
     func testStaleSessionKeywordRejectionIn404PurgesKeychainAndThrowsExpired() async throws {
         let keychain = LockedKeychain()
         let store = KeychainSessionStore(keychain: keychain)
-        let staleSession = AuthenticationSessionMaterial(
+        let staleIdentity = AuthenticationIdentityRecord(
             userID: testUserID,
             provider: .apple,
-            accessToken: "stored-access",
-            refreshToken: "stored-refresh",
             expiresAt: fixedNow.addingTimeInterval(-100)
         )
-        try store.write(staleSession)
+        try store.writeIdentity(staleIdentity)
 
         let sessionNotFoundError = NSError(
             domain: "AuthError",
@@ -593,7 +693,7 @@ final class OAuthSessionServiceRestoreTests: XCTestCase {
 
         let callCount = await refresher.refreshCallCount
         XCTAssertEqual(callCount, 1)
-        XCTAssertNil(try store.read())
+        XCTAssertNil(try store.readIdentity())
     }
 
     func testClassifyRefreshErrorTableCoverage() {

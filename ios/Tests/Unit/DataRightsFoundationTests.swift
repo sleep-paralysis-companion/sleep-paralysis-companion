@@ -237,7 +237,7 @@ final class DataRightsFoundationTests: XCTestCase {
         try await database.createProfile(Phase1BFixture.profile(), settings: Phase1BFixture.settings())
         let keychain = LockedKeychain()
         let sessionStore = KeychainSessionStore(keychain: keychain)
-        try sessionStore.write(Phase1BFixture.session())
+        try sessionStore.writeIdentity(AuthenticationIdentityRecord(session: Phase1BFixture.session()))
         let alarms = RecordingAlarmRemoval()
         let files = RecordingFileRemoval()
         let coordinator = LocalDataDeletionCoordinator(
@@ -252,7 +252,7 @@ final class DataRightsFoundationTests: XCTestCase {
         let alarmCount = await alarms.count
         let fileCount = await files.count
         XCTAssertNil(profile)
-        XCTAssertNil(try sessionStore.read())
+        XCTAssertNil(try sessionStore.readIdentity())
         XCTAssertEqual(alarmCount, 1)
         XCTAssertEqual(fileCount, 1)
     }
@@ -402,7 +402,7 @@ final class DataRightsFoundationTests: XCTestCase {
         try await database.createProfile(Phase1BFixture.profile(), settings: Phase1BFixture.settings())
         let keychain = LockedKeychain()
         let sessionStore = KeychainSessionStore(keychain: keychain)
-        try sessionStore.write(Phase1BFixture.session())
+        try sessionStore.writeIdentity(AuthenticationIdentityRecord(session: Phase1BFixture.session()))
         let alarms = RecordingAlarmRemoval()
         let files = RecordingFileRemoval()
         let local = LocalDataDeletionCoordinator(
@@ -451,7 +451,7 @@ final class DataRightsFoundationTests: XCTestCase {
         XCTAssertEqual(finalAlarmCount, 1)
         XCTAssertEqual(finalFileCount, 1)
         XCTAssertEqual(finalSignOutCount, 1)
-        XCTAssertNil(try sessionStore.read())
+        XCTAssertNil(try sessionStore.readIdentity())
         let profile = try await database.profile(id: Phase1BFixture.profileID)
         XCTAssertNil(profile)
     }
@@ -466,7 +466,7 @@ final class DataRightsFoundationTests: XCTestCase {
 
         let keychain = LockedKeychain()
         let sessionStore = KeychainSessionStore(keychain: keychain)
-        try sessionStore.write(Phase1BFixture.session())
+        try sessionStore.writeIdentity(AuthenticationIdentityRecord(session: Phase1BFixture.session()))
         let authentication = AuthenticationCoordinator(
             challengeFactory: OAuthChallengeFactory(random: FixedSecureRandom(byte: 7)),
             gateway: ScriptedAuthenticationGateway(
@@ -500,7 +500,7 @@ final class DataRightsFoundationTests: XCTestCase {
         )
         XCTAssertEqual(formerOwner?.ownership, .formerAccountProtected)
         XCTAssertNil(differentOwner)
-        XCTAssertNil(try sessionStore.read())
+        XCTAssertNil(try sessionStore.readIdentity())
     }
 
     func testDiagnosticsBoundaryIsDisabledAndContentFree() {
