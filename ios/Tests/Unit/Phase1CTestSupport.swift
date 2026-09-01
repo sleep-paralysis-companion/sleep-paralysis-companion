@@ -163,9 +163,9 @@ actor NoOpReminderScheduler: ReminderNotificationScheduling {
         []
     }
 
-    func remove(identifiers: [String]) async {}
+    func remove(identifiers _: [String]) async {}
 
-    func add(_ plan: SleepReminderPlan) async throws {}
+    func add(_: SleepReminderPlan) async throws {}
 }
 
 func makeTestPhase1Store(namespace: String = "test-\(UUID().uuidString)") -> IntegratedPhase1Store {
