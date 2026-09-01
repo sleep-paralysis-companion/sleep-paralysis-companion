@@ -30,7 +30,7 @@ struct HomeView: View {
                     HomeHeroCard(
                         playbackState: model.playbackState,
                         onPlayPause: {
-                            model.toggleHeroPlayback()
+                            model.open(.grounding)
                         },
                         onOpenPlayer: {
                             model.open(.audioPlayer)
