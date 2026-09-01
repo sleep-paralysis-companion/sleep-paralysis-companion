@@ -1288,8 +1288,6 @@ final class AppModel {
         if route == .morningCheckIn {
             isMorningCheckInPresented = true
             selectedTab = .sleep
-            path = []
-            return
         }
         path.append(route)
         if route == .grounding {
