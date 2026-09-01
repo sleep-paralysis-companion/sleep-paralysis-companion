@@ -428,7 +428,7 @@ final class AuthenticationFoundationTests: XCTestCase {
             account: SessionKeychainIdentity.identityAccount
         )
         let rawDataUnwrapped = try XCTUnwrap(rawData)
-        let rawString = String(decoding: rawDataUnwrapped, as: UTF8.self)
+        let rawString = try XCTUnwrap(String(data: rawDataUnwrapped, encoding: .utf8))
 
         // Verify tokens are absent from stored identity bytes.
         XCTAssertFalse(rawString.contains("accessToken"))
