@@ -186,14 +186,9 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         }
 
         let sdkSession = await currentSDKSession()
-        let refreshToken = sdkSession?.refreshToken
-
-        let session = do {
-            if let refreshToken {
-                try await authRefresher.refreshSession(refreshToken: refreshToken)
-            } else {
-                try await client.auth.refreshSession()
-            }
+        let session: Session
+        do {
+            session = try await fetchRefreshedSession(refreshToken: sdkSession?.refreshToken)
         } catch {
             let classification = Self.classifyRefreshError(error)
             switch classification {
@@ -242,8 +237,9 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
     private func restoreLegacyMaterial(
         _ legacy: AuthenticationSessionMaterial
     ) async throws -> SessionRestoreResult {
-        let session = do {
-            try await authRefresher.refreshSession(refreshToken: legacy.refreshToken)
+        let session: Session
+        do {
+            session = try await authRefresher.refreshSession(refreshToken: legacy.refreshToken)
         } catch {
             let classification = Self.classifyRefreshError(error)
             switch classification {
@@ -278,6 +274,14 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
 
         let material = Self.material(from: session, provider: legacy.provider)
         return .refreshed(material)
+    }
+
+    private func fetchRefreshedSession(refreshToken: String?) async throws -> Session {
+        if let refreshToken {
+            try await authRefresher.refreshSession(refreshToken: refreshToken)
+        } else {
+            try await client.auth.refreshSession()
+        }
     }
 
     /// Determines if an error represents an unreachable host or transport failure.
