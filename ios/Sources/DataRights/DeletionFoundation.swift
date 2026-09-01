@@ -1,5 +1,19 @@
 import Foundation
 
+/// # Deletion Foundation & Data Rights
+///
+/// This file defines the coordinators and contracts for user-controlled sign-out, local data deletion,
+/// and complete remote account deletion:
+///
+/// - `SignOutCoordinator`: Phase 1B coordinator managing explicit local-copy choices and delegating provider grant
+///   revocations through `AuthenticationCoordinator` (Stack A).
+/// - `AccountDeletionCoordinator`: Coordinates the two-phase account deletion workflow: verified remote RPC
+///   deletion via `AccountDeletionGateway`, session termination (`AccountDeletionSessionSigningOut` / `OAuthSessionServicing`),
+///   and local data purge via `LocalAccountDataRemoving`.
+/// - `LocalDataDeletionCoordinator`: Orchestrates the total erasure of wake alarms, downloaded audio, exports,
+///   Keychain session records, and SQLite profile data.
+///
+/// See `docs/PHASE_SIGN_IN_FLOW.md` Section 9 for complete data-rights workflow diagrams.
 nonisolated enum SignOutLocalDataChoice: String, Codable, CaseIterable, Sendable {
     case keepProtectedLocalCopy
     case removeAccountDataFromDevice

@@ -2,6 +2,16 @@ import Foundation
 import Security
 import Supabase
 
+/// # Keychain Session Store & Storage Bridge
+///
+/// This file implements the post-S4 sanctioned storage architecture:
+/// 1. `SupabaseKeychainLocalStorage`: Bridges `supabase-swift`'s `AuthLocalStorage` to iOS Keychain,
+///    acting as the sole persistent repository for access and refresh tokens at rest.
+/// 2. `KeychainSessionStore`: Stores the non-secret `AuthenticationIdentityRecord` used by the app for
+///    cold-launch restore decisions, wrong-account validations, and data-rights flows.
+/// 3. `SystemKeychainClient`: Hardware-backed Keychain operations enforcing `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`.
+///
+/// See `docs/PHASE_SIGN_IN_FLOW.md` Section 4 for the complete storage inventory.
 nonisolated protocol KeychainClient: Sendable {
     func read(service: String, account: String) throws -> Data?
     func write(_ data: Data, service: String, account: String) throws

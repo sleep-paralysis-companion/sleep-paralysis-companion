@@ -2,6 +2,27 @@ import CryptoKit
 import Foundation
 import Security
 
+/// # Authentication Foundation (Stack A — Native ID-Token & Deletion Foundation)
+///
+/// This file defines the core types, models, cryptographic challenge generation, and coordinator
+/// for the Phase 1B hand-hardened native identity stack and data-rights foundation.
+///
+/// ## Architecture & Invariant Ownership
+/// - **Challenge & Proofs**: `OAuthChallengeFactory` generates cryptographically secure state, raw/hashed
+///   nonces, and PKCE verifiers (`OAuthChallenge`).
+/// - **Native Credential Exchange**: `AuthenticationCoordinator` coordinates native OpenID Connect
+///   ID-token exchanges (`signInWithIdToken`), validating client-side challenge state and raw nonces before
+///   invoking `AuthenticationGateway`.
+/// - **Account Guard**: `AuthenticationCoordinator.complete` and `reauthenticate` enforce `expectedFormerUserID`
+///   checks to reject account mismatches and prevent cross-account profile linkage.
+/// - **Storage Post-S4**: At rest, only `AuthenticationIdentityRecord` (non-secret: `userID`, `provider`,
+///   `expiresAt`) is persisted in `SessionSecretStore` (`KeychainSessionStore`). Secret tokens exist only in
+///   the SDK-managed Keychain bridge (`SupabaseKeychainLocalStorage`).
+/// - **Live Consumers**: Consumed by `SignOutCoordinator` (`DeletionFoundation.swift`) and verified via
+///   `AuthenticationFoundationTests` and `DataRightsFoundationTests`. Interactive Web OAuth sign-in in the
+///   app shell delegates to Stack B (`SupabaseOAuthSessionService`).
+///
+/// See `docs/PHASE_SIGN_IN_FLOW.md` for the authoritative architectural narrative.
 nonisolated enum SessionKeychainIdentity {
     static let service = "app.sleepcompanion.spc.authentication"
     static let account = "supabase-identity"

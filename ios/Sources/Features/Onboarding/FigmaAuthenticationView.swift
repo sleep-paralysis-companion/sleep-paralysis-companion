@@ -9,9 +9,7 @@ struct FigmaAuthenticationView: View {
     let signIn: (AuthenticationProvider) -> Void
 
     @State private var mode: AuthenticationEntryMode = .createAccount
-    @State private var fullName = ""
     @State private var localMessage: String?
-    @FocusState private var fullNameIsFocused: Bool
 
     var body: some View {
         ZStack {
@@ -24,11 +22,9 @@ struct FigmaAuthenticationView: View {
                 )
                 AuthenticationReferenceLayout(
                     mode: mode,
-                    fullName: $fullName,
-                    fullNameIsFocused: $fullNameIsFocused,
                     message: visibleMessage,
                     isProcessing: isProcessing,
-                    createAccount: createAccount,
+                    continueAction: continueToProviderSelection,
                     choose: chooseProvider,
                     switchMode: switchMode
                 )
@@ -70,19 +66,11 @@ struct FigmaAuthenticationView: View {
         return nil
     }
 
-    private func createAccount() {
-        let name = fullName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else {
-            localMessage = "Enter your name to continue."
-            fullNameIsFocused = true
-            return
-        }
-        fullNameIsFocused = false
+    private func continueToProviderSelection() {
         localMessage = "Choose Google or Apple to create your account."
     }
 
     private func chooseProvider(_ provider: AuthenticationProvider) {
-        fullNameIsFocused = false
         guard isConfigured else {
             localMessage = "Provider sign-in will be available once configuration is complete."
             return
@@ -93,7 +81,6 @@ struct FigmaAuthenticationView: View {
 
     private func switchMode() {
         mode = mode == .createAccount ? .logIn : .createAccount
-        fullNameIsFocused = false
         localMessage = nil
     }
 }
@@ -108,11 +95,9 @@ private struct AuthenticationReferenceLayout: View {
     static let height: CGFloat = 932
 
     let mode: AuthenticationEntryMode
-    @Binding var fullName: String
-    var fullNameIsFocused: FocusState<Bool>.Binding
     let message: String?
     let isProcessing: Bool
-    let createAccount: () -> Void
+    let continueAction: () -> Void
     let choose: (AuthenticationProvider) -> Void
     let switchMode: () -> Void
 
@@ -138,26 +123,6 @@ private struct AuthenticationReferenceLayout: View {
                 verticalPosition: 249
             )
 
-            TextField("Full Name", text: $fullName)
-                .font(AppFont.inter(size: 17, relativeTo: .body))
-                .foregroundStyle(.white)
-                .tint(AuthenticationPalette.actionEnd)
-                .focused(fullNameIsFocused)
-                .textContentType(.name)
-                .autocorrectionDisabled()
-                .submitLabel(.continue)
-                .onSubmit(createAccount)
-                .padding(.horizontal, 42)
-                .frame(width: 370, height: 72)
-                .background(AuthenticationPalette.controlFill)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(AuthenticationPalette.controlStroke, lineWidth: 1)
-                }
-                .position(x: 215, y: 376)
-                .accessibilityIdentifier("authentication.fullName")
-
             HStack(spacing: 18) {
                 AuthenticationProviderButton(
                     provider: .google,
@@ -177,7 +142,7 @@ private struct AuthenticationReferenceLayout: View {
                     .position(x: 215, y: 548)
             }
 
-            Button(action: createAccount) {
+            Button(action: continueAction) {
                 Text("Create account")
                     .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -198,6 +163,7 @@ private struct AuthenticationReferenceLayout: View {
             .position(x: 215, y: 731)
             .accessibilityIdentifier("authentication.createAccount")
             .accessibilityLabel("Create account")
+            .accessibilityHint("Prompts to choose Google or Apple to create an account")
             .accessibilityAddTraits(.isButton)
 
             policyLine

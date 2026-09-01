@@ -1,6 +1,14 @@
 import Foundation
 import Supabase
 
+/// # Supabase Authentication Gateway (Stack A OpenID Connect Adapter)
+///
+/// Conforms to `AuthenticationGateway` to perform native OpenID Connect identity token exchanges
+/// (`signInWithIdToken`) and provider grant revocation.
+///
+/// Used by `AuthenticationCoordinator` in the Phase 1B hand-hardened native identity stack and data-rights foundation.
+///
+/// See `docs/PHASE_SIGN_IN_FLOW.md` for architectural context.
 nonisolated protocol ProviderGrantRevoking: Sendable {
     func revoke(_ request: ProviderGrantRevocationRequest) async throws
 }

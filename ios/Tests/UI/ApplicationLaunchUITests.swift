@@ -26,7 +26,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["authentication.createAccount"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["authentication.apple"].exists)
         XCTAssertTrue(app.buttons["authentication.google"].exists)
-        XCTAssertTrue(app.textFields["authentication.fullName"].exists)
+        XCTAssertFalse(app.textFields["authentication.fullName"].exists)
         app.buttons["authentication.goToLogin"].tap()
         XCTAssertTrue(app.staticTexts["Welcome Back"].waitForExistence(timeout: 3))
         app.buttons["authentication.goToCreateAccount"].tap()
