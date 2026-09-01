@@ -109,7 +109,7 @@ func waitForAppModel(
         if predicate() {
             return
         }
-        await Task.yield()
+        try? await Task.sleep(nanoseconds: 10_000_000)
     }
     XCTFail("Timed out waiting for app state.", file: file, line: line)
 }
