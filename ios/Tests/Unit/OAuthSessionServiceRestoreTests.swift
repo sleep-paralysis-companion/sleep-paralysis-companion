@@ -30,7 +30,7 @@ final class ScriptedSupabaseAuthRefresher: SupabaseAuthRefreshing, @unchecked Se
         queue.sync { _behavior = behavior }
     }
 
-    func refreshSession(refreshToken: String) async throws -> Session {
+    func refreshSession(refreshToken: String?) async throws -> Session {
         let current = queue.sync { () -> Behavior in
             _refreshCallCount += 1
             _lastRefreshTokenPassed = refreshToken

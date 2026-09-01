@@ -87,7 +87,7 @@ actor UnavailableOAuthSessionService: OAuthSessionServicing {
 #endif
 
 nonisolated protocol SupabaseAuthRefreshing: Sendable {
-    func refreshSession(refreshToken: String) async throws -> Session
+    func refreshSession(refreshToken: String?) async throws -> Session
 }
 
 nonisolated struct DefaultSupabaseAuthRefresher: SupabaseAuthRefreshing {
@@ -97,8 +97,12 @@ nonisolated struct DefaultSupabaseAuthRefresher: SupabaseAuthRefreshing {
         self.client = client
     }
 
-    func refreshSession(refreshToken: String) async throws -> Session {
-        try await client.auth.refreshSession(refreshToken: refreshToken)
+    func refreshSession(refreshToken: String?) async throws -> Session {
+        if let refreshToken {
+            try await client.auth.refreshSession(refreshToken: refreshToken)
+        } else {
+            try await client.auth.refreshSession()
+        }
     }
 }
 
@@ -277,11 +281,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
     }
 
     private func fetchRefreshedSession(refreshToken: String?) async throws -> Session {
-        if let refreshToken {
-            try await authRefresher.refreshSession(refreshToken: refreshToken)
-        } else {
-            try await client.auth.refreshSession()
-        }
+        try await authRefresher.refreshSession(refreshToken: refreshToken)
     }
 
     /// Determines if an error represents an unreachable host or transport failure.
