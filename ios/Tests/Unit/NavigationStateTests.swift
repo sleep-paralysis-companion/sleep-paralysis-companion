@@ -138,7 +138,7 @@ final class NavigationStateTests: XCTestCase {
         _ = try await store.saveSchedule(SleepSchedule.defaultValue, profileID: snapshot.profile.id, userID: user)
 
         let authService = ScriptedOAuthSessionService(
-            restoreResult: SessionRestoreResult(session: session, requiresReauthentication: false)
+            restoreResult: .fresh(session)
         )
         let signedInModel = makeTestAppModel(authService: authService, store: store)
         signedInModel.activate()
