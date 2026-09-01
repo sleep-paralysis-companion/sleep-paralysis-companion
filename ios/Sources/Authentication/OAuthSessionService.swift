@@ -144,15 +144,15 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         sessionStore: any SessionSecretStore,
         authRefresher: (any SupabaseAuthRefreshing)? = nil,
         oauthAuthenticator: (any SupabaseOAuthAuthenticating)? = nil,
-        logger: any PrivacySafeLogging = NoOpPrivacySafeLogger(),
-        clock: any Phase1BClock = SystemPhase1BClock()
+        logger: (any PrivacySafeLogging)? = nil,
+        clock: (any Phase1BClock)? = nil
     ) {
         self.client = client
         self.sessionStore = sessionStore
         self.authRefresher = authRefresher ?? DefaultSupabaseAuthRefresher(client: client)
         self.oauthAuthenticator = oauthAuthenticator ?? DefaultSupabaseOAuthAuthenticator(client: client)
-        self.logger = logger
-        self.clock = clock
+        self.logger = logger ?? NoOpPrivacySafeLogger()
+        self.clock = clock ?? SystemPhase1BClock()
     }
 
     func restore() async throws -> SessionRestoreResult? {
