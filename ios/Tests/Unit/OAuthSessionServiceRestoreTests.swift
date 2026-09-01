@@ -3,28 +3,51 @@ import Foundation
 import Supabase
 import XCTest
 
-actor ScriptedSupabaseAuthRefresher: SupabaseAuthRefreshing {
-    enum Behavior {
+final class ScriptedSupabaseAuthRefresher: SupabaseAuthRefreshing, @unchecked Sendable {
+    enum Behavior: Sendable {
         case success(Session)
         case failure(any Error)
     }
 
+    private let lock = NSLock()
     private var behavior: Behavior
-    private(set) var refreshCallCount = 0
-    private(set) var lastRefreshTokenPassed: String?
+    private var _refreshCallCount = 0
+    private var _lastRefreshTokenPassed: String?
 
     init(behavior: Behavior) {
         self.behavior = behavior
     }
 
+    var refreshCallCount: Int {
+        get async {
+            lock.lock()
+            defer { lock.unlock() }
+            return _refreshCallCount
+        }
+    }
+
+    var lastRefreshTokenPassed: String? {
+        get async {
+            lock.lock()
+            defer { lock.unlock() }
+            return _lastRefreshTokenPassed
+        }
+    }
+
     func setBehavior(_ behavior: Behavior) {
+        lock.lock()
+        defer { lock.unlock() }
         self.behavior = behavior
     }
 
     func refreshSession(refreshToken: String) async throws -> Session {
-        refreshCallCount += 1
-        lastRefreshTokenPassed = refreshToken
-        switch behavior {
+        lock.lock()
+        _refreshCallCount += 1
+        _lastRefreshTokenPassed = refreshToken
+        let currentBehavior = behavior
+        lock.unlock()
+
+        switch currentBehavior {
         case let .success(session):
             return session
         case let .failure(error):

@@ -17,7 +17,7 @@ nonisolated enum SessionRestoreResult: Equatable, Sendable {
     }
 }
 
-protocol OAuthSessionServicing: AccountDeletionSessionSigningOut {
+nonisolated protocol OAuthSessionServicing: AccountDeletionSessionSigningOut {
     var isConfigured: Bool { get }
     func restore() async throws -> SessionRestoreResult?
     func signIn(provider: AuthenticationProvider) async throws -> AuthenticationSessionMaterial
@@ -86,11 +86,11 @@ actor UnavailableOAuthSessionService: OAuthSessionServicing {
     }
 #endif
 
-protocol SupabaseAuthRefreshing: Sendable {
+nonisolated protocol SupabaseAuthRefreshing: Sendable {
     func refreshSession(refreshToken: String) async throws -> Session
 }
 
-actor DefaultSupabaseAuthRefresher: SupabaseAuthRefreshing {
+nonisolated struct DefaultSupabaseAuthRefresher: SupabaseAuthRefreshing {
     private let client: SupabaseClient
 
     init(client: SupabaseClient) {
@@ -102,11 +102,11 @@ actor DefaultSupabaseAuthRefresher: SupabaseAuthRefreshing {
     }
 }
 
-protocol SupabaseOAuthAuthenticating: Sendable {
+nonisolated protocol SupabaseOAuthAuthenticating: Sendable {
     func signInWithOAuth(provider: AuthenticationProvider) async throws -> Session
 }
 
-actor DefaultSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating {
+nonisolated struct DefaultSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating {
     private let client: SupabaseClient
 
     init(client: SupabaseClient) {
