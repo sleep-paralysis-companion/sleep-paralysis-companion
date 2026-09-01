@@ -38,14 +38,13 @@ nonisolated struct SupabasePublicConfiguration: Sendable {
     }
 
     func makeClient(storage: (any AuthLocalStorage)? = nil) -> SupabaseClient {
-        let authOptions: SupabaseClientOptions.AuthOptions
-        if let storage {
-            authOptions = SupabaseClientOptions.AuthOptions(
+        let authOptions = if let storage {
+            SupabaseClientOptions.AuthOptions(
                 storage: storage,
                 redirectToURL: oauthRedirectURL
             )
         } else {
-            authOptions = SupabaseClientOptions.AuthOptions(
+            SupabaseClientOptions.AuthOptions(
                 redirectToURL: oauthRedirectURL
             )
         }

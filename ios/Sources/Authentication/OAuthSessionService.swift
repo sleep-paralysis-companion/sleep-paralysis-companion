@@ -177,12 +177,11 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             let sdkSession = await currentSDKSession()
             let refreshToken = sdkSession?.refreshToken
 
-            let session: Session
-            do {
+            let session = do {
                 if let refreshToken {
-                    session = try await authRefresher.refreshSession(refreshToken: refreshToken)
+                    try await authRefresher.refreshSession(refreshToken: refreshToken)
                 } else {
-                    session = try await client.auth.refreshSession()
+                    try await client.auth.refreshSession()
                 }
             } catch {
                 let classification = Self.classifyRefreshError(error)
@@ -231,9 +230,8 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         }
 
         if let legacy = try sessionStore.readLegacyMaterial() {
-            let session: Session
-            do {
-                session = try await authRefresher.refreshSession(refreshToken: legacy.refreshToken)
+            let session = do {
+                try await authRefresher.refreshSession(refreshToken: legacy.refreshToken)
             } catch {
                 let classification = Self.classifyRefreshError(error)
                 switch classification {
@@ -476,14 +474,10 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
     }
 
     func reauthenticateForDeletion() async throws -> ReauthenticatedSession {
-        let storedProvider: AuthenticationProvider
-        let storedUserID: UUID
-        if let stored = try sessionStore.readIdentity() {
-            storedProvider = stored.provider
-            storedUserID = stored.userID
+        let (storedProvider, storedUserID) = if let stored = try sessionStore.readIdentity() {
+            (stored.provider, stored.userID)
         } else if let legacy = try sessionStore.readLegacyMaterial() {
-            storedProvider = legacy.provider
-            storedUserID = legacy.userID
+            (legacy.provider, legacy.userID)
         } else {
             throw AuthenticationError.expired
         }
