@@ -4,21 +4,25 @@ import Supabase
 
 /// # OAuth Session Service (Stack B — Production Web OAuth & Session Lifecycle)
 ///
-/// This file defines the active production authentication engine used by `AppModel` for user sign-in,
-/// cold-launch session restoration, error classification, privacy-safe logging, and account deletion reauthentication.
+/// This file defines the active production authentication engine used by `AppModel`
+/// for user sign-in, cold-launch session restoration, error classification,
+/// privacy-safe logging, and account deletion reauthentication.
 ///
 /// ## Architecture & Invariant Ownership
-/// - **SDK Delegation**: Interactive sign-in delegates browser session management (`ASWebAuthenticationSession`)
-///   and OAuth 2.0 PKCE to `supabase-swift` (`signInWithOAuth(provider:)`).
-/// - **Offline-Tolerant Restore (S1)**: `restore()` checks stored expiration with 60-second leeway, skipping network
-///   calls for fresh tokens. If refresh fails due to network/unclassified errors, sessions are preserved offline
-///   instead of being purged. Only definitive grant rejection purges the Keychain.
-/// - **Error Taxonomy & Logging (S2)**: `classifySignInError` maps low-level errors to standard `AuthenticationError`
-///   cases without logging PII or credentials.
-/// - **Sanctioned Storage (S4)**: OAuth tokens are persisted by `supabase-swift` in `SupabaseKeychainLocalStorage`,
-///   while the app maintains an `AuthenticationIdentityRecord` in `KeychainSessionStore`.
-/// - **Account Guard**: Validates that refreshed sessions match `stored.userID`, throwing `wrongAccount` and
-///   purging Keychain if a mismatched user is returned.
+/// - **SDK Delegation**: Interactive sign-in delegates browser session management
+///   (`ASWebAuthenticationSession`) and OAuth 2.0 PKCE to `supabase-swift`
+///   (`signInWithOAuth(provider:)`).
+/// - **Offline-Tolerant Restore (S1)**: `restore()` checks stored expiration with 60-second
+///   leeway, skipping network calls for fresh tokens. If refresh fails due to network/unclassified
+///   errors, sessions are preserved offline instead of being purged. Only definitive grant
+///   rejection purges the Keychain.
+/// - **Error Taxonomy & Logging (S2)**: `classifySignInError` maps low-level errors to standard
+///   `AuthenticationError` cases without logging PII or credentials.
+/// - **Sanctioned Storage (S4)**: OAuth tokens are persisted by `supabase-swift` in
+///   `SupabaseKeychainLocalStorage`, while the app maintains an `AuthenticationIdentityRecord`
+///   in `KeychainSessionStore`.
+/// - **Account Guard**: Validates that refreshed sessions match `stored.userID`, throwing
+///   `wrongAccount` and purging Keychain if a mismatched user is returned.
 ///
 /// See `docs/PHASE_SIGN_IN_FLOW.md` for the complete specification.
 nonisolated enum SessionRestoreResult: Equatable, Sendable {
