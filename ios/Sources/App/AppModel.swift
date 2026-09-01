@@ -1085,9 +1085,6 @@ final class AppModel {
             try await store.saveCheckIn(value, userID: userID)
             checkIns.removeAll { $0.id == value.id }
             checkIns.insert(value, at: 0)
-            if path.last == .morningCheckIn {
-                path.removeLast()
-            }
             return true
         } catch {
             feedbackMessage = "The check-in could not be saved. Your answers remain on screen."
