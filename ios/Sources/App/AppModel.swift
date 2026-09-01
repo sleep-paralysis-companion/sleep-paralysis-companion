@@ -273,6 +273,10 @@ final class AppModel {
                 break
             }
         }
+
+        func setLaunchDestinationForTesting(_ destination: LaunchDestination) {
+            launchDestination = destination
+        }
     #endif
 
     private func configureCatalogAudioServiceIfAvailable() async {

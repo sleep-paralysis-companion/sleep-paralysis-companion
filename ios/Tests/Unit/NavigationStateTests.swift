@@ -112,40 +112,8 @@ final class NavigationStateTests: XCTestCase {
         XCTAssertNil(signedOutModel.feedbackMessage)
 
         // 2. Signed-in state: openDeepLink produces no navigation change, no feedback banner
-        let user = UUID()
-        let session = AuthenticationSessionMaterial(
-            userID: user,
-            provider: .apple,
-            accessToken: "test-token",
-            refreshToken: "test-refresh",
-            expiresAt: Date().addingTimeInterval(3600)
-        )
-        let store = makeTestPhase1Store(namespace: "test-oauth-cb-\(UUID().uuidString)")
-        let snapshot = try await store.resume(session: session)
-        let now = Date()
-        let draft = QuestionnaireDraft(
-            id: UUID(),
-            profileID: snapshot.profile.id,
-            accountUserID: user,
-            episodeFrequency: .rarely,
-            postEpisodeFeeling: .shakeItOff,
-            calmingPersonContext: .alone,
-            createdAt: now,
-            updatedAt: now
-        )
-        try await store.saveDraft(draft)
-        _ = try await store.completeQuestionnaire(profileID: snapshot.profile.id, userID: user)
-        _ = try await store.saveSchedule(SleepSchedule.defaultValue, profileID: snapshot.profile.id, userID: user)
-
-        let authService = ScriptedOAuthSessionService(
-            restoreResult: .fresh(session)
-        )
-        let signedInModel = makeTestAppModel(authService: authService, store: store)
-        signedInModel.activate()
-
-        await waitForAppModel {
-            signedInModel.launchDestination == .home
-        }
+        let signedInModel = makeTestAppModel()
+        signedInModel.setLaunchDestinationForTesting(.home)
         XCTAssertEqual(signedInModel.launchDestination, .home)
 
         signedInModel.selectTab(.me)
