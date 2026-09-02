@@ -1048,7 +1048,7 @@ private struct BedtimeAudioCard: View {
                     .foregroundStyle(.clear)
                     .frame(height: 0)
             }
-            if !isDownloaded && !model.networkAvailable {
+            if !isDownloaded, !model.networkAvailable {
                 Text("Unavailable offline")
                     .font(.caption2)
                     .foregroundStyle(.clear)
@@ -1060,7 +1060,7 @@ private struct BedtimeAudioCard: View {
                     .foregroundStyle(.clear)
                     .frame(height: 0)
             }
-            if !isDownloaded && model.networkAvailable {
+            if !isDownloaded, model.networkAvailable {
                 Text("Stream preview available")
                     .font(.caption2)
                     .foregroundStyle(.clear)
@@ -1072,7 +1072,7 @@ private struct BedtimeAudioCard: View {
                     .foregroundStyle(.clear)
                     .frame(height: 0)
             }
-            if isDownloaded && asset.delivery == .downloadable {
+            if isDownloaded, asset.delivery == .downloadable {
                 Button("Remove offline download") {
                     Task { await model.removeDownload(asset) }
                 }
