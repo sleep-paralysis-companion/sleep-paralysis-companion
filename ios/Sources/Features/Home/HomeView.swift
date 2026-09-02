@@ -30,10 +30,10 @@ struct HomeView: View {
                     HomeHeroCard(
                         playbackState: model.playbackState,
                         onPlayPause: {
-                            model.open(.grounding)
+                            model.startSleepSession()
                         },
                         onOpenPlayer: {
-                            model.open(.audioPlayer)
+                            model.startSleepSession()
                         }
                     )
                     .padding(.top, 16)
@@ -130,7 +130,8 @@ struct HomeView: View {
 
     private var scheduleSummary: some View {
         Button {
-            model.open(.alarmHistory)
+            model.beginNewSchedule()
+            model.open(.alarmScheduleEditor)
         } label: {
             HomeScheduleSummary(
                 sleep: time(hour: model.sleepSchedule.sleepHour, minute: model.sleepSchedule.sleepMinute),
@@ -139,7 +140,7 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Sleep schedule summary")
-        .accessibilityHint("Opens schedule manager")
+        .accessibilityHint("Opens alarm schedule editor")
         .accessibilityIdentifier("home.scheduleSummary")
     }
 
@@ -180,7 +181,7 @@ struct HomeView: View {
                     title: "Calm your mind",
                     detail: "Recovery audio",
                     icon: "waveform",
-                    action: { model.open(.audioLibrary) }
+                    action: { model.startUnwindSession() }
                 )
                 quickAction(
                     title: "Morning\ncheck-in",
@@ -195,7 +196,7 @@ struct HomeView: View {
                     title: "Calm your mind",
                     detail: "Recovery audio",
                     icon: "waveform",
-                    action: { model.open(.audioLibrary) }
+                    action: { model.startUnwindSession() }
                 )
                 quickAction(
                     title: "Morning check-in",
@@ -292,11 +293,11 @@ private struct HomeHeroCard: View {
                     .accessibilityHidden(true)
 
                 VStack(spacing: 10) {
-                    Text("I just had an episode")
+                    Text("Enable Lock screen")
                         .font(AppFont.latoBold(size: 24, relativeTo: .title2))
                         .multilineTextAlignment(.center)
 
-                    Text("You’re Safe! Play Recovery Audio")
+                    Text("Keep grounding companion ready on your Lock Screen")
                         .font(AppFont.inter(size: 17, relativeTo: .body))
                         .foregroundStyle(HomeScreenPalette.textSecondary)
                         .multilineTextAlignment(.center)
@@ -309,8 +310,8 @@ private struct HomeHeroCard: View {
             .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Open full screen audio player")
-        .accessibilityHint("Opens audio player and controls.")
+        .accessibilityLabel("Enable Lock Screen")
+        .accessibilityHint("Starts sleep session and activates Lock Screen companion.")
         .accessibilityIdentifier("home.heroCard")
         .overlay {
             GeometryReader { proxy in
@@ -333,17 +334,16 @@ private struct HomeHeroCard: View {
                                 radius: isPlaying ? 10 : 4
                             )
 
-                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        Image(systemName: "moon.stars.fill")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundStyle(.white)
-                            .offset(x: isPlaying ? 0 : 2)
                     }
                     .frame(width: 76, height: 76)
                     .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(isPlaying ? "Pause recovery audio" : "Play recovery audio")
-                .accessibilityHint("Plays or pauses your selected recovery audio.")
+                .accessibilityLabel("Enable Lock screen")
+                .accessibilityHint("Starts sleep session and activates Lock Screen companion.")
                 .accessibilityIdentifier("home.manualEpisode")
                 .position(
                     x: proxy.size.width * 0.790,

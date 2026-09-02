@@ -42,6 +42,9 @@ final class AppModel {
     private(set) var selectedCheckInID: UUID?
     private(set) var sleepTimerRemaining: TimeInterval?
     @ObservationIgnored private var sleepTimerTask: Task<Void, Never>?
+    var isAlarmRinging: Bool = false
+    private(set) var ringingAlarmSchedule: ScheduleUIModel?
+    @ObservationIgnored private var alarmSnoozeTask: Task<Void, Never>?
     var profile: LocalProfile?
     var settings: AppSettings?
 
@@ -826,6 +829,16 @@ final class AppModel {
     }
 
     var activeTrackTitle: String {
+        if case let .playing(id) = playbackState {
+            if id == "quick-unwind" { return "Quick Unwind" }
+            if id == "slow-unwind" { return "Slow Unwind" }
+            if id == "second-sleep" { return "Calming Second Sleep" }
+        }
+        if case let .paused(id) = playbackState {
+            if id == "quick-unwind" { return "Quick Unwind" }
+            if id == "slow-unwind" { return "Slow Unwind" }
+            if id == "second-sleep" { return "Calming Second Sleep" }
+        }
         if case let .personalClip(id) = recoveryAudioDefault,
            personalClips.contains(where: { $0.id == id })
         {
@@ -843,6 +856,16 @@ final class AppModel {
     }
 
     var activeTrackSubtitle: String {
+        if case let .playing(id) = playbackState {
+            if id == "quick-unwind" { return "Settling into restful calmness" }
+            if id == "slow-unwind" { return "Slower transition into sleep" }
+            if id == "second-sleep" { return "Gentle guided recovery session" }
+        }
+        if case let .paused(id) = playbackState {
+            if id == "quick-unwind" { return "Settling into restful calmness" }
+            if id == "slow-unwind" { return "Slower transition into sleep" }
+            if id == "second-sleep" { return "Gentle guided recovery session" }
+        }
         if case let .personalClip(id) = recoveryAudioDefault,
            personalClips.contains(where: { $0.id == id })
         {
@@ -1013,16 +1036,106 @@ final class AppModel {
         }
     }
 
-    private func playSelectedRecoveryAudio() {
-        guard case let .personalClip(id) = recoveryAudioDefault,
-              let clip = personalClips.first(where: { $0.id == id })
-        else {
-            audioController.showVisualFallback()
-            playbackState = .visualFallback
-            updateSleepSessionLiveActivityForPlayback()
-            return
+    func triggerAlarmRinging(schedule: ScheduleUIModel? = nil) {
+        ringingAlarmSchedule = schedule ?? scheduleUIModels.first(where: { $0.isEnabled })
+        isAlarmRinging = true
+
+        let soundName = SystemAudioAssets.defaultAlarmFileName
+        if let url = SystemAudioAssets.bundledURL(for: soundName) {
+            try? audioController.play(url: url, identifier: "alarm-ringing")
+            playbackState = audioController.playbackState
         }
-        play(clip)
+    }
+
+    func snoozeAlarm(minutes: Int? = nil) {
+        audioController.stopPlayback()
+        playbackState = .idle
+        isAlarmRinging = false
+
+        let duration = minutes ?? ringingAlarmSchedule?.snoozeMinutes ?? 9
+        alarmSnoozeTask?.cancel()
+        alarmSnoozeTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(duration * 60))
+            guard !Task.isCancelled else { return }
+            self?.triggerAlarmRinging(schedule: self?.ringingAlarmSchedule)
+        }
+    }
+
+    func stopAlarm() {
+        alarmSnoozeTask?.cancel()
+        alarmSnoozeTask = nil
+        audioController.stopPlayback()
+        playbackState = .idle
+        isAlarmRinging = false
+
+        // Stopping alarm immediately presents the morning questionnaire
+        selectedTab = .sleep
+        isMorningCheckInPresented = true
+        open(.morningCheckIn)
+    }
+
+    func startUnwindSession() {
+        guard launchDestination == .home else { return }
+        let defaultSleep = settings?.defaultSleepSupport ?? .quickSleep
+        let fileName = defaultSleep == .longSleepAid
+            ? "spc_catalog_slow-unwind_v1.m4a"
+            : "spc_catalog_quick-unwind_v1.m4a"
+        let trackID = defaultSleep == .longSleepAid ? "slow-unwind" : "quick-unwind"
+
+        if let url = SystemAudioAssets.bundledURL(for: fileName) {
+            try? audioController.play(url: url, identifier: trackID)
+            playbackState = audioController.playbackState
+        }
+        startSleepSession()
+        open(.audioPlayer)
+    }
+
+    func playCalmingSecondSleepAudio() {
+        let bundledName = "spc_catalog_slow-unwind_v1.m4a"
+        if let url = SystemAudioAssets.bundledURL(for: bundledName) ??
+            SystemAudioAssets.bundledURL(for: "spc_catalog_quick-unwind_v1.m4a")
+        {
+            do {
+                try audioController.play(url: url, identifier: "second-sleep")
+                playbackState = audioController.playbackState
+                updateSleepSessionLiveActivityForPlayback()
+                return
+            } catch {
+                // Fall through to visual fallback
+            }
+        }
+        audioController.showVisualFallback()
+        playbackState = .visualFallback
+        updateSleepSessionLiveActivityForPlayback()
+    }
+
+    private func playSelectedRecoveryAudio() {
+        let postSupport = settings?.defaultPostEpisodeSupport ?? .calmingAudio
+        switch postSupport {
+        case .partnerVoice:
+            if case let .personalClip(id) = recoveryAudioDefault,
+               let clip = personalClips.first(where: { $0.id == id })
+            {
+                play(clip)
+                return
+            } else if let firstClip = personalClips.first {
+                play(firstClip)
+                return
+            }
+            playCalmingSecondSleepAudio()
+
+        case .calmingAudio:
+            playCalmingSecondSleepAudio()
+
+        case .callPartner:
+            if let contact = partnerContact,
+               let phoneURL = contact.phoneURL
+            {
+                UIApplication.shared.open(phoneURL)
+            } else {
+                open(.defaultSettings)
+            }
+        }
     }
 
     private func updateSleepSessionLiveActivityForPlayback() {
@@ -1293,9 +1406,30 @@ final class AppModel {
     }
 
     func openDeepLink(_ url: URL) {
-        if url.scheme?.lowercased() == "spc", url.host?.lowercased() == "sleep-session" {
-            presentActiveSleepSession()
-            return
+        if url.scheme?.lowercased() == "spc" {
+            let host = url.host?.lowercased()
+            if host == "sleep-session" {
+                presentActiveSleepSession()
+                return
+            }
+            if host == "alarm-ringing" || host == "ring" {
+                triggerAlarmRinging()
+                return
+            }
+            if host == "alarm-stop" {
+                stopAlarm()
+                return
+            }
+            if host == "alarm-snooze" {
+                snoozeAlarm()
+                return
+            }
+            if host == "checkin" {
+                selectedTab = .sleep
+                isMorningCheckInPresented = true
+                open(.morningCheckIn)
+                return
+            }
         }
         // ASWebAuthenticationSession consumes OAuth callbacks (e.g. spc://auth/callback);
         // unrouted URLs are ignored safely (verified in

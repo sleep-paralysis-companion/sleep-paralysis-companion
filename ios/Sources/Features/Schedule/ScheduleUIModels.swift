@@ -89,6 +89,7 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
     var preWakeReminderLeadMinutes: Int?
     var wakeAudio: ScheduleUIAudioSelection
     var isEnabled: Bool
+    var snoozeMinutes: Int?
     /// A non-nil date marks a one-time wake-only alarm.
     var oneTimeDate: Date?
 
@@ -105,6 +106,7 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         preWakeReminderLeadMinutes: Int?,
         wakeAudio: ScheduleUIAudioSelection,
         isEnabled: Bool,
+        snoozeMinutes: Int? = 9,
         oneTimeDate: Date? = nil
     ) {
         self.id = id
@@ -119,6 +121,7 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         self.preWakeReminderLeadMinutes = preWakeReminderLeadMinutes
         self.wakeAudio = wakeAudio
         self.isEnabled = isEnabled
+        self.snoozeMinutes = snoozeMinutes
         self.oneTimeDate = oneTimeDate
     }
 

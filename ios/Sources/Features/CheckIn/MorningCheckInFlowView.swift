@@ -33,15 +33,15 @@ struct MorningCheckInFlowView: View {
     }
 
     private var questionCard: some View {
-        VStack(alignment: .leading, spacing: 28) {
+        VStack(alignment: .leading, spacing: 20) {
             Text(step.questionTitle)
-                .font(AppFont.latoSemiBold(size: 31, relativeTo: .title))
+                .font(AppFont.latoSemiBold(size: 22, relativeTo: .title2))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
 
             switch step {
             case .episode:
-                HStack(spacing: 24) {
+                HStack(spacing: 16) {
                     episodeAnswer(title: "YES", emoji: "😟", occurrence: .yes)
                     episodeAnswer(title: "NO", emoji: "🙂", occurrence: .no)
                 }
@@ -88,12 +88,12 @@ struct MorningCheckInFlowView: View {
                 .disabled(isSaving)
                 .accessibilityIdentifier("morningCheckIn.skip")
         }
-        .padding(32)
+        .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(red: 0.07, green: 0.09, blue: 0.24).opacity(0.94))
-        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color(red: 0.20, green: 0.21, blue: 0.45), lineWidth: 1)
         }
     }
@@ -105,18 +105,18 @@ struct MorningCheckInFlowView: View {
                 step = occurrence == .yes ? .feeling : .sleepHelp
             }
         } label: {
-            VStack(spacing: 22) {
+            VStack(spacing: 14) {
                 Text(emoji)
-                    .font(.system(size: 56))
+                    .font(.system(size: 36))
                 Text(title)
-                    .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
+                    .font(AppFont.inter(size: 16, relativeTo: .callout, weight: .semibold))
             }
-            .frame(maxWidth: .infinity, minHeight: 202)
+            .frame(maxWidth: .infinity, minHeight: 130)
             .background(Color(red: 0.08, green: 0.10, blue: 0.25))
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(Color(red: 0.16, green: 0.17, blue: 0.38), lineWidth: 2)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color(red: 0.16, green: 0.17, blue: 0.38), lineWidth: 1.5)
             }
         }
         .buttonStyle(.plain)
@@ -124,24 +124,24 @@ struct MorningCheckInFlowView: View {
     }
 
     private func answerList(_ answers: [AnswerOption]) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             ForEach(Array(answers.enumerated()), id: \.offset) { _, answer in
                 Button(action: answer.action) {
-                    HStack(spacing: 18) {
+                    HStack(spacing: 14) {
                         Text(answer.emoji)
-                            .font(.system(size: 34))
-                            .frame(width: 62, height: 62)
+                            .font(.system(size: 22))
+                            .frame(width: 44, height: 44)
                             .background(Color(red: 0.11, green: 0.12, blue: 0.31))
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         Text(answer.title)
-                            .font(AppFont.inter(size: 24, relativeTo: .title2, weight: .medium))
+                            .font(AppFont.inter(size: 17, relativeTo: .body, weight: .medium))
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 0)
                     }
-                    .padding(18)
-                    .frame(maxWidth: .infinity, minHeight: 98, alignment: .leading)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
                     .background(Color(red: 0.08, green: 0.10, blue: 0.25))
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .disabled(isSaving)
@@ -152,27 +152,27 @@ struct MorningCheckInFlowView: View {
     private func affirmationContent(for occurrence: EpisodeOccurrence) -> some View {
         let affirmation = MorningAffirmation.message(for: occurrence, on: .now)
 
-        return VStack(spacing: 30) {
-            MoonMark(size: 260)
+        return VStack(spacing: 24) {
+            MoonMark(size: 180)
                 .padding(.top, 6)
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 Text(affirmation.title)
-                    .font(AppFont.latoSemiBold(size: 31, relativeTo: .title))
+                    .font(AppFont.latoSemiBold(size: 24, relativeTo: .title2))
                     .multilineTextAlignment(.center)
                 Text(affirmation.detail)
-                    .font(AppFont.inter(size: 20, relativeTo: .title3))
+                    .font(AppFont.inter(size: 16, relativeTo: .body))
                     .foregroundStyle(Color(red: 0.65, green: 0.62, blue: 0.84))
                     .multilineTextAlignment(.center)
                 Text(affirmation.supportingDetail)
-                    .font(AppFont.inter(size: 20, relativeTo: .title3))
+                    .font(AppFont.inter(size: 16, relativeTo: .body))
                     .foregroundStyle(Color(red: 0.65, green: 0.62, blue: 0.84))
                     .multilineTextAlignment(.center)
             }
             Button("Return To Home") {
                 model.completeMorningCheckIn()
             }
-            .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .semibold))
-            .frame(maxWidth: .infinity, minHeight: 62)
+            .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
+            .frame(maxWidth: .infinity, minHeight: 52)
             .background(
                 LinearGradient(
                     colors: [Color(red: 0.39, green: 0.27, blue: 0.75), Color(red: 0.25, green: 0.52, blue: 0.85)],
@@ -316,16 +316,17 @@ private struct MorningCheckInHeader: View {
     let step: MorningCheckInStep
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(headerDate)
-                        .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
+                        .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .semibold))
+                        .tracking(1.2)
                         .foregroundStyle(Color(red: 0.57, green: 0.54, blue: 0.78))
                     Text("Good morning,\nthere 🌤️")
-                        .font(AppFont.latoSemiBold(size: 38, relativeTo: .largeTitle))
+                        .font(AppFont.latoSemiBold(size: 26, relativeTo: .title))
                     Text("Let's check in with your night.")
-                        .font(AppFont.inter(size: 20, relativeTo: .title3))
+                        .font(AppFont.inter(size: 15, relativeTo: .subheadline))
                         .foregroundStyle(Color(red: 0.64, green: 0.61, blue: 0.82))
                 }
                 Spacer(minLength: 12)
@@ -333,15 +334,15 @@ private struct MorningCheckInHeader: View {
                     Circle()
                         .fill(Color(red: 0.42, green: 0.26, blue: 0.75))
                     Text("🌙")
-                        .font(.system(size: 53))
+                        .font(.system(size: 34))
                 }
-                .frame(width: 144, height: 144)
-                .padding(.top, 34)
+                .frame(width: 80, height: 80)
+                .padding(.top, 12)
             }
 
             if let progressTitle = step.progressTitle {
                 Text(progressTitle)
-                    .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
+                    .font(AppFont.inter(size: 14, relativeTo: .footnote, weight: .medium))
                     .foregroundStyle(Color(red: 0.57, green: 0.54, blue: 0.78))
                 HStack(spacing: 0) {
                     ForEach(0 ..< 4, id: \.self) { index in

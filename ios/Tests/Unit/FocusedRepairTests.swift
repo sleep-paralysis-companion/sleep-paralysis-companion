@@ -440,3 +440,66 @@ final class AuthenticatedJourneyDomainCoverageTests: XCTestCase {
         )
     }
 }
+
+final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
+    @MainActor
+    func testTriggerAlarmRingingSetsStateAndStopNavigatesToCheckIn() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        XCTAssertFalse(model.isAlarmRinging)
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.stopAlarm()
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertEqual(model.selectedTab, .sleep)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+        XCTAssertTrue(model.path.contains(.morningCheckIn))
+    }
+
+    @MainActor
+    func testSnoozeAlarmDismissesRingingState() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.snoozeAlarm(minutes: 5)
+        XCTAssertFalse(model.isAlarmRinging)
+    }
+
+    @MainActor
+    func testAlarmDeepLinksRouteCorrectly() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.openDeepLink(URL(string: "spc://alarm-ringing")!)
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.openDeepLink(URL(string: "spc://alarm-stop")!)
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertEqual(model.selectedTab, .sleep)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+
+        model.openDeepLink(URL(string: "spc://checkin")!)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+    }
+
+    @MainActor
+    func testStartUnwindSessionActivatesSleepSessionAndNavigatesToPlayer() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.startUnwindSession()
+        XCTAssertNotNil(model.sleepSessionStartedAt)
+        XCTAssertTrue(model.path.contains(.audioPlayer))
+    }
+
+    func testScheduleUIModelDefaultSnoozeMinutes() {
+        let schedule = ScheduleUIModel.newSleep
+        XCTAssertEqual(schedule.snoozeMinutes, 9)
+    }
+}
+

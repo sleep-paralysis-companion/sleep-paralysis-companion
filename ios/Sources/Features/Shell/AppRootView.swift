@@ -21,6 +21,9 @@ struct AppRootView: View {
         .font(AppTypographyRole.body)
         .tint(AppColorRole.accent)
         .onOpenURL(perform: model.openDeepLink)
+        .fullScreenCover(isPresented: $model.isAlarmRinging) {
+            AlarmRingingView(model: model)
+        }
         .task {
             model.activate(restoredState: restoredNavigation)
             attemptManualEpisodeHandoff()
@@ -174,6 +177,7 @@ private struct AppRouteDestinationView: View {
                 onSave: { schedule in
                     if model.saveScheduleUI(schedule) {
                         dismissScheduleRoute()
+                        model.startUnwindSession()
                     }
                 },
                 onDelete: { schedule in
