@@ -79,7 +79,7 @@ nonisolated struct CatalogAudioAsset: Identifiable, Codable, Equatable, Sendable
         minimumCatalogSchema: Int,
         provenanceReference: String,
         rightsReference: String,
-        approvalReference: String,
+        approvalReference: String
     ) {
         self.id = id
         self.contentVersion = contentVersion
@@ -263,7 +263,7 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
     init(
         manifestVersion: Int,
         minimumAppVersion: String? = nil,
-        assets: [CatalogAudioAsset],
+        assets: [CatalogAudioAsset]
     ) {
         self.manifestVersion = manifestVersion
         self.minimumAppVersion = minimumAppVersion
@@ -308,11 +308,11 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 localeIdentifier: "en",
                 delivery: .bundled,
                 status: .approved,
-                durationMilliseconds: 30041,
-                byteCount: 2884207,
+                durationMilliseconds: 30_041,
+                byteCount: 2_884_207,
                 mimeType: "audio/x-caf",
                 codec: "pcm_s16le",
-                sampleRateHz: 48000,
+                sampleRateHz: 48_000,
                 channels: 1,
                 sha256: "202b416ac3066ef272baa856d30d817e7686412b0fef5b78f5531c252f40d42c",
                 previewPathID: nil,
@@ -323,7 +323,7 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 minimumCatalogSchema: 1,
                 provenanceReference: "audio-owner-supplied-2026-08-17",
                 rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
-                approvalReference: "audio-product-approval-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17"
             ),
             CatalogAudioAsset(
                 id: "notification",
@@ -335,11 +335,11 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 localeIdentifier: "en",
                 delivery: .bundled,
                 status: .approved,
-                durationMilliseconds: 2000,
-                byteCount: 192292,
+                durationMilliseconds: 2_000,
+                byteCount: 192_292,
                 mimeType: "audio/x-caf",
                 codec: "pcm_s16le",
-                sampleRateHz: 48000,
+                sampleRateHz: 48_000,
                 channels: 1,
                 sha256: "6359c2edc965029a953c2050230be47381e977c6d3b3d7ce4761dbc332256ed8",
                 previewPathID: nil,
@@ -350,7 +350,7 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 minimumCatalogSchema: 1,
                 provenanceReference: "audio-owner-supplied-2026-08-17",
                 rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
-                approvalReference: "audio-product-approval-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17"
             ),
             CatalogAudioAsset(
                 id: "quick-unwind",
@@ -362,11 +362,11 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 localeIdentifier: "en",
                 delivery: .bundled,
                 status: .approved,
-                durationMilliseconds: 393160,
-                byteCount: 9655675,
+                durationMilliseconds: 393_160,
+                byteCount: 9_655_675,
                 mimeType: "audio/mp4",
                 codec: "aac-lc",
-                sampleRateHz: 44100,
+                sampleRateHz: 44_100,
                 channels: 2,
                 sha256: "3c2e9fcad44eae60fad8aed98c36352db42a0be828b8ad8f807952e2044f27fd",
                 previewPathID: nil,
@@ -377,7 +377,7 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 minimumCatalogSchema: 1,
                 provenanceReference: "audio-owner-supplied-2026-08-17",
                 rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
-                approvalReference: "audio-product-approval-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17"
             ),
             CatalogAudioAsset(
                 id: "slow-unwind",
@@ -389,11 +389,11 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 localeIdentifier: "en",
                 delivery: .bundled,
                 status: .approved,
-                durationMilliseconds: 5170642,
-                byteCount: 85201262,
+                durationMilliseconds: 5_170_642,
+                byteCount: 85_201_262,
                 mimeType: "audio/mp4",
                 codec: "aac-lc",
-                sampleRateHz: 44100,
+                sampleRateHz: 44_100,
                 channels: 2,
                 sha256: "e00421526fda96c132295ae46f2bf2558db26d6aac53a2e04992c23bdbea88fc",
                 previewPathID: nil,
@@ -404,9 +404,9 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
                 minimumCatalogSchema: 1,
                 provenanceReference: "audio-owner-supplied-2026-08-17",
                 rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
-                approvalReference: "audio-product-approval-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17"
             ),
-        ],
+        ]
     )
 }
 
