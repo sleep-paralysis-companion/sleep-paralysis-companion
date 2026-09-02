@@ -9,14 +9,14 @@ CODE_SIGN_STYLE = Manual
 CODE_SIGNING_ALLOWED = NO
 CODE_SIGNING_REQUIRED = NO
 DEVELOPMENT_TEAM =
-SPC_PUBLIC_API_BASE_URL =
-SPC_ALLOWED_API_HOSTS =
-SPC_PRODUCTION_API_HOSTS =
-SPC_AUDIO_CATALOG_MANIFEST_URL =
-SPC_AUDIO_CATALOG_AUTHORIZATION_URL =
-SPC_AUDIO_CATALOG_ALLOWED_HOSTS =
+SPC_PUBLIC_API_BASE_URL = https:/$()/nfzvlvukbeapcnlmyecf.supabase.co
+SPC_ALLOWED_API_HOSTS = nfzvlvukbeapcnlmyecf.supabase.co
+SPC_PRODUCTION_API_HOSTS = nfzvlvukbeapcnlmyecf.supabase.co
+SPC_AUDIO_CATALOG_MANIFEST_URL = https:/$()/nfzvlvukbeapcnlmyecf.supabase.co/functions/v1/audio-manifest
+SPC_AUDIO_CATALOG_AUTHORIZATION_URL = https:/$()/nfzvlvukbeapcnlmyecf.supabase.co/functions/v1/audio-authorize
+SPC_AUDIO_CATALOG_ALLOWED_HOSTS = nfzvlvukbeapcnlmyecf.supabase.co
 SPC_SUPABASE_URL = https:/$()/nfzvlvukbeapcnlmyecf.supabase.co
 SPC_SUPABASE_PUBLISHABLE_KEY =
-SPC_OAUTH_REDIRECT_URL =
+SPC_OAUTH_REDIRECT_URL = app.sleepcompanion.spc://auth/callback
 
 #include? "Local.xcconfig"

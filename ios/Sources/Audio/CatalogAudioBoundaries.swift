@@ -324,7 +324,7 @@ actor CatalogAudioCacheCoordinator {
 
         let value = metadata(
             for: asset,
-            state: networkAvailable ? .availableRemotely : .notAvailable
+            state: asset.delivery == .bundled ? .availableOffline : (networkAvailable ? .availableRemotely : .notAvailable)
         )
         try await index.save(value)
         return value
@@ -337,10 +337,7 @@ actor CatalogAudioCacheCoordinator {
         let url: URL
         if asset.delivery == .bundled {
             guard let bundledResourceName = asset.bundledResourceName,
-                  let bundledURL = Bundle.main.url(
-                      forResource: bundledResourceName,
-                      withExtension: nil
-                  )
+                  let bundledURL = SystemAudioAssets.bundledURL(for: bundledResourceName)
             else {
                 throw CatalogAudioBoundaryError.offline
             }

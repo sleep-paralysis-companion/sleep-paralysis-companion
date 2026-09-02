@@ -140,7 +140,7 @@ private struct AppRouteDestinationView: View {
         case .audioPlayer:
             AudioPlayerView(model: model)
         case .curatedAudioLibrary:
-            CatalogAudioLibraryView(service: model.catalogAudioService) {
+            CatalogAudioLibraryView(appModel: model, service: model.catalogAudioService) {
                 model.open(.audioLibrary)
             }
         case .sleepSchedule:

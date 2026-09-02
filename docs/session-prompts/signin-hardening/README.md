@@ -1,5 +1,9 @@
 # Sign-In Flow Hardening — Orchestrated Sessions
 
+> **Completed 01 September 2026.** All hardening sessions S1–S7 are merged and reconciled.
+> The definitive end-to-end authentication narrative, launch composition, offline restore, storage inventory,
+> failure taxonomy, and wrong-account guards are documented in [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md).
+
 > Created 27 August 2026 following the full sign-in flow review. Run each prompt below in its
 > own chat session (fresh context). Each file is a complete operating contract; sessions assume
 > no memory of other chats. Merge branches in the numbered order.
@@ -12,15 +16,15 @@ into seven low-conflict sessions so parallel chat sessions cannot stomp each oth
 
 ## Session index
 
-| # | Prompt file | Fixes | Priority | Depends on |
-|---|-------------|-------|----------|------------|
-| S1 | `AUTH_S1_OFFLINE_TOLERANT_RESTORE_SESSION_PROMPT.md` | Offline launch deleting valid sessions; unconditional refresh | 🔴 High | — |
-| S2 | `AUTH_S2_FAILURE_TAXONOMY_LOGGING_SESSION_PROMPT.md` | All failures conflated to one opaque message; no auth logging | 🟡 Medium | merge S1 first |
-| S3 | `AUTH_S3_CONSTANTS_AND_POLISH_SESSION_PROMPT.md` | Keychain service-string drift; dead `wrongAccount` catch; callback deeplink test; a11y audit | ⚪ Medium-low | merge S2 first |
-| S4 | `AUTH_S4_SINGLE_SOURCE_SESSION_STORAGE_SESSION_PROMPT.md` | Refresh/access tokens persisted twice (SDK + app Keychain store) | 🟡 Medium | merge S3 first |
-| S5 | `AUTH_S5_FULLNAME_FIELD_RESOLUTION_SESSION_PROMPT.md` | Create-account mode collects a Full Name it discards | 🟡 Medium | — (any slot) |
-| S6 | `AUTH_S6_RELEASE_CONFIG_PROVISIONING_SESSION_PROMPT.md` | Clean-clone/TestFlight builds ship with blank Supabase key/redirect → silent dead auth | 🔴 High | — (run FIRST, parallel-safe) |
-| S7 | `AUTH_S7_CONSOLIDATION_AND_FLOW_DOC_SESSION_PROMPT.md` | Dual auth architectures undocumented; final flow documentation | ⚪ Low | merge S1–S6 |
+| # | Prompt file | Fixes | Priority | Status |
+|---|-------------|-------|----------|--------|
+| S1 | `AUTH_S1_OFFLINE_TOLERANT_RESTORE_SESSION_PROMPT.md` | Offline launch deleting valid sessions; unconditional refresh | 🔴 High | **Completed** — see [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md#5-launch-restoration-strategy-offline-tolerant-s1--migration-s4) |
+| S2 | `AUTH_S2_FAILURE_TAXONOMY_LOGGING_SESSION_PROMPT.md` | All failures conflated to one opaque message; no auth logging | 🟡 Medium | **Completed** — see [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md#7-failure-taxonomy-user-copy--privacy-safe-logging-s2) |
+| S3 | `AUTH_S3_CONSTANTS_AND_POLISH_SESSION_PROMPT.md` | Keychain service-string drift; dead `wrongAccount` catch; callback deeplink test; a11y audit | ⚪ Medium-low | **Completed** — see [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md#10-accessibility--ui-design-system-notes-s3--s5-outcomes) |
+| S4 | `AUTH_S4_SINGLE_SOURCE_SESSION_STORAGE_SESSION_PROMPT.md` | Refresh/access tokens persisted twice (SDK + app Keychain store) | 🟡 Medium | **Completed** — see [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md#4-storage-inventory-at-rest-post-s4-architecture) |
+| S5 | `AUTH_S5_FULLNAME_FIELD_RESOLUTION_SESSION_PROMPT.md` | Create-account mode collects a Full Name it discards | 🟡 Medium | **Completed** — see [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md#10-accessibility--ui-design-system-notes-s3--s5-outcomes) |
+| S6 | `AUTH_S6_RELEASE_CONFIG_PROVISIONING_SESSION_PROMPT.md` | Clean-clone/TestFlight builds ship with blank Supabase key/redirect → silent dead auth | 🔴 High | **Completed** — see [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md#3-launch-composition--configuration-decision-tree) + [`AUTH_CONFIG_PROVISIONING.md`](../../phase-1c/AUTH_CONFIG_PROVISIONING.md) |
+| S7 | `AUTH_S7_CONSOLIDATION_AND_FLOW_DOC_SESSION_PROMPT.md` | Dual auth architectures undocumented; final flow documentation | ⚪ Low | **Completed** — see [`docs/PHASE_SIGN_IN_FLOW.md`](../../PHASE_SIGN_IN_FLOW.md) |
 
 ## Recommended run order
 

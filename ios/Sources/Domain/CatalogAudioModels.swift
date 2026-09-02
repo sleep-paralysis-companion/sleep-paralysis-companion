@@ -277,8 +277,7 @@ nonisolated enum CatalogAudioManifestValidator {
         }
 
         if [.quickUnwind, .secondSleep, .slowUnwind].contains(asset.category) {
-            guard asset.delivery == .downloadable,
-                  asset.mimeType.lowercased() == "audio/mp4",
+            guard asset.mimeType.lowercased() == "audio/mp4",
                   asset.codec.lowercased() == "aac-lc"
             else {
                 throw CatalogAudioBoundaryError.invalidManifest("catalog_codec")

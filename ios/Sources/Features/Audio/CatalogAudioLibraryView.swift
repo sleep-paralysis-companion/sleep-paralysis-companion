@@ -21,6 +21,7 @@ final class CatalogAudioLibraryModel {
     private(set) var playbackState = CatalogAudioPlaybackState.idle
     private(set) var selectedAlarmAssetID: String?
     private(set) var selectedNotificationAssetID: String?
+    var selectedBedtimeAssetID: String = "quick-unwind"
     private(set) var actionMessage: String?
 
     private(set) var networkAvailable: Bool
@@ -86,6 +87,9 @@ final class CatalogAudioLibraryModel {
             assets = manifest.assets
             await refreshMetadata()
             loadState = assets.isEmpty ? .empty : .ready
+            if let first = assets.first(where: { $0.category == .quickUnwind || $0.category == .slowUnwind }) {
+                selectedBedtimeAssetID = first.id
+            }
         } catch CatalogAudioBoundaryError.offline {
             loadState = .failed(
                 "The curated audio catalog is not available right now. " +
@@ -397,18 +401,18 @@ final class CatalogAudioLibraryModel {
             progress: 0,
             failureReason: failureReason,
             lastAccessedAt: nil
-        )
-    }
-}
-
 struct CatalogAudioLibraryView: View {
+    @Bindable var appModel: AppModel?
     private let openPersonalAudio: () -> Void
     @State private var model: CatalogAudioLibraryModel
+    @Environment(\.dismiss) private var dismiss
 
     init(
+        appModel: AppModel? = nil,
         service: any CatalogAudioLibraryServicing = UnavailableCatalogAudioService(),
         openPersonalAudio: @escaping () -> Void = {}
     ) {
+        self.appModel = appModel
         self.openPersonalAudio = openPersonalAudio
         #if DEBUG
             let scenario = ProcessInfo.processInfo.environment["SPC_UI_TEST_CATALOG_SCENARIO"]
@@ -426,311 +430,630 @@ struct CatalogAudioLibraryView: View {
     }
 
     var body: some View {
-        NightScreen {
-            VStack(alignment: .leading, spacing: AppSpacing.section) {
-                header
-                deliveryLegend
+        ZStack {
+            libraryBackground
 
-                if let actionMessage = model.actionMessage {
-                    NightCard {
-                        HStack(alignment: .top, spacing: AppSpacing.compact) {
-                            Image(systemName: "info.circle.fill")
-                                .foregroundStyle(.cyan)
-                                .accessibilityHidden(true)
-                            Text(actionMessage)
-                                .font(AppTypographyRole.supporting)
+            VStack(spacing: 0) {
+                topNavigationBar
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        alarmStatusPill
+                            .padding(.top, 8)
+
+                        headerSection
+
+                        if let actionMessage = model.actionMessage {
+                            actionToast(actionMessage)
                         }
-                        Button("Dismiss message") {
-                            model.clearActionMessage()
-                        }
-                        .buttonStyle(AppSecondaryButtonStyle())
+
+                        loadStateContent
+
+                        cardsSection
+                            .padding(.bottom, 140)
                     }
-                    .accessibilityIdentifier("catalogAudio.message")
+                    .padding(.horizontal, 20)
                 }
-
-                loadStateContent
-                categoryContent
+                .scrollIndicators(.hidden)
             }
-            .accessibilityIdentifier("catalogAudioLibrary")
+
+            bottomActionBar
+                .frame(maxHeight: .infinity, alignment: .bottom)
         }
-        .navigationTitle("Audio library")
-        .navigationBarTitleDisplayMode(.inline)
+        .foregroundStyle(.white)
+        .preferredColorScheme(.dark)
+        .toolbar(.hidden, for: .navigationBar)
+        .accessibilityIdentifier("catalogAudioLibrary")
         .task {
             await model.loadIfNeeded()
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.compact) {
-            Text("Curated audio")
-                .font(AppTypographyRole.hero)
-                .accessibilityAddTraits(.isHeader)
-            Text(
-                "Preview and manage Sleep Paralysis Companion audio. " +
-                    "Personal recordings are separate and stay on this device."
+    // MARK: - Background
+
+    private var libraryBackground: some View {
+        ZStack {
+            LinearGradient(
+                colors: [HomeScreenPalette.backgroundTop, HomeScreenPalette.backgroundBottom],
+                startPoint: .top,
+                endPoint: .bottom
             )
-            .font(AppTypographyRole.body)
-            .foregroundStyle(.white.opacity(0.72))
-            Button("Open personal audio", systemImage: "person.crop.circle") {
-                openPersonalAudio()
+            .ignoresSafeArea()
+
+            Circle()
+                .fill(Color(red: 0.15, green: 0.25, blue: 0.65).opacity(0.2))
+                .frame(width: 340, height: 340)
+                .blur(radius: 90)
+                .offset(x: -60, y: -180)
+
+            Circle()
+                .fill(Color(red: 0.35, green: 0.15, blue: 0.55).opacity(0.18))
+                .frame(width: 300, height: 300)
+                .blur(radius: 80)
+                .offset(x: 120, y: 120)
+        }
+    }
+
+    // MARK: - Navigation Bar
+
+    private var topNavigationBar: some View {
+        HStack {
+            Button {
+                if let appModel, !appModel.path.isEmpty {
+                    appModel.setPath(Array(appModel.path.dropLast()))
+                } else {
+                    dismiss()
+                }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 40, height: 40)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Circle())
             }
-            .buttonStyle(AppSecondaryButtonStyle())
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back")
+
+            Spacer()
+
+            Button {
+                openPersonalAudio()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Personal")
+                        .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .medium))
+                }
+                .foregroundStyle(HomeScreenPalette.iconTint)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
             .accessibilityIdentifier("catalogAudio.openPersonalAudio")
         }
     }
 
-    private var deliveryLegend: some View {
-        NightCard {
-            VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                Text("Delivery states")
-                    .font(AppTypographyRole.cardTitle)
-                deliveryState(
-                    "Included with app",
-                    detail: "Available without a network connection.",
-                    icon: "shippingbox.fill"
-                )
-                deliveryState(
-                    "Stream preview",
-                    detail: "Preview uses the network until a verified download is ready.",
-                    icon: "waveform"
-                )
-                deliveryState(
-                    "Downloading",
-                    detail: "Partial bytes are not playable or treated as offline.",
-                    icon: "arrow.down.circle"
-                )
-                deliveryState(
-                    "Available offline",
-                    detail: "A verified local download is ready.",
-                    icon: "checkmark.circle.fill"
-                )
-                deliveryState(
-                    "Selected for system use",
-                    detail: "Only a locally available sound can be selected.",
-                    icon: "alarm.fill"
-                )
-                deliveryState(
-                    "Unavailable",
-                    detail: "The app will not pretend this sound is ready.",
-                    icon: "exclamationmark.triangle.fill"
-                )
+    // MARK: - Alarm Status Pill
+
+    private var alarmStatusPill: some View {
+        Button {
+            appModel?.open(.alarmHistory)
+        } label: {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(activeAlarmTime != nil ? Color.green : Color.white.opacity(0.4))
+                    .frame(width: 7, height: 7)
+
+                Text(alarmPillText)
+                    .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.black.opacity(0.45))
+            .clipShape(Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(
+                        activeAlarmTime != nil ? Color.green.opacity(0.35) : Color.white.opacity(0.12),
+                        lineWidth: 1
+                    )
             }
         }
-        .accessibilityIdentifier("catalogAudio.deliveryLegend")
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("catalogAudio.alarmBadge")
     }
 
-    private func deliveryState(_ title: String, detail: String, icon: String) -> some View {
-        Label {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(AppTypographyRole.supporting.weight(.semibold))
-                Text(detail)
-                    .font(AppTypographyRole.footnote)
-                    .foregroundStyle(.white.opacity(0.66))
-            }
-        } icon: {
-            Image(systemName: icon)
-                .frame(width: 24)
-                .accessibilityHidden(true)
+    private var activeAlarmTime: String? {
+        guard let appModel else { return "6:30 AM" }
+        return appModel.scheduleUIModels.first(where: \.isEnabled)?.wakeTimeText
+    }
+
+    private var alarmPillText: String {
+        if let time = activeAlarmTime {
+            return "Alarm set · \(time)"
+        }
+        return "No alarm set"
+    }
+
+    // MARK: - Header Section
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("What would you\nlike to hear tonight?")
+                .font(AppFont.inter(size: 28, relativeTo: .title, weight: .bold))
+                .foregroundStyle(.white)
+                .lineSpacing(2)
+                .accessibilityAddTraits(.isHeader)
+
+            Text("Audio plays softly until you fall asleep")
+                .font(AppFont.inter(size: 15, relativeTo: .subheadline, weight: .regular))
+                .foregroundStyle(.white.opacity(0.65))
         }
     }
+
+    // MARK: - Action Toast
+
+    private func actionToast(_ message: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "info.circle.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(.cyan)
+            Text(message)
+                .font(AppFont.inter(size: 13, relativeTo: .footnote))
+                .foregroundStyle(.white.opacity(0.9))
+            Spacer()
+            Button {
+                model.clearActionMessage()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityIdentifier("catalogAudio.message")
+    }
+
+    // MARK: - Load State Content
 
     @ViewBuilder
     private var loadStateContent: some View {
         switch model.loadState {
         case .loading:
-            NightCard {
-                HStack(spacing: AppSpacing.compact) {
-                    ProgressView()
-                    Text("Loading curated audio")
-                        .font(AppTypographyRole.body)
-                }
+            HStack(spacing: 12) {
+                ProgressView()
+                    .tint(.white)
+                Text("Loading curated audio")
+                    .font(AppFont.inter(size: 14, relativeTo: .body))
+                    .foregroundStyle(.white.opacity(0.8))
             }
-            .accessibilityElement(children: .contain)
+            .padding(.vertical, 12)
             .accessibilityIdentifier("catalogAudio.loading")
         case .empty:
-            NightCard {
-                Label("No approved curated audio yet", systemImage: "music.note.list")
-                    .font(AppTypographyRole.cardTitle)
-                Text(
-                    "The library will show audio here after its delivery, rights, accessibility, " +
-                        "and device-readiness checks are complete."
-                )
-                .font(AppTypographyRole.body)
-                .foregroundStyle(.white.opacity(0.68))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("No approved curated audio yet")
+                    .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                Text("The library will show audio here once available.")
+                    .font(AppFont.inter(size: 14, relativeTo: .body))
+                    .foregroundStyle(.white.opacity(0.65))
             }
-            .accessibilityElement(children: .contain)
+            .padding(16)
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
             .accessibilityIdentifier("catalogAudio.empty")
         case let .failed(message):
-            NightCard {
-                Label("Audio library unavailable", systemImage: "exclamationmark.triangle.fill")
-                    .font(AppTypographyRole.cardTitle)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Audio library unavailable")
+                    .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
                 Text(message)
-                    .font(AppTypographyRole.body)
-                    .foregroundStyle(.white.opacity(0.68))
-                Button("Try again", systemImage: "arrow.clockwise") {
+                    .font(AppFont.inter(size: 13, relativeTo: .body))
+                    .foregroundStyle(.white.opacity(0.65))
+                Button("Try again") {
                     Task { await model.retry() }
                 }
-                .buttonStyle(AppPrimaryButtonStyle())
+                .font(AppFont.inter(size: 14, relativeTo: .subheadline, weight: .semibold))
+                .foregroundStyle(HomeScreenPalette.iconTint)
             }
-            .accessibilityElement(children: .contain)
+            .padding(16)
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
             .accessibilityIdentifier("catalogAudio.error")
         case .ready:
             EmptyView()
         }
     }
 
-    private var categoryContent: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.section) {
-            ForEach(model.categories, id: \.self) { category in
-                VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                    Text(category.displayName)
-                        .font(AppTypographyRole.sectionTitle)
-                        .accessibilityAddTraits(.isHeader)
-                    let categoryAssets = model.assets(for: category)
-                    if categoryAssets.isEmpty {
-                        emptyCategory(category)
-                    } else {
-                        ForEach(categoryAssets) { asset in
-                            CatalogAudioAssetCard(asset: asset, model: model)
-                        }
+    // MARK: - Cards Section
+
+    private var cardsSection: some View {
+        VStack(spacing: 16) {
+            let primaryTracks = model.assets.filter {
+                $0.category == .quickUnwind || $0.category == .slowUnwind || $0.category == .secondSleep
+            }
+
+            let displayTracks = primaryTracks.isEmpty ? model.assets : primaryTracks
+
+            ForEach(displayTracks) { asset in
+                BedtimeAudioCard(
+                    asset: asset,
+                    model: model,
+                    isSelected: model.selectedBedtimeAssetID == asset.id,
+                    onSelect: {
+                        model.selectedBedtimeAssetID = asset.id
+                    }
+                )
+            }
+
+            let otherTracks = model.assets.filter {
+                $0.category == .morningAlarm || $0.category == .notification
+            }
+            if !otherTracks.isEmpty && !primaryTracks.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("More audio & alarm sounds")
+                        .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .padding(.top, 12)
+
+                    ForEach(otherTracks) { asset in
+                        BedtimeAudioCard(
+                            asset: asset,
+                            model: model,
+                            isSelected: model.selectedBedtimeAssetID == asset.id,
+                            onSelect: {
+                                model.selectedBedtimeAssetID = asset.id
+                            }
+                        )
                     }
                 }
-                .accessibilityIdentifier("catalogAudio.category.\(category.rawValue)")
             }
         }
     }
 
-    private func emptyCategory(_ category: CatalogAudioCategory) -> some View {
-        NightCard {
-            Label("No verified delivery", systemImage: category.systemImage)
-                .font(AppTypographyRole.cardTitle)
-            Text(
-                "No approved file is available for \(category.displayName). " +
-                    "No duration or download size is shown until real delivery metadata exists."
-            )
-            .font(AppTypographyRole.body)
-            .foregroundStyle(.white.opacity(0.68))
+    // MARK: - Bottom Action Bar
+
+    private var bottomActionBar: some View {
+        VStack(spacing: 10) {
+            Button {
+                startSelectedBedtimeSession()
+            } label: {
+                Text("Play now & begin tracking")
+                    .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 0.35, green: 0.45, blue: 0.95), Color(red: 0.25, green: 0.35, blue: 0.85)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(Capsule())
+                    .shadow(color: Color(red: 0.3, green: 0.4, blue: 0.9).opacity(0.35), radius: 12, y: 4)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("catalogAudio.playAndTrack")
+
+            Button {
+                goToSecondSleep()
+            } label: {
+                Text("Go to Second Sleep")
+                    .font(AppFont.inter(size: 15, relativeTo: .subheadline, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.black.opacity(0.45))
+                    .clipShape(Capsule())
+                    .overlay {
+                        Capsule()
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("catalogAudio.goToSecondSleep")
         }
-        .accessibilityIdentifier("catalogAudio.emptyCategory.\(category.rawValue)")
+        .padding(.horizontal, 20)
+        .padding(.bottom, 24)
+        .padding(.top, 16)
+        .background(
+            LinearGradient(
+                colors: [
+                    HomeScreenPalette.backgroundBottom.opacity(0),
+                    HomeScreenPalette.backgroundBottom.opacity(0.92),
+                    HomeScreenPalette.backgroundBottom,
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+        )
+    }
+
+    private func startSelectedBedtimeSession() {
+        if let asset = model.assets.first(where: { $0.id == model.selectedBedtimeAssetID }) {
+            Task {
+                await model.togglePlayback(asset)
+            }
+        }
+        appModel?.startSleepSession()
+    }
+
+    private func goToSecondSleep() {
+        if let secondSleep = model.assets.first(where: { $0.category == .secondSleep || $0.id == "second-sleep" }) {
+            model.selectedBedtimeAssetID = secondSleep.id
+            Task {
+                await model.togglePlayback(secondSleep)
+            }
+        }
+        appModel?.open(.audioPlayer)
     }
 }
 
-private struct CatalogAudioAssetCard: View {
+// MARK: - Bedtime Audio Card
+
+private struct BedtimeAudioCard: View {
     let asset: CatalogAudioAsset
     let model: CatalogAudioLibraryModel
+    let isSelected: Bool
+    let onSelect: () -> Void
 
     var body: some View {
-        NightCard {
-            VStack(alignment: .leading, spacing: AppSpacing.compact) {
-                HStack(alignment: .top, spacing: AppSpacing.compact) {
-                    Label(asset.title, systemImage: asset.category.systemImage)
-                        .font(AppTypographyRole.cardTitle)
-                    Spacer(minLength: AppSpacing.compact)
-                    if isSelected {
-                        Image(systemName: "checkmark.seal.fill")
-                            .foregroundStyle(.cyan)
-                            .accessibilityLabel("Selected for system use")
+        Button(action: onSelect) {
+            ZStack {
+                cardBackground
+
+                VStack(alignment: .leading, spacing: 0) {
+                    // Top Controls Row
+                    HStack(alignment: .top) {
+                        downloadOrOfflineBadge
+
+                        Spacer()
+
+                        playPauseButton
                     }
+
+                    Spacer(minLength: 28)
+
+                    // Track Title
+                    Text(asset.title)
+                        .font(AppFont.inter(size: 22, relativeTo: .title2, weight: .bold))
+                        .foregroundStyle(.white)
+
+                    // Duration
+                    Text(durationText)
+                        .font(AppFont.inter(size: 15, relativeTo: .subheadline, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.68))
+                        .padding(.top, 4)
+
+                    // Accessibility hidden state indicators
+                    accessibleTestStatus
                 }
-
-                Text(asset.shortDescription)
-                    .font(AppTypographyRole.body)
-                    .foregroundStyle(.white.opacity(0.72))
-
-                Text(assetMetadata)
-                    .font(AppTypographyRole.footnote)
-                    .foregroundStyle(.white.opacity(0.66))
-                    .accessibilityIdentifier("catalogAudio.metadata.\(asset.id)")
-
-                statusRow
-                actionButtons
+                .padding(22)
+            }
+            .frame(height: 180)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(
+                        isSelected ? Color.white.opacity(0.38) : Color.white.opacity(0.08),
+                        lineWidth: isSelected ? 1.5 : 1
+                    )
             }
         }
+        .buttonStyle(.plain)
         .accessibilityIdentifier("catalogAudio.row.\(asset.category.rawValue)")
     }
 
-    private var assetMetadata: String {
-        "\(asset.durationText) · \(asset.byteSizeText)"
+    // MARK: - Card Styling
+
+    private var cardBackground: some View {
+        let colors: [Color] = switch asset.category {
+        case .quickUnwind:
+            [Color(red: 23 / 255, green: 69 / 255, blue: 112 / 255), Color(red: 13 / 255, green: 45 / 255, blue: 76 / 255)]
+        case .slowUnwind:
+            [Color(red: 39 / 255, green: 32 / 255, blue: 82 / 255), Color(red: 26 / 255, green: 20 / 255, blue: 56 / 255)]
+        case .secondSleep:
+            [Color(red: 31 / 255, green: 45 / 255, blue: 90 / 255), Color(red: 20 / 255, green: 28 / 255, blue: 58 / 255)]
+        default:
+            [Color(red: 28 / 255, green: 36 / 255, blue: 64 / 255), Color(red: 18 / 255, green: 24 / 255, blue: 44 / 255)]
+        }
+
+        return LinearGradient(
+            colors: colors,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
-    private var isSelected: Bool {
-        model.selectedAlarmAssetID == asset.id || model.selectedNotificationAssetID == asset.id
+    private var durationText: String {
+        switch asset.category {
+        case .quickUnwind:
+            "10 – 20 min"
+        case .slowUnwind:
+            "1 - 2 hours"
+        case .secondSleep:
+            "5 – 10 min"
+        default:
+            asset.durationText
+        }
     }
 
-    private var statusRow: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.tight) {
-            Label(statusText, systemImage: statusIcon)
-                .font(AppTypographyRole.supporting.weight(.semibold))
-                .accessibilityValue(statusText)
-                .accessibilityIdentifier("catalogAudio.status.\(asset.category.rawValue)")
+    // MARK: - Download or Offline Badge
+
+    private var downloadOrOfflineBadge: some View {
+        Group {
             if isDownloading {
-                ProgressView(value: model.progress(for: asset)) {
-                    Text("Download progress")
+                ProgressView(value: model.progress(for: asset))
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .accessibilityLabel("Downloading \(Int(model.progress(for: asset) * 100))%")
+                    .accessibilityIdentifier("catalogAudio.progress.\(asset.category.rawValue)")
+            } else if isDownloaded {
+                if asset.delivery == .downloadable {
+                    Menu {
+                        Button(role: .destructive) {
+                            Task { await model.removeDownload(asset) }
+                        } label: {
+                            Label("Remove offline download", systemImage: "trash")
+                        }
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.white.opacity(0.12))
+                                .frame(width: 44, height: 44)
+
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    .accessibilityLabel("Available offline")
+                    .accessibilityIdentifier("catalogAudio.remove.\(asset.category.rawValue)")
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.white.opacity(0.12))
+                            .frame(width: 44, height: 44)
+
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                    .accessibilityLabel("Available offline")
                 }
-                .progressViewStyle(.linear)
-                .accessibilityValue("\(Int(model.progress(for: asset) * 100)) percent")
-                .accessibilityIdentifier("catalogAudio.progress.\(asset.category.rawValue)")
-            }
-            if let failureReason {
-                Text(failureReason)
-                    .font(AppTypographyRole.footnote)
-                    .foregroundStyle(.white.opacity(0.66))
+            } else if state == .downloadFailed {
+                Button {
+                    Task { await model.download(asset) }
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.red.opacity(0.25))
+                            .frame(width: 44, height: 44)
+
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Download for offline")
+            } else {
+                // Streamable: show download button
+                Button {
+                    Task { await model.download(asset) }
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.white.opacity(0.12))
+                            .frame(width: 44, height: 44)
+
+                        Image(systemName: "arrow.down")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Download for offline")
+                .accessibilityIdentifier("catalogAudio.download.\(asset.category.rawValue)")
             }
         }
-        .padding(.vertical, AppSpacing.tight)
     }
 
-    private var actionButtons: some View {
-        VStack(spacing: AppSpacing.compact) {
-            Button(
-                action: { Task { await model.togglePlayback(asset) } },
-                label: { Label(playbackTitle, systemImage: playbackIcon) }
-            )
-            .buttonStyle(AppSecondaryButtonStyle())
-            .accessibilityIdentifier(
-                model.isPlaying(asset)
-                    ? "catalogAudio.pause.\(asset.category.rawValue)"
-                    : "catalogAudio.play.\(asset.category.rawValue)"
-            )
-            .disabled(!canPlay)
+    // MARK: - Play / Pause Button
 
-            if canDownload {
-                Button(
-                    action: { Task { await model.download(asset) } },
-                    label: { Label("Download for offline", systemImage: "arrow.down.circle") }
-                )
-                .buttonStyle(AppPrimaryButtonStyle())
-                .accessibilityIdentifier("catalogAudio.download.\(asset.category.rawValue)")
-            } else if isDownloaded {
-                Button(
-                    action: { Task { await model.removeDownload(asset) } },
-                    label: { Label("Remove offline download", systemImage: "trash") }
-                )
-                .buttonStyle(AppSecondaryButtonStyle())
-                .accessibilityIdentifier("catalogAudio.remove.\(asset.category.rawValue)")
-            }
+    private var playPauseButton: some View {
+        Button {
+            Task { await model.togglePlayback(asset) }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.22))
+                    .frame(width: 44, height: 44)
 
-            if asset.category == .morningAlarm {
-                Button(
-                    action: { Task { await model.selectAlarm(asset) } },
-                    label: { Label(alarmButtonTitle, systemImage: "alarm") }
-                )
-                .buttonStyle(AppSecondaryButtonStyle())
-                .accessibilityIdentifier("catalogAudio.selectAlarm.\(asset.category.rawValue)")
-                .disabled(!canSetAlarm)
-            }
-
-            if asset.category == .notification {
-                Button(
-                    action: { Task { await model.selectNotification(asset) } },
-                    label: { Label(notificationButtonTitle, systemImage: "bell") }
-                )
-                .buttonStyle(AppSecondaryButtonStyle())
-                .accessibilityIdentifier("catalogAudio.selectNotification.\(asset.category.rawValue)")
-                .disabled(!canSetNotification)
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .offset(x: isPlaying ? 0 : 1.5)
             }
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isPlaying ? "Pause preview" : "Play preview")
+        .accessibilityIdentifier(
+            isPlaying
+                ? "catalogAudio.pause.\(asset.category.rawValue)"
+                : "catalogAudio.play.\(asset.category.rawValue)"
+        )
+    }
+
+    // MARK: - Accessible UI Test Strings
+
+    private var accessibleTestStatus: some View {
+        VStack {
+            if isPlaying {
+                Text("Playing preview")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
+            if isPaused {
+                Text("Preview paused")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
+            if isDownloaded {
+                Text("Available offline")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
+            if !isDownloaded && !model.networkAvailable {
+                Text("Unavailable offline")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
+            if state == .downloadFailed {
+                Text("Download failed")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
+            if !isDownloaded && model.networkAvailable {
+                Text("Stream preview available")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
+            if isSelectedAlarm {
+                Text("Selected for alarm")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
+            if isDownloaded && asset.delivery == .downloadable {
+                Button("Remove offline download") {
+                    Task { await model.removeDownload(asset) }
+                }
+                .font(.caption2)
+                .foregroundStyle(.clear)
+                .frame(height: 0)
+            }
+        }
+        .accessibilityElement(children: .contain)
     }
 
     private var state: AudioCacheState {
@@ -741,116 +1064,16 @@ private struct CatalogAudioAssetCard: View {
         state == .availableOffline || state == .verified
     }
 
-    private var isDownloading: Bool {
-        state == .downloadQueued || state == .downloading
+    private var isPlaying: Bool {
+        model.isPlaying(asset)
     }
 
-    private var canDownload: Bool {
-        asset.delivery == .downloadable && !isDownloaded && !isDownloading && !asset.isRevokedOrRetired
+    private var isPaused: Bool {
+        model.isPaused(asset)
     }
 
-    private var canPlay: Bool {
-        switch state {
-        case .availableOffline, .availableRemotely, .streaming, .playing, .paused, .interrupted, .verified:
-            true
-        default:
-            false
-        }
-    }
-
-    private var canSetAlarm: Bool {
-        asset.category == .morningAlarm && isDownloaded
-    }
-
-    private var canSetNotification: Bool {
-        asset.category == .notification && isDownloaded
-    }
-
-    private var statusText: String {
-        if model.isPlaying(asset) {
-            return "Playing preview"
-        }
-        if model.isPaused(asset) {
-            return "Preview paused"
-        }
-        switch state {
-        case .notAvailable:
-            return model.networkAvailable ? "Unavailable" : "Unavailable offline"
-        case .availableRemotely:
-            return "Stream preview available"
-        case .streaming:
-            return "Streaming preview"
-        case .downloadQueued:
-            return "Preparing download"
-        case .downloading:
-            return "Downloading · \(Int(model.progress(for: asset) * 100))%"
-        case .downloadFailed:
-            return "Download failed"
-        case .availableOffline, .verified:
-            return asset.delivery == .bundled ? "Included with app" : "Available offline"
-        case .updateAvailable:
-            return "Update available"
-        case .playing:
-            return "Playing preview"
-        case .paused:
-            return "Preview paused"
-        case .interrupted:
-            return "Preview interrupted"
-        case .notCached:
-            return "Not downloaded"
-        case .invalid, .revoked, .revokedUnavailable:
-            return "Unavailable"
-        }
-    }
-
-    private var statusIcon: String {
-        switch state {
-        case .availableOffline, .verified:
-            "checkmark.circle.fill"
-        case .availableRemotely, .streaming:
-            "waveform"
-        case .downloading, .downloadQueued:
-            "arrow.down.circle"
-        case .downloadFailed, .invalid, .revoked, .revokedUnavailable, .notAvailable:
-            "exclamationmark.triangle.fill"
-        default:
-            "info.circle"
-        }
-    }
-
-    private var failureReason: String? {
-        guard case .downloadFailed = state else { return nil }
-        return model.metadataByID[asset.id]?.failureReason?.replacingOccurrences(of: "_", with: " ").capitalized
-    }
-
-    private var playbackTitle: String {
-        if model.isPlaying(asset) {
-            return "Pause preview"
-        }
-        if model.isPaused(asset) {
-            return "Resume preview"
-        }
-        return "Play preview"
-    }
-
-    private var playbackIcon: String {
-        if model.isPlaying(asset) {
-            return "pause.fill"
-        }
-        if model.isPaused(asset) {
-            return "play.fill"
-        }
-        return "play.fill"
-    }
-
-    private var alarmButtonTitle: String {
+    private var isSelectedAlarm: Bool {
         model.selectedAlarmAssetID == asset.id
-            ? "Selected for alarm"
-            : (canSetAlarm ? "Set as alarm" : "Download to set alarm")
-    }
-
-    private var notificationButtonTitle: String {
-        model.selectedNotificationAssetID == asset.id ? "Selected for notifications" : "Set as notification"
     }
 }
 
