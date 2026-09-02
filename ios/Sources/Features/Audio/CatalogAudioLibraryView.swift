@@ -87,7 +87,9 @@ final class CatalogAudioLibraryModel {
             assets = manifest.assets
             await refreshMetadata()
             loadState = assets.isEmpty ? .empty : .ready
-            if let first = assets.first(where: { $0.category == .quickUnwind || $0.category == .slowUnwind }) {
+            if let first = assets.first(where: {
+                $0.category == .quickUnwind || $0.category == .slowUnwind
+            }) {
                 selectedBedtimeAssetID = first.id
             }
         } catch CatalogAudioBoundaryError.offline {
@@ -129,7 +131,8 @@ final class CatalogAudioLibraryModel {
         if let metadata = metadataByID[asset.id] {
             return metadata.state
         }
-        return asset.delivery == .bundled ? .availableOffline : (networkAvailable ? .availableRemotely : .notAvailable)
+        let fallbackState: AudioCacheState = networkAvailable ? .availableRemotely : .notAvailable
+        return asset.delivery == .bundled ? .availableOffline : fallbackState
     }
 
     func progress(for asset: CatalogAudioAsset) -> Double {
@@ -239,7 +242,8 @@ final class CatalogAudioLibraryModel {
                 progress: 0,
                 failureReason: nil
             )
-            actionMessage = "Removed \(asset.title) from offline storage. It can be downloaded again when available."
+            actionMessage = "Removed \(asset.title) from offline storage. " +
+                "It can be downloaded again when available."
         } catch {
             actionMessage = "\(asset.title) could not be removed from offline storage."
         }
@@ -305,7 +309,11 @@ final class CatalogAudioLibraryModel {
                     networkAvailable: networkAvailable
                 )
             } catch {
-                refreshed[asset.id] = metadata(for: asset, state: .notAvailable, failureReason: "catalog_unavailable")
+                refreshed[asset.id] = metadata(
+                    for: asset,
+                    state: .notAvailable,
+                    failureReason: "catalog_unavailable"
+                )
             }
         }
         metadataByID = refreshed
@@ -369,8 +377,8 @@ final class CatalogAudioLibraryModel {
     private func setMetadata(
         for asset: CatalogAudioAsset,
         state: AudioCacheState,
-        progress: Double,
-        failureReason: String?
+        progress: Double = 0,
+        failureReason: String? = nil
     ) {
         let current = metadataByID[asset.id]
         metadataByID[asset.id] = AudioCacheMetadata(
@@ -398,6 +406,8 @@ final class CatalogAudioLibraryModel {
             relativeFileName: nil,
             verifiedAt: nil,
             byteCount: 0,
+            progress: 0,
+            failureReason: failureReason,
             lastAccessedAt: nil
         )
     }
@@ -699,7 +709,7 @@ struct CatalogAudioLibraryView: View {
             let otherTracks = model.assets.filter {
                 $0.category == .morningAlarm || $0.category == .notification
             }
-            if !otherTracks.isEmpty && !primaryTracks.isEmpty {
+            if !otherTracks.isEmpty, !primaryTracks.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("More audio & alarm sounds")
                         .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
@@ -735,7 +745,10 @@ struct CatalogAudioLibraryView: View {
                     .frame(height: 56)
                     .background(
                         LinearGradient(
-                            colors: [Color(red: 0.35, green: 0.45, blue: 0.95), Color(red: 0.25, green: 0.35, blue: 0.85)],
+                            colors: [
+                                Color(red: 0.35, green: 0.45, blue: 0.95),
+                                Color(red: 0.25, green: 0.35, blue: 0.85),
+                            ],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -791,7 +804,9 @@ struct CatalogAudioLibraryView: View {
     }
 
     private func goToSecondSleep() {
-        if let secondSleep = model.assets.first(where: { $0.category == .secondSleep || $0.id == "second-sleep" }) {
+        if let secondSleep = model.assets.first(where: {
+            $0.category == .secondSleep || $0.id == "second-sleep"
+        }) {
             model.selectedBedtimeAssetID = secondSleep.id
             Task {
                 await model.togglePlayback(secondSleep)
@@ -861,13 +876,25 @@ private struct BedtimeAudioCard: View {
     private var cardBackground: some View {
         let colors: [Color] = switch asset.category {
         case .quickUnwind:
-            [Color(red: 23 / 255, green: 69 / 255, blue: 112 / 255), Color(red: 13 / 255, green: 45 / 255, blue: 76 / 255)]
+            [
+                Color(red: 23 / 255, green: 69 / 255, blue: 112 / 255),
+                Color(red: 13 / 255, green: 45 / 255, blue: 76 / 255),
+            ]
         case .slowUnwind:
-            [Color(red: 39 / 255, green: 32 / 255, blue: 82 / 255), Color(red: 26 / 255, green: 20 / 255, blue: 56 / 255)]
+            [
+                Color(red: 39 / 255, green: 32 / 255, blue: 82 / 255),
+                Color(red: 26 / 255, green: 20 / 255, blue: 56 / 255),
+            ]
         case .secondSleep:
-            [Color(red: 31 / 255, green: 45 / 255, blue: 90 / 255), Color(red: 20 / 255, green: 28 / 255, blue: 58 / 255)]
+            [
+                Color(red: 31 / 255, green: 45 / 255, blue: 90 / 255),
+                Color(red: 20 / 255, green: 28 / 255, blue: 58 / 255),
+            ]
         default:
-            [Color(red: 28 / 255, green: 36 / 255, blue: 64 / 255), Color(red: 18 / 255, green: 24 / 255, blue: 44 / 255)]
+            [
+                Color(red: 28 / 255, green: 36 / 255, blue: 64 / 255),
+                Color(red: 18 / 255, green: 24 / 255, blue: 44 / 255),
+            ]
         }
 
         return LinearGradient(
@@ -1150,7 +1177,9 @@ private extension CatalogAudioBoundaryError {
             default: .availableRemotely
             }
             metadataByID = Dictionary(uniqueKeysWithValues: assets.map { asset in
-                let itemState = scenario == "offline" && asset.delivery == .downloadable ? .notAvailable : state
+                let itemState: AudioCacheState = (scenario == "offline" && asset.delivery == .downloadable)
+                    ? .notAvailable
+                    : state
                 return (
                     asset.id,
                     metadata(
