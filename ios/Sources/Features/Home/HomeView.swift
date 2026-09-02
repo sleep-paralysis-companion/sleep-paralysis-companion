@@ -30,7 +30,7 @@ struct HomeView: View {
                     HomeHeroCard(
                         playbackState: model.playbackState,
                         onPlayPause: {
-                            model.startSleepSession()
+                            model.open(.grounding)
                         },
                         onOpenPlayer: {
                             model.startSleepSession()
@@ -334,16 +334,17 @@ private struct HomeHeroCard: View {
                                 radius: isPlaying ? 10 : 4
                             )
 
-                        Image(systemName: "moon.stars.fill")
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundStyle(.white)
+                            .offset(x: isPlaying ? 0 : 2)
                     }
                     .frame(width: 76, height: 76)
                     .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Enable Lock screen")
-                .accessibilityHint("Starts sleep session and activates Lock Screen companion.")
+                .accessibilityLabel(isPlaying ? "Pause recovery audio" : "Play recovery audio")
+                .accessibilityHint("Plays or pauses your selected recovery audio.")
                 .accessibilityIdentifier("home.manualEpisode")
                 .position(
                     x: proxy.size.width * 0.790,
