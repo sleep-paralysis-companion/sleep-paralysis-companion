@@ -77,7 +77,7 @@ nonisolated struct UnavailableCatalogAudioService: CatalogAudioLibraryServicing 
         CatalogAudioManifest.bundled
     }
 
-    func state(for asset: CatalogAudioAsset, networkAvailable: Bool) async throws -> AudioCacheMetadata {
+    func state(for asset: CatalogAudioAsset, networkAvailable _: Bool) async throws -> AudioCacheMetadata {
         AudioCacheMetadata(
             assetID: asset.id,
             catalogVersion: asset.contentVersion,
