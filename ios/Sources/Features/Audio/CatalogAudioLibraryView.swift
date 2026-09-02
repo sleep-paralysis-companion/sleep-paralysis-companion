@@ -414,7 +414,7 @@ final class CatalogAudioLibraryModel {
 }
 
 struct CatalogAudioLibraryView: View {
-    @Bindable var appModel: AppModel?
+    var appModel: AppModel?
     private let openPersonalAudio: () -> Void
     @State private var model: CatalogAudioLibraryModel
     @Environment(\.dismiss) private var dismiss
