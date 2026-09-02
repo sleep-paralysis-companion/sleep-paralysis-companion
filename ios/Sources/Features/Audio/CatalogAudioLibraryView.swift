@@ -583,8 +583,16 @@ struct CatalogAudioLibraryView: View {
     }
 
     private var activeAlarmTime: String? {
-        guard let appModel else { return "6:30 AM" }
-        return appModel.scheduleUIModels.first(where: \.isEnabled)?.wakeTimeText
+        guard let appModel,
+              let activeSchedule = appModel.scheduleUIModels.first(where: \.isEnabled)
+        else {
+            return nil
+        }
+        let hour = activeSchedule.wakeHour
+        let minute = activeSchedule.wakeMinute
+        let displayHour = hour.isMultiple(of: 12) ? 12 : hour % 12
+        let period = hour >= 12 ? "PM" : "AM"
+        return "\(displayHour):\(String(format: "%02d", minute)) \(period)"
     }
 
     private var alarmPillText: String {
@@ -1086,6 +1094,10 @@ private struct BedtimeAudioCard: View {
 
     private var state: AudioCacheState {
         model.cacheState(for: asset)
+    }
+
+    private var isDownloading: Bool {
+        state == .downloading
     }
 
     private var isDownloaded: Bool {
