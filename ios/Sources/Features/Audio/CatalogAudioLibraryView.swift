@@ -860,12 +860,28 @@ private struct BedtimeAudioCard: View {
                         .foregroundStyle(.white.opacity(0.68))
                         .padding(.top, 4)
 
+                    if asset.category == .morningAlarm {
+                        Button(
+                            action: { Task { await model.selectAlarm(asset) } },
+                            label: { Label(alarmButtonTitle, systemImage: "alarm") }
+                        )
+                        .font(AppFont.inter(size: 13, relativeTo: .caption, weight: .medium))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Capsule())
+                        .accessibilityIdentifier("catalogAudio.selectAlarm.\(asset.category.rawValue)")
+                        .disabled(!canSetAlarm)
+                        .padding(.top, 8)
+                    }
+
                     // Accessibility hidden state indicators
                     accessibleTestStatus
                 }
                 .padding(22)
             }
-            .frame(height: 180)
+            .frame(minHeight: 180)
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .overlay {
                 RoundedRectangle(cornerRadius: 24)
@@ -1050,6 +1066,12 @@ private struct BedtimeAudioCard: View {
                     .foregroundStyle(.clear)
                     .frame(height: 0)
             }
+            if isDownloading {
+                Text("Downloading \(Int(model.progress(for: asset) * 100))%")
+                    .font(.caption2)
+                    .foregroundStyle(.clear)
+                    .frame(height: 0)
+            }
             if isDownloaded {
                 Text("Available offline")
                     .font(.caption2)
@@ -1075,10 +1097,12 @@ private struct BedtimeAudioCard: View {
                     .frame(height: 0)
             }
             if isSelectedAlarm {
-                Text("Selected for alarm")
-                    .font(.caption2)
-                    .foregroundStyle(.clear)
-                    .frame(height: 0)
+                Button("Selected for alarm") {
+                    Task { await model.selectAlarm(asset) }
+                }
+                .font(.caption2)
+                .foregroundStyle(.clear)
+                .frame(height: 0)
             }
             if isDownloaded, asset.delivery == .downloadable {
                 Button("Remove offline download") {
@@ -1114,6 +1138,16 @@ private struct BedtimeAudioCard: View {
 
     private var isSelectedAlarm: Bool {
         model.selectedAlarmAssetID == asset.id
+    }
+
+    private var canSetAlarm: Bool {
+        isDownloaded && asset.category == .morningAlarm
+    }
+
+    private var alarmButtonTitle: String {
+        isSelectedAlarm
+            ? "Selected for alarm"
+            : (canSetAlarm ? "Set as alarm" : "Download to set alarm")
     }
 }
 
