@@ -1148,7 +1148,7 @@ final class AppModel {
             }
             playCalmingSecondSleepAudio()
 
-        case .calmingAudio:
+        case .calmingAudio, .quickSleep, .longSleepAid:
             playCalmingSecondSleepAudio()
 
         case .callPartner:
