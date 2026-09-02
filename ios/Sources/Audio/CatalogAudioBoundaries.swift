@@ -511,6 +511,8 @@ actor CatalogAudioCacheCoordinator {
             }
             if let current = try await index.metadata(assetID: asset.id) {
                 try await index.save(replacing(current, state: .availableOffline, lastAccessedAt: Date()))
+            } else {
+                try await index.save(metadata(for: asset, state: .availableOffline, lastAccessedAt: Date()))
             }
             return bundledURL
         }
@@ -597,17 +599,26 @@ actor CatalogAudioCacheCoordinator {
         try? await index.save(replacing(current, progress: progress))
     }
 
-    private func metadata(for asset: CatalogAudioAsset, state: AudioCacheState) -> AudioCacheMetadata {
+    private func metadata(
+        for asset: CatalogAudioAsset,
+        state: AudioCacheState,
+        relativeFileName: String? = nil,
+        verifiedAt: Date? = nil,
+        byteCount: Int64? = nil,
+        progress: Double? = nil,
+        failureReason: String? = nil,
+        lastAccessedAt: Date? = nil
+    ) -> AudioCacheMetadata {
         AudioCacheMetadata(
             assetID: asset.id,
             catalogVersion: asset.contentVersion,
             state: state,
-            relativeFileName: nil,
-            verifiedAt: nil,
-            byteCount: 0,
-            progress: 0,
-            failureReason: nil,
-            lastAccessedAt: nil
+            relativeFileName: relativeFileName ?? (asset.delivery == .bundled ? asset.bundledResourceName : nil),
+            verifiedAt: verifiedAt,
+            byteCount: byteCount ?? (asset.delivery == .bundled ? asset.byteCount : 0),
+            progress: progress ?? (asset.delivery == .bundled ? 1 : 0),
+            failureReason: failureReason,
+            lastAccessedAt: lastAccessedAt
         )
     }
 
