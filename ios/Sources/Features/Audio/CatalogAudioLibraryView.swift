@@ -892,39 +892,26 @@ private struct BedtimeAudioCard: View {
 
     // MARK: - Download or Offline Badge
 
+    @ViewBuilder
     private var downloadOrOfflineBadge: some View {
-        Group {
-            if isDownloading {
-                ProgressView(value: model.progress(for: asset))
-                    .progressViewStyle(.circular)
-                    .tint(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .accessibilityLabel("Downloading \(Int(model.progress(for: asset) * 100))%")
-                    .accessibilityIdentifier("catalogAudio.progress.\(asset.category.rawValue)")
-            } else if isDownloaded {
-                if asset.delivery == .downloadable {
-                    Menu {
-                        Button(role: .destructive) {
-                            Task { await model.removeDownload(asset) }
-                        } label: {
-                            Label("Remove offline download", systemImage: "trash")
-                        }
+        if isDownloading {
+            ProgressView(value: model.progress(for: asset))
+                .progressViewStyle(.circular)
+                .tint(.white)
+                .frame(width: 44, height: 44)
+                .background(Color.white.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .accessibilityLabel("Downloading \(Int(model.progress(for: asset) * 100))%")
+                .accessibilityIdentifier("catalogAudio.progress.\(asset.category.rawValue)")
+        } else if isDownloaded {
+            if asset.delivery == .downloadable {
+                Menu {
+                    Button(role: .destructive) {
+                        Task { await model.removeDownload(asset) }
                     } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.white.opacity(0.12))
-                                .frame(width: 44, height: 44)
-
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
+                        Label("Remove offline download", systemImage: "trash")
                     }
-                    .accessibilityLabel("Available offline")
-                    .accessibilityIdentifier("catalogAudio.remove.\(asset.category.rawValue)")
-                } else {
+                } label: {
                     ZStack {
                         RoundedRectangle(cornerRadius: 14)
                             .fill(Color.white.opacity(0.12))
@@ -934,43 +921,55 @@ private struct BedtimeAudioCard: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.white)
                     }
-                    .accessibilityLabel("Available offline")
                 }
-            } else if state == .downloadFailed {
-                Button {
-                    Task { await model.download(asset) }
-                } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.red.opacity(0.25))
-                            .frame(width: 44, height: 44)
-
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Download for offline")
+                .accessibilityLabel("Available offline")
+                .accessibilityIdentifier("catalogAudio.remove.\(asset.category.rawValue)")
             } else {
-                // Streamable: show download button
-                Button {
-                    Task { await model.download(asset) }
-                } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.white.opacity(0.12))
-                            .frame(width: 44, height: 44)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.white.opacity(0.12))
+                        .frame(width: 44, height: 44)
 
-                        Image(systemName: "arrow.down")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.9))
-                    }
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Download for offline")
-                .accessibilityIdentifier("catalogAudio.download.\(asset.category.rawValue)")
+                .accessibilityLabel("Available offline")
             }
+        } else if state == .downloadFailed {
+            Button {
+                Task { await model.download(asset) }
+            } label: {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.red.opacity(0.25))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Download for offline")
+        } else {
+            // Streamable: show download button
+            Button {
+                Task { await model.download(asset) }
+            } label: {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.white.opacity(0.12))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: "arrow.down")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Download for offline")
+            .accessibilityIdentifier("catalogAudio.download.\(asset.category.rawValue)")
         }
     }
 
