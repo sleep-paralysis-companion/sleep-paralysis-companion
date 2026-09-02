@@ -111,99 +111,99 @@ nonisolated struct CatalogAudioAsset: Identifiable, Codable, Equatable, Sendable
     private enum CodingKeys: String, CodingKey {
         case id
         case contentVersion
-        case content_version
+        case contentVersionSnake = "content_version"
         case manifestVersion
-        case manifest_version
+        case manifestVersionSnake = "manifest_version"
         case category
         case title
         case shortDescription
-        case short_description
+        case shortDescriptionSnake = "short_description"
         case localeIdentifier
-        case locale_identifier
+        case localeIdentifierSnake = "locale_identifier"
         case delivery
         case status
         case durationMilliseconds
-        case duration_milliseconds
+        case durationMillisecondsSnake = "duration_milliseconds"
         case byteCount
-        case byte_count
+        case byteCountSnake = "byte_count"
         case mimeType
-        case mime_type
+        case mimeTypeSnake = "mime_type"
         case codec
         case sampleRateHz
-        case sample_rate_hz
+        case sampleRateHzSnake = "sample_rate_hz"
         case channels
         case sha256
         case previewPathID
         case previewPathId
-        case preview_path_id
+        case previewPathIdSnake = "preview_path_id"
         case downloadPathID
         case downloadPathId
-        case download_path_id
+        case downloadPathIdSnake = "download_path_id"
         case offlineCacheAllowed
-        case offline_cache_allowed
+        case offlineCacheAllowedSnake = "offline_cache_allowed"
         case bundledResourceName
-        case bundled_resource_name
+        case bundledResourceNameSnake = "bundled_resource_name"
         case minimumAppVersion
-        case minimum_app_version
+        case minimumAppVersionSnake = "minimum_app_version"
         case minimumCatalogSchema
-        case minimum_catalog_schema
+        case minimumCatalogSchemaSnake = "minimum_catalog_schema"
         case provenanceReference
-        case provenance_reference
+        case provenanceReferenceSnake = "provenance_reference"
         case rightsReference
-        case rights_reference
+        case rightsReferenceSnake = "rights_reference"
         case approvalReference
-        case approval_reference
+        case approvalReferenceSnake = "approval_reference"
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         contentVersion = try container.decodeIfPresent(Int.self, forKey: .contentVersion)
-            ?? container.decode(Int.self, forKey: .content_version)
+            ?? container.decode(Int.self, forKey: .contentVersionSnake)
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion)
-            ?? container.decode(Int.self, forKey: .manifest_version)
+            ?? container.decode(Int.self, forKey: .manifestVersionSnake)
         category = try container.decode(CatalogAudioCategory.self, forKey: .category)
         title = try container.decode(String.self, forKey: .title)
         shortDescription = try container.decodeIfPresent(String.self, forKey: .shortDescription)
-            ?? container.decode(String.self, forKey: .short_description)
+            ?? container.decode(String.self, forKey: .shortDescriptionSnake)
         localeIdentifier = try container.decodeIfPresent(String.self, forKey: .localeIdentifier)
-            ?? container.decode(String.self, forKey: .locale_identifier)
+            ?? container.decode(String.self, forKey: .localeIdentifierSnake)
         delivery = try container.decode(CatalogAudioDelivery.self, forKey: .delivery)
         status = try container.decode(CatalogAudioApprovalStatus.self, forKey: .status)
         durationMilliseconds = try container.decodeIfPresent(Int64.self, forKey: .durationMilliseconds)
-            ?? container.decode(Int64.self, forKey: .duration_milliseconds)
+            ?? container.decode(Int64.self, forKey: .durationMillisecondsSnake)
         byteCount = try container.decodeIfPresent(Int64.self, forKey: .byteCount)
-            ?? container.decode(Int64.self, forKey: .byte_count)
+            ?? container.decode(Int64.self, forKey: .byteCountSnake)
         mimeType = try container.decodeIfPresent(String.self, forKey: .mimeType)
-            ?? container.decode(String.self, forKey: .mime_type)
+            ?? container.decode(String.self, forKey: .mimeTypeSnake)
         codec = try container.decode(String.self, forKey: .codec)
         sampleRateHz = try container.decodeIfPresent(Int.self, forKey: .sampleRateHz)
-            ?? container.decode(Int.self, forKey: .sample_rate_hz)
+            ?? container.decode(Int.self, forKey: .sampleRateHzSnake)
         channels = try container.decode(Int.self, forKey: .channels)
         sha256 = try container.decode(String.self, forKey: .sha256)
 
         previewPathID = try container.decodeIfPresent(String.self, forKey: .previewPathId)
             ?? container.decodeIfPresent(String.self, forKey: .previewPathID)
-            ?? container.decodeIfPresent(String.self, forKey: .preview_path_id)
+            ?? container.decodeIfPresent(String.self, forKey: .previewPathIdSnake)
 
         downloadPathID = try container.decodeIfPresent(String.self, forKey: .downloadPathId)
             ?? container.decodeIfPresent(String.self, forKey: .downloadPathID)
-            ?? container.decodeIfPresent(String.self, forKey: .download_path_id)
+            ?? container.decodeIfPresent(String.self, forKey: .downloadPathIdSnake)
 
         offlineCacheAllowed = try container.decodeIfPresent(Bool.self, forKey: .offlineCacheAllowed)
-            ?? container.decode(Bool.self, forKey: .offline_cache_allowed)
+            ?? container.decode(Bool.self, forKey: .offlineCacheAllowedSnake)
         bundledResourceName = try container.decodeIfPresent(String.self, forKey: .bundledResourceName)
-            ?? container.decodeIfPresent(String.self, forKey: .bundled_resource_name)
+            ?? container.decodeIfPresent(String.self, forKey: .bundledResourceNameSnake)
         minimumAppVersion = try container.decodeIfPresent(String.self, forKey: .minimumAppVersion)
-            ?? container.decodeIfPresent(String.self, forKey: .minimum_app_version)
+            ?? container.decodeIfPresent(String.self, forKey: .minimumAppVersionSnake)
         minimumCatalogSchema = try container.decodeIfPresent(Int.self, forKey: .minimumCatalogSchema)
-            ?? container.decode(Int.self, forKey: .minimum_catalog_schema)
+            ?? container.decode(Int.self, forKey: .minimumCatalogSchemaSnake)
         provenanceReference = try container.decodeIfPresent(String.self, forKey: .provenanceReference)
-            ?? container.decode(String.self, forKey: .provenance_reference)
+            ?? container.decode(String.self, forKey: .provenanceReferenceSnake)
         rightsReference = try container.decodeIfPresent(String.self, forKey: .rightsReference)
-            ?? container.decode(String.self, forKey: .rights_reference)
+            ?? container.decode(String.self, forKey: .rightsReferenceSnake)
         approvalReference = try container.decodeIfPresent(String.self, forKey: .approvalReference)
-            ?? container.decode(String.self, forKey: .approval_reference)
+            ?? container.decode(String.self, forKey: .approvalReferenceSnake)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -272,18 +272,18 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case manifestVersion
-        case manifest_version
+        case manifestVersionSnake = "manifest_version"
         case minimumAppVersion
-        case minimum_app_version
+        case minimumAppVersionSnake = "minimum_app_version"
         case assets
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion)
-            ?? container.decode(Int.self, forKey: .manifest_version)
+            ?? container.decode(Int.self, forKey: .manifestVersionSnake)
         minimumAppVersion = try container.decodeIfPresent(String.self, forKey: .minimumAppVersion)
-            ?? container.decodeIfPresent(String.self, forKey: .minimum_app_version)
+            ?? container.decodeIfPresent(String.self, forKey: .minimumAppVersionSnake)
         assets = try container.decode([CatalogAudioAsset].self, forKey: .assets)
     }
 
