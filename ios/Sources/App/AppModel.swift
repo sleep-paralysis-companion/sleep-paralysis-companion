@@ -835,7 +835,7 @@ final class AppModel {
         audioController.stopPlayback()
 
         #if DEBUG
-            if uiTestScenario != nil {
+            if ProcessInfo.processInfo.environment["SPC_UI_TEST_CATALOG_SCENARIO"] != nil {
                 playbackState = .playing(asset.id)
                 updateSleepSessionLiveActivityForPlayback()
                 return
