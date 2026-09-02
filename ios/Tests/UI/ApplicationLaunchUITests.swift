@@ -281,20 +281,32 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["home.manualEpisode"].exists)
 
-        app.buttons["Activity"].tap()
+        let activityTab = app.buttons["Activity"]
+        XCTAssertTrue(activityTab.waitForExistence(timeout: 8))
+        makeHittable(activityTab, in: app)
+        activityTab.tap()
         XCTAssertTrue(app.staticTexts["Activity is coming soon"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Activity tracking is coming soon."].exists)
         capture("16-activity-tab", app: app)
 
-        app.buttons["Sleep"].tap()
+        let sleepTab = app.buttons["Sleep"]
+        XCTAssertTrue(sleepTab.waitForExistence(timeout: 8))
+        makeHittable(sleepTab, in: app)
+        sleepTab.tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         capture("17-home-tab", app: app)
 
-        app.buttons["Journal"].tap()
+        let journalTab = app.buttons["Journal"]
+        XCTAssertTrue(journalTab.waitForExistence(timeout: 8))
+        makeHittable(journalTab, in: app)
+        journalTab.tap()
         XCTAssertTrue(app.staticTexts["Journal is coming soon"].waitForExistence(timeout: 8))
         capture("18-journal-coming-soon", app: app)
 
-        app.buttons["Me"].tap()
+        let meTab = app.buttons["Me"]
+        XCTAssertTrue(meTab.waitForExistence(timeout: 8))
+        makeHittable(meTab, in: app)
+        meTab.tap()
         XCTAssertTrue(app.buttons["Manage subscription"].waitForExistence(timeout: 8))
         capture("19-me-settings", app: app)
         app.terminate()
@@ -529,6 +541,10 @@ final class ApplicationLaunchUITests: XCTestCase {
 
     @MainActor
     private func makeHittable(_ element: XCUIElement, in app: XCUIApplication) {
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline, !element.isHittable {
+            Thread.sleep(forTimeInterval: 0.2)
+        }
         for _ in 0 ..< 8 where !element.isHittable {
             swipeUp(in: app)
         }

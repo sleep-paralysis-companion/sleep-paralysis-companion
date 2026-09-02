@@ -531,6 +531,12 @@ struct CatalogAudioLibraryView: View {
 
             Spacer()
 
+            Text("Curated audio")
+                .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
+                .foregroundStyle(.white)
+
+            Spacer()
+
             Button {
                 openPersonalAudio()
             } label: {
@@ -1112,6 +1118,10 @@ private struct BedtimeAudioCard: View {
                 .foregroundStyle(.clear)
                 .frame(height: 0)
             }
+            Text(asset.category.displayName)
+                .font(.caption2)
+                .foregroundStyle(.clear)
+                .frame(height: 0)
         }
         .accessibilityElement(children: .contain)
     }
