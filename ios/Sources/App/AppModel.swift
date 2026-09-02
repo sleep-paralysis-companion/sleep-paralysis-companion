@@ -830,14 +830,26 @@ final class AppModel {
 
     var activeTrackTitle: String {
         if case let .playing(id) = playbackState {
-            if id == "quick-unwind" { return "Quick Unwind" }
-            if id == "slow-unwind" { return "Slow Unwind" }
-            if id == "second-sleep" { return "Calming Second Sleep" }
+            if id == "quick-unwind" {
+                return "Quick Unwind"
+            }
+            if id == "slow-unwind" {
+                return "Slow Unwind"
+            }
+            if id == "second-sleep" {
+                return "Calming Second Sleep"
+            }
         }
         if case let .paused(id) = playbackState {
-            if id == "quick-unwind" { return "Quick Unwind" }
-            if id == "slow-unwind" { return "Slow Unwind" }
-            if id == "second-sleep" { return "Calming Second Sleep" }
+            if id == "quick-unwind" {
+                return "Quick Unwind"
+            }
+            if id == "slow-unwind" {
+                return "Slow Unwind"
+            }
+            if id == "second-sleep" {
+                return "Calming Second Sleep"
+            }
         }
         if case let .personalClip(id) = recoveryAudioDefault,
            personalClips.contains(where: { $0.id == id })
@@ -857,14 +869,26 @@ final class AppModel {
 
     var activeTrackSubtitle: String {
         if case let .playing(id) = playbackState {
-            if id == "quick-unwind" { return "Settling into restful calmness" }
-            if id == "slow-unwind" { return "Slower transition into sleep" }
-            if id == "second-sleep" { return "Gentle guided recovery session" }
+            if id == "quick-unwind" {
+                return "Settling into restful calmness"
+            }
+            if id == "slow-unwind" {
+                return "Slower transition into sleep"
+            }
+            if id == "second-sleep" {
+                return "Gentle guided recovery session"
+            }
         }
         if case let .paused(id) = playbackState {
-            if id == "quick-unwind" { return "Settling into restful calmness" }
-            if id == "slow-unwind" { return "Slower transition into sleep" }
-            if id == "second-sleep" { return "Gentle guided recovery session" }
+            if id == "quick-unwind" {
+                return "Settling into restful calmness"
+            }
+            if id == "slow-unwind" {
+                return "Slower transition into sleep"
+            }
+            if id == "second-sleep" {
+                return "Gentle guided recovery session"
+            }
         }
         if case let .personalClip(id) = recoveryAudioDefault,
            personalClips.contains(where: { $0.id == id })

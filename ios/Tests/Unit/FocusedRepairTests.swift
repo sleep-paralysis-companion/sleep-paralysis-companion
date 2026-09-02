@@ -471,19 +471,22 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
     }
 
     @MainActor
-    func testAlarmDeepLinksRouteCorrectly() {
+    func testAlarmDeepLinksRouteCorrectly() throws {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
 
-        model.openDeepLink(URL(string: "spc://alarm-ringing")!)
+        let ringingURL = try XCTUnwrap(URL(string: "spc://alarm-ringing"))
+        model.openDeepLink(ringingURL)
         XCTAssertTrue(model.isAlarmRinging)
 
-        model.openDeepLink(URL(string: "spc://alarm-stop")!)
+        let stopURL = try XCTUnwrap(URL(string: "spc://alarm-stop"))
+        model.openDeepLink(stopURL)
         XCTAssertFalse(model.isAlarmRinging)
         XCTAssertEqual(model.selectedTab, .sleep)
         XCTAssertTrue(model.isMorningCheckInPresented)
 
-        model.openDeepLink(URL(string: "spc://checkin")!)
+        let checkinURL = try XCTUnwrap(URL(string: "spc://checkin"))
+        model.openDeepLink(checkinURL)
         XCTAssertTrue(model.isMorningCheckInPresented)
     }
 
@@ -502,4 +505,3 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
         XCTAssertEqual(schedule.snoozeMinutes, 9)
     }
 }
-
