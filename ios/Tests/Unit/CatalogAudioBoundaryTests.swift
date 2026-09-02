@@ -207,6 +207,109 @@ final class CatalogAudioBoundaryTests: XCTestCase {
         XCTAssertEqual(downloadCount, 0)
     }
 
+    func testManifestJSONDecodingWithConvertFromSnakeCasePopulatesPathIDsAndValidates() throws {
+        let json = """
+        {
+            "manifest_version": 1,
+            "minimum_app_version": "1.0.0",
+            "assets": [
+                {
+                    "id": "quick-unwind",
+                    "content_version": 1,
+                    "manifest_version": 1,
+                    "category": "quick_unwind",
+                    "title": "Quick Unwind",
+                    "short_description": "A short guided reset for settling the body and attention.",
+                    "locale_identifier": "en",
+                    "delivery": "bundled",
+                    "status": "approved",
+                    "duration_milliseconds": 393160,
+                    "byte_count": 9655675,
+                    "mime_type": "audio/mp4",
+                    "codec": "aac-lc",
+                    "sample_rate_hz": 44100,
+                    "channels": 2,
+                    "sha256": "3c2e9fcad44eae60fad8aed98c36352db42a0be828b8ad8f807952e2044f27fd",
+                    "preview_path_id": null,
+                    "download_path_id": null,
+                    "offline_cache_allowed": false,
+                    "bundled_resource_name": "spc_catalog_quick-unwind_v1.m4a",
+                    "minimum_app_version": "1.0.0",
+                    "minimum_catalog_schema": 1,
+                    "provenance_reference": "audio-owner-supplied-2026-08-17",
+                    "rights_reference": "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
+                    "approval_reference": "audio-product-approval-2026-08-17"
+                },
+                {
+                    "id": "morning-stillness",
+                    "content_version": 1,
+                    "manifest_version": 1,
+                    "category": "morning_alarm",
+                    "title": "Morning Stillness",
+                    "short_description": "A downloadable gentle wake-up choice.",
+                    "locale_identifier": "en",
+                    "delivery": "downloadable",
+                    "status": "approved",
+                    "duration_milliseconds": 30041,
+                    "byte_count": 2884215,
+                    "mime_type": "audio/x-caf",
+                    "codec": "pcm_s16le",
+                    "sample_rate_hz": 48000,
+                    "channels": 1,
+                    "sha256": "33b713bbcd5d51e9304f6a2e88df33ebc2e311d7cb13c6deb565fd4590661c5a",
+                    "preview_path_id": "previews/morning-stillness/v1/preview.m4a",
+                    "download_path_id": "system-sounds/morning-stillness/v1/full.caf",
+                    "offline_cache_allowed": true,
+                    "bundled_resource_name": null,
+                    "minimum_app_version": "1.0.0",
+                    "minimum_catalog_schema": 1,
+                    "provenance_reference": "audio-owner-supplied-2026-08-17",
+                    "rights_reference": "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
+                    "approval_reference": "audio-product-approval-2026-08-17"
+                }
+            ]
+        }
+        """
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let manifest = try decoder.decode(CatalogAudioManifest.self, from: Data(json.utf8))
+        XCTAssertEqual(manifest.manifestVersion, 1)
+        XCTAssertEqual(manifest.assets.count, 2)
+
+        let quickUnwind = manifest.assets[0]
+        XCTAssertEqual(quickUnwind.id, "quick-unwind")
+        XCTAssertEqual(quickUnwind.delivery, .bundled)
+        XCTAssertEqual(quickUnwind.bundledResourceName, "spc_catalog_quick-unwind_v1.m4a")
+
+        let morningStillness = manifest.assets[1]
+        XCTAssertEqual(morningStillness.id, "morning-stillness")
+        XCTAssertEqual(morningStillness.delivery, .downloadable)
+        XCTAssertEqual(morningStillness.previewPathID, "previews/morning-stillness/v1/preview.m4a")
+        XCTAssertEqual(morningStillness.downloadPathID, "system-sounds/morning-stillness/v1/full.caf")
+
+        XCTAssertNoThrow(try CatalogAudioManifestValidator.validate(manifest))
+    }
+
+    func testBundledCatalogManifestIsValidAndIncludesUnwindAudio() throws {
+        let manifest = CatalogAudioManifest.bundled
+        XCTAssertEqual(manifest.manifestVersion, 1)
+        XCTAssertEqual(manifest.assets.count, 4)
+        XCTAssertTrue(manifest.assets.contains { $0.id == "quick-unwind" && $0.category == .quickUnwind })
+        XCTAssertTrue(manifest.assets.contains { $0.id == "slow-unwind" && $0.category == .slowUnwind })
+        XCTAssertNoThrow(try CatalogAudioManifestValidator.validate(manifest))
+    }
+
+    func testUnavailableCatalogAudioServiceReturnsBundledManifest() async throws {
+        let service = UnavailableCatalogAudioService()
+        let manifest = try await service.loadCatalog()
+        XCTAssertEqual(manifest, CatalogAudioManifest.bundled)
+        if let quickUnwind = manifest.assets.first(where: { $0.id == "quick-unwind" }) {
+            let metadata = try await service.state(for: quickUnwind, networkAvailable: false)
+            XCTAssertEqual(metadata.state, .availableOffline)
+        }
+    }
+
     private func makeAsset(id: String, data: Data = Data("audio".utf8)) -> CatalogAudioAsset {
         CatalogAudioAsset(
             id: id,

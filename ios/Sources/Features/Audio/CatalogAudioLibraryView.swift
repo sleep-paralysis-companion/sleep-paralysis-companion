@@ -15,8 +15,8 @@ nonisolated enum CatalogAudioLibraryLoadState: Equatable, Sendable {
 @MainActor
 @Observable
 final class CatalogAudioLibraryModel {
-    private(set) var loadState: CatalogAudioLibraryLoadState = .loading
-    private(set) var assets: [CatalogAudioAsset] = []
+    private(set) var loadState: CatalogAudioLibraryLoadState = .ready
+    private(set) var assets: [CatalogAudioAsset] = CatalogAudioManifest.bundled.assets
     private(set) var metadataByID: [String: AudioCacheMetadata] = [:]
     private(set) var playbackState = CatalogAudioPlaybackState.idle
     private(set) var selectedAlarmAssetID: String?
@@ -93,14 +93,21 @@ final class CatalogAudioLibraryModel {
                 selectedBedtimeAssetID = first.id
             }
         } catch CatalogAudioBoundaryError.offline {
-            loadState = .failed(
-                "The curated audio catalog is not available right now. " +
-                    "Your personal recordings remain separate and on this device."
-            )
+            if assets.isEmpty {
+                assets = CatalogAudioManifest.bundled.assets
+            }
+            await refreshMetadata()
+            loadState = assets.isEmpty ? .empty : .ready
+            actionMessage = "The curated audio catalog is not available right now. " +
+                "Showing downloaded and bundled audio."
         } catch {
-            loadState = .failed(
-                "The curated audio catalog could not be verified. No unverified audio was made playable."
-            )
+            if assets.isEmpty {
+                assets = CatalogAudioManifest.bundled.assets
+            }
+            await refreshMetadata()
+            loadState = assets.isEmpty ? .empty : .ready
+            actionMessage = "The curated audio catalog could not be verified. " +
+                "Showing verified bundled audio."
         }
     }
 
@@ -311,8 +318,8 @@ final class CatalogAudioLibraryModel {
             } catch {
                 refreshed[asset.id] = metadata(
                     for: asset,
-                    state: .notAvailable,
-                    failureReason: "catalog_unavailable"
+                    state: asset.delivery == .bundled ? .availableOffline : .notAvailable,
+                    failureReason: asset.delivery == .bundled ? nil : "catalog_unavailable"
                 )
             }
         }
@@ -1224,7 +1231,10 @@ private extension CatalogAudioBoundaryError {
             case "error": .failed("The test catalog could not be verified.")
             default: .ready
             }
-            guard loadState == .ready else { return }
+            guard loadState == .ready else {
+                assets = []
+                return
+            }
 
             assets = CatalogAudioLibraryUITestFixture.assets
             let state: AudioCacheState = switch scenario {

@@ -74,28 +74,40 @@ extension CatalogAudioService: CatalogAudioLibraryServicing {}
 
 nonisolated struct UnavailableCatalogAudioService: CatalogAudioLibraryServicing {
     func loadCatalog() async throws -> CatalogAudioManifest {
-        throw CatalogAudioBoundaryError.offline
+        CatalogAudioManifest.bundled
     }
 
     func state(for asset: CatalogAudioAsset, networkAvailable: Bool) async throws -> AudioCacheMetadata {
         AudioCacheMetadata(
             assetID: asset.id,
             catalogVersion: asset.contentVersion,
-            state: networkAvailable ? .notAvailable : .notAvailable,
-            relativeFileName: nil,
+            state: asset.delivery == .bundled ? .availableOffline : .notAvailable,
+            relativeFileName: asset.bundledResourceName,
             verifiedAt: nil,
-            byteCount: 0,
-            progress: 0,
-            failureReason: "catalog_unavailable",
+            byteCount: asset.byteCount,
+            progress: asset.delivery == .bundled ? 1 : 0,
+            failureReason: nil,
             lastAccessedAt: nil
         )
     }
 
-    func previewURL(for _: CatalogAudioAsset) async throws -> URL {
+    func previewURL(for asset: CatalogAudioAsset) async throws -> URL {
+        if asset.delivery == .bundled,
+           let resourceName = asset.bundledResourceName,
+           let url = SystemAudioAssets.bundledURL(for: resourceName)
+        {
+            return url
+        }
         throw CatalogAudioBoundaryError.offline
     }
 
-    func playbackURL(for _: CatalogAudioAsset, networkAvailable _: Bool) async throws -> URL {
+    func playbackURL(for asset: CatalogAudioAsset, networkAvailable _: Bool) async throws -> URL {
+        if asset.delivery == .bundled,
+           let resourceName = asset.bundledResourceName,
+           let url = SystemAudioAssets.bundledURL(for: resourceName)
+        {
+            return url
+        }
         throw CatalogAudioBoundaryError.offline
     }
 
@@ -108,7 +120,13 @@ nonisolated struct UnavailableCatalogAudioService: CatalogAudioLibraryServicing 
 
     func deleteCachedAudio(_: CatalogAudioAsset) async throws {}
 
-    func preflightAlarm(_: CatalogAudioAsset) async throws -> URL {
+    func preflightAlarm(_ asset: CatalogAudioAsset) async throws -> URL {
+        if asset.delivery == .bundled,
+           let resourceName = asset.bundledResourceName,
+           let url = SystemAudioAssets.bundledURL(for: resourceName)
+        {
+            return url
+        }
         throw CatalogAudioBoundaryError.alarmAssetNotLocal
     }
 }

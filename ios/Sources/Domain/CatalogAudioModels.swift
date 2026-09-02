@@ -54,6 +54,187 @@ nonisolated struct CatalogAudioAsset: Identifiable, Codable, Equatable, Sendable
     let rightsReference: String
     let approvalReference: String
 
+    init(
+        id: String,
+        contentVersion: Int,
+        manifestVersion: Int,
+        category: CatalogAudioCategory,
+        title: String,
+        shortDescription: String,
+        localeIdentifier: String,
+        delivery: CatalogAudioDelivery,
+        status: CatalogAudioApprovalStatus,
+        durationMilliseconds: Int64,
+        byteCount: Int64,
+        mimeType: String,
+        codec: String,
+        sampleRateHz: Int,
+        channels: Int,
+        sha256: String,
+        previewPathID: String?,
+        downloadPathID: String?,
+        offlineCacheAllowed: Bool,
+        bundledResourceName: String?,
+        minimumAppVersion: String?,
+        minimumCatalogSchema: Int,
+        provenanceReference: String,
+        rightsReference: String,
+        approvalReference: String,
+    ) {
+        self.id = id
+        self.contentVersion = contentVersion
+        self.manifestVersion = manifestVersion
+        self.category = category
+        self.title = title
+        self.shortDescription = shortDescription
+        self.localeIdentifier = localeIdentifier
+        self.delivery = delivery
+        self.status = status
+        self.durationMilliseconds = durationMilliseconds
+        self.byteCount = byteCount
+        self.mimeType = mimeType
+        self.codec = codec
+        self.sampleRateHz = sampleRateHz
+        self.channels = channels
+        self.sha256 = sha256
+        self.previewPathID = previewPathID
+        self.downloadPathID = downloadPathID
+        self.offlineCacheAllowed = offlineCacheAllowed
+        self.bundledResourceName = bundledResourceName
+        self.minimumAppVersion = minimumAppVersion
+        self.minimumCatalogSchema = minimumCatalogSchema
+        self.provenanceReference = provenanceReference
+        self.rightsReference = rightsReference
+        self.approvalReference = approvalReference
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case contentVersion
+        case content_version
+        case manifestVersion
+        case manifest_version
+        case category
+        case title
+        case shortDescription
+        case short_description
+        case localeIdentifier
+        case locale_identifier
+        case delivery
+        case status
+        case durationMilliseconds
+        case duration_milliseconds
+        case byteCount
+        case byte_count
+        case mimeType
+        case mime_type
+        case codec
+        case sampleRateHz
+        case sample_rate_hz
+        case channels
+        case sha256
+        case previewPathID
+        case previewPathId
+        case preview_path_id
+        case downloadPathID
+        case downloadPathId
+        case download_path_id
+        case offlineCacheAllowed
+        case offline_cache_allowed
+        case bundledResourceName
+        case bundled_resource_name
+        case minimumAppVersion
+        case minimum_app_version
+        case minimumCatalogSchema
+        case minimum_catalog_schema
+        case provenanceReference
+        case provenance_reference
+        case rightsReference
+        case rights_reference
+        case approvalReference
+        case approval_reference
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        contentVersion = try container.decodeIfPresent(Int.self, forKey: .contentVersion)
+            ?? container.decode(Int.self, forKey: .content_version)
+        manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion)
+            ?? container.decode(Int.self, forKey: .manifest_version)
+        category = try container.decode(CatalogAudioCategory.self, forKey: .category)
+        title = try container.decode(String.self, forKey: .title)
+        shortDescription = try container.decodeIfPresent(String.self, forKey: .shortDescription)
+            ?? container.decode(String.self, forKey: .short_description)
+        localeIdentifier = try container.decodeIfPresent(String.self, forKey: .localeIdentifier)
+            ?? container.decode(String.self, forKey: .locale_identifier)
+        delivery = try container.decode(CatalogAudioDelivery.self, forKey: .delivery)
+        status = try container.decode(CatalogAudioApprovalStatus.self, forKey: .status)
+        durationMilliseconds = try container.decodeIfPresent(Int64.self, forKey: .durationMilliseconds)
+            ?? container.decode(Int64.self, forKey: .duration_milliseconds)
+        byteCount = try container.decodeIfPresent(Int64.self, forKey: .byteCount)
+            ?? container.decode(Int64.self, forKey: .byte_count)
+        mimeType = try container.decodeIfPresent(String.self, forKey: .mimeType)
+            ?? container.decode(String.self, forKey: .mime_type)
+        codec = try container.decode(String.self, forKey: .codec)
+        sampleRateHz = try container.decodeIfPresent(Int.self, forKey: .sampleRateHz)
+            ?? container.decode(Int.self, forKey: .sample_rate_hz)
+        channels = try container.decode(Int.self, forKey: .channels)
+        sha256 = try container.decode(String.self, forKey: .sha256)
+
+        previewPathID = try container.decodeIfPresent(String.self, forKey: .previewPathId)
+            ?? container.decodeIfPresent(String.self, forKey: .previewPathID)
+            ?? container.decodeIfPresent(String.self, forKey: .preview_path_id)
+
+        downloadPathID = try container.decodeIfPresent(String.self, forKey: .downloadPathId)
+            ?? container.decodeIfPresent(String.self, forKey: .downloadPathID)
+            ?? container.decodeIfPresent(String.self, forKey: .download_path_id)
+
+        offlineCacheAllowed = try container.decodeIfPresent(Bool.self, forKey: .offlineCacheAllowed)
+            ?? container.decode(Bool.self, forKey: .offline_cache_allowed)
+        bundledResourceName = try container.decodeIfPresent(String.self, forKey: .bundledResourceName)
+            ?? container.decodeIfPresent(String.self, forKey: .bundled_resource_name)
+        minimumAppVersion = try container.decodeIfPresent(String.self, forKey: .minimumAppVersion)
+            ?? container.decodeIfPresent(String.self, forKey: .minimum_app_version)
+        minimumCatalogSchema = try container.decodeIfPresent(Int.self, forKey: .minimumCatalogSchema)
+            ?? container.decode(Int.self, forKey: .minimum_catalog_schema)
+        provenanceReference = try container.decodeIfPresent(String.self, forKey: .provenanceReference)
+            ?? container.decode(String.self, forKey: .provenance_reference)
+        rightsReference = try container.decodeIfPresent(String.self, forKey: .rightsReference)
+            ?? container.decode(String.self, forKey: .rights_reference)
+        approvalReference = try container.decodeIfPresent(String.self, forKey: .approvalReference)
+            ?? container.decode(String.self, forKey: .approval_reference)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(contentVersion, forKey: .contentVersion)
+        try container.encode(manifestVersion, forKey: .manifestVersion)
+        try container.encode(category, forKey: .category)
+        try container.encode(title, forKey: .title)
+        try container.encode(shortDescription, forKey: .shortDescription)
+        try container.encode(localeIdentifier, forKey: .localeIdentifier)
+        try container.encode(delivery, forKey: .delivery)
+        try container.encode(status, forKey: .status)
+        try container.encode(durationMilliseconds, forKey: .durationMilliseconds)
+        try container.encode(byteCount, forKey: .byteCount)
+        try container.encode(mimeType, forKey: .mimeType)
+        try container.encode(codec, forKey: .codec)
+        try container.encode(sampleRateHz, forKey: .sampleRateHz)
+        try container.encode(channels, forKey: .channels)
+        try container.encode(sha256, forKey: .sha256)
+        try container.encodeIfPresent(previewPathID, forKey: .previewPathID)
+        try container.encodeIfPresent(downloadPathID, forKey: .downloadPathID)
+        try container.encode(offlineCacheAllowed, forKey: .offlineCacheAllowed)
+        try container.encodeIfPresent(bundledResourceName, forKey: .bundledResourceName)
+        try container.encodeIfPresent(minimumAppVersion, forKey: .minimumAppVersion)
+        try container.encode(minimumCatalogSchema, forKey: .minimumCatalogSchema)
+        try container.encode(provenanceReference, forKey: .provenanceReference)
+        try container.encode(rightsReference, forKey: .rightsReference)
+        try container.encode(approvalReference, forKey: .approvalReference)
+    }
+
     var isRevokedOrRetired: Bool {
         status == .revoked || status == .retired
     }
@@ -78,6 +259,155 @@ nonisolated struct CatalogAudioManifest: Codable, Equatable, Sendable {
     let manifestVersion: Int
     let minimumAppVersion: String?
     let assets: [CatalogAudioAsset]
+
+    init(
+        manifestVersion: Int,
+        minimumAppVersion: String? = nil,
+        assets: [CatalogAudioAsset],
+    ) {
+        self.manifestVersion = manifestVersion
+        self.minimumAppVersion = minimumAppVersion
+        self.assets = assets
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case manifestVersion
+        case manifest_version
+        case minimumAppVersion
+        case minimum_app_version
+        case assets
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        manifestVersion = try container.decodeIfPresent(Int.self, forKey: .manifestVersion)
+            ?? container.decode(Int.self, forKey: .manifest_version)
+        minimumAppVersion = try container.decodeIfPresent(String.self, forKey: .minimumAppVersion)
+            ?? container.decodeIfPresent(String.self, forKey: .minimum_app_version)
+        assets = try container.decode([CatalogAudioAsset].self, forKey: .assets)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(manifestVersion, forKey: .manifestVersion)
+        try container.encodeIfPresent(minimumAppVersion, forKey: .minimumAppVersion)
+        try container.encode(assets, forKey: .assets)
+    }
+
+    static let bundled = CatalogAudioManifest(
+        manifestVersion: 1,
+        minimumAppVersion: "1.0.0",
+        assets: [
+            CatalogAudioAsset(
+                id: "felt-dawn",
+                contentVersion: 1,
+                manifestVersion: 1,
+                category: .morningAlarm,
+                title: "Felt Dawn",
+                shortDescription: "The compact bundled default wake-up sound.",
+                localeIdentifier: "en",
+                delivery: .bundled,
+                status: .approved,
+                durationMilliseconds: 30041,
+                byteCount: 2884207,
+                mimeType: "audio/x-caf",
+                codec: "pcm_s16le",
+                sampleRateHz: 48000,
+                channels: 1,
+                sha256: "202b416ac3066ef272baa856d30d817e7686412b0fef5b78f5531c252f40d42c",
+                previewPathID: nil,
+                downloadPathID: nil,
+                offlineCacheAllowed: false,
+                bundledResourceName: "SPCWakeUpGentleLoop.caf",
+                minimumAppVersion: "1.0.0",
+                minimumCatalogSchema: 1,
+                provenanceReference: "audio-owner-supplied-2026-08-17",
+                rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17",
+            ),
+            CatalogAudioAsset(
+                id: "notification",
+                contentVersion: 1,
+                manifestVersion: 1,
+                category: .notification,
+                title: "Notification",
+                shortDescription: "The bundled short notification sound.",
+                localeIdentifier: "en",
+                delivery: .bundled,
+                status: .approved,
+                durationMilliseconds: 2000,
+                byteCount: 192292,
+                mimeType: "audio/x-caf",
+                codec: "pcm_s16le",
+                sampleRateHz: 48000,
+                channels: 1,
+                sha256: "6359c2edc965029a953c2050230be47381e977c6d3b3d7ce4761dbc332256ed8",
+                previewPathID: nil,
+                downloadPathID: nil,
+                offlineCacheAllowed: false,
+                bundledResourceName: "SPCNotification.caf",
+                minimumAppVersion: "1.0.0",
+                minimumCatalogSchema: 1,
+                provenanceReference: "audio-owner-supplied-2026-08-17",
+                rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17",
+            ),
+            CatalogAudioAsset(
+                id: "quick-unwind",
+                contentVersion: 1,
+                manifestVersion: 1,
+                category: .quickUnwind,
+                title: "Quick Unwind",
+                shortDescription: "A short guided reset for settling the body and attention.",
+                localeIdentifier: "en",
+                delivery: .bundled,
+                status: .approved,
+                durationMilliseconds: 393160,
+                byteCount: 9655675,
+                mimeType: "audio/mp4",
+                codec: "aac-lc",
+                sampleRateHz: 44100,
+                channels: 2,
+                sha256: "3c2e9fcad44eae60fad8aed98c36352db42a0be828b8ad8f807952e2044f27fd",
+                previewPathID: nil,
+                downloadPathID: nil,
+                offlineCacheAllowed: false,
+                bundledResourceName: "spc_catalog_quick-unwind_v1.m4a",
+                minimumAppVersion: "1.0.0",
+                minimumCatalogSchema: 1,
+                provenanceReference: "audio-owner-supplied-2026-08-17",
+                rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17",
+            ),
+            CatalogAudioAsset(
+                id: "slow-unwind",
+                contentVersion: 1,
+                manifestVersion: 1,
+                category: .slowUnwind,
+                title: "Slow Unwind",
+                shortDescription: "The long-form catalog session for a slower transition into rest.",
+                localeIdentifier: "en",
+                delivery: .bundled,
+                status: .approved,
+                durationMilliseconds: 5170642,
+                byteCount: 85201262,
+                mimeType: "audio/mp4",
+                codec: "aac-lc",
+                sampleRateHz: 44100,
+                channels: 2,
+                sha256: "e00421526fda96c132295ae46f2bf2558db26d6aac53a2e04992c23bdbea88fc",
+                previewPathID: nil,
+                downloadPathID: nil,
+                offlineCacheAllowed: false,
+                bundledResourceName: "spc_catalog_slow-unwind_v1.m4a",
+                minimumAppVersion: "1.0.0",
+                minimumCatalogSchema: 1,
+                provenanceReference: "audio-owner-supplied-2026-08-17",
+                rightsReference: "owner-authorized-app-store-worldwide-offline-transcode-2026-08-17",
+                approvalReference: "audio-product-approval-2026-08-17",
+            ),
+        ],
+    )
 }
 
 nonisolated struct CatalogAudioDownloadProgress: Equatable, Sendable {

@@ -36,22 +36,22 @@ if [[ "$HAS_ENV_CONFIG" == "true" ]]; then
     echo "// See docs/phase-1c/AUTH_CONFIG_PROVISIONING.md for details."
     if [[ -n "${SPC_PUBLIC_API_BASE_URL:-}" ]]; then
       echo "SPC_PUBLIC_API_BASE_URL = $(escape_xcconfig_url "$SPC_PUBLIC_API_BASE_URL")"
-    else
-      echo "SPC_PUBLIC_API_BASE_URL ="
     fi
-    echo "SPC_ALLOWED_API_HOSTS = ${SPC_ALLOWED_API_HOSTS:-}"
-    echo "SPC_PRODUCTION_API_HOSTS = ${SPC_PRODUCTION_API_HOSTS:-}"
+    if [[ -n "${SPC_ALLOWED_API_HOSTS:-}" ]]; then
+      echo "SPC_ALLOWED_API_HOSTS = $SPC_ALLOWED_API_HOSTS"
+    fi
+    if [[ -n "${SPC_PRODUCTION_API_HOSTS:-}" ]]; then
+      echo "SPC_PRODUCTION_API_HOSTS = $SPC_PRODUCTION_API_HOSTS"
+    fi
     if [[ -n "${SPC_AUDIO_CATALOG_MANIFEST_URL:-}" ]]; then
       echo "SPC_AUDIO_CATALOG_MANIFEST_URL = $(escape_xcconfig_url "$SPC_AUDIO_CATALOG_MANIFEST_URL")"
-    else
-      echo "SPC_AUDIO_CATALOG_MANIFEST_URL ="
     fi
     if [[ -n "${SPC_AUDIO_CATALOG_AUTHORIZATION_URL:-}" ]]; then
       echo "SPC_AUDIO_CATALOG_AUTHORIZATION_URL = $(escape_xcconfig_url "$SPC_AUDIO_CATALOG_AUTHORIZATION_URL")"
-    else
-      echo "SPC_AUDIO_CATALOG_AUTHORIZATION_URL ="
     fi
-    echo "SPC_AUDIO_CATALOG_ALLOWED_HOSTS = ${SPC_AUDIO_CATALOG_ALLOWED_HOSTS:-}"
+    if [[ -n "${SPC_AUDIO_CATALOG_ALLOWED_HOSTS:-}" ]]; then
+      echo "SPC_AUDIO_CATALOG_ALLOWED_HOSTS = $SPC_AUDIO_CATALOG_ALLOWED_HOSTS"
+    fi
 
     if [[ -n "${SPC_SUPABASE_URL:-}" ]]; then
       echo "SPC_SUPABASE_URL = $(escape_xcconfig_url "$SPC_SUPABASE_URL")"

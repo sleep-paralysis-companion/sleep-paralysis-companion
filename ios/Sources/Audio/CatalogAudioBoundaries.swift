@@ -347,10 +347,18 @@ actor CatalogAudioCacheCoordinator {
             url = try await remote.authorizedURL(for: asset, purpose: .preview)
             try validateRemoteURL(url)
         }
-        if let current = try await index.metadata(assetID: asset.id) {
-            try await index.save(replacing(current, state: .streaming))
+        if asset.delivery == .bundled {
+            if let current = try await index.metadata(assetID: asset.id) {
+                try await index.save(replacing(current, state: .availableOffline, lastAccessedAt: Date()))
+            } else {
+                try await index.save(metadata(for: asset, state: .availableOffline, lastAccessedAt: Date()))
+            }
         } else {
-            try await index.save(metadata(for: asset, state: .streaming))
+            if let current = try await index.metadata(assetID: asset.id) {
+                try await index.save(replacing(current, state: .streaming))
+            } else {
+                try await index.save(metadata(for: asset, state: .streaming))
+            }
         }
         return url
     }
@@ -495,6 +503,18 @@ actor CatalogAudioCacheCoordinator {
     }
 
     func localPlaybackURL(for asset: CatalogAudioAsset) async throws -> URL? {
+        if asset.delivery == .bundled {
+            guard let bundledResourceName = asset.bundledResourceName,
+                  let bundledURL = SystemAudioAssets.bundledURL(for: bundledResourceName)
+            else {
+                return nil
+            }
+            if let current = try await index.metadata(assetID: asset.id) {
+                try await index.save(replacing(current, state: .availableOffline, lastAccessedAt: Date()))
+            }
+            return bundledURL
+        }
+
         guard let current = try await index.metadata(assetID: asset.id),
               current.catalogVersion == asset.contentVersion,
               current.state == .availableOffline || current.state == .verified,
