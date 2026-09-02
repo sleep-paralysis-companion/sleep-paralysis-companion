@@ -29,13 +29,16 @@ final class CatalogAudioLibraryModel {
     private let service: any CatalogAudioLibraryServicing
     private let uiTestScenario: String?
     @ObservationIgnored private let audioPlayer: CatalogAudioPlayer
+    @ObservationIgnored weak var appModel: AppModel?
     @ObservationIgnored private var pathMonitor: NWPathMonitor?
     private var hasAttemptedLoad = false
 
     init(
         service: any CatalogAudioLibraryServicing = UnavailableCatalogAudioService(),
         networkAvailable: Bool = true,
-        uiTestScenario: String? = nil
+        uiTestScenario: String? = nil,
+        audioPlayer: CatalogAudioPlayer? = nil,
+        appModel: AppModel? = nil
     ) {
         #if DEBUG
             self.service = uiTestScenario.map {
@@ -46,7 +49,8 @@ final class CatalogAudioLibraryModel {
         #endif
         self.networkAvailable = networkAvailable
         self.uiTestScenario = uiTestScenario
-        audioPlayer = CatalogAudioPlayer()
+        self.audioPlayer = audioPlayer ?? appModel?.catalogAudioPlayer ?? CatalogAudioPlayer()
+        self.appModel = appModel
         selectedAlarmAssetID = AlarmSoundSelectionStore.selectedAlarmAssetID()
             ?? SystemAudioAssets.defaultAlarmAssetID
         selectedNotificationAssetID = AlarmSoundSelectionStore.selectedNotificationAssetID()
@@ -163,6 +167,8 @@ final class CatalogAudioLibraryModel {
     }
 
     func togglePlayback(_ asset: CatalogAudioAsset) async {
+        appModel?.selectCatalogAsset(asset)
+
         if isPlaying(asset) {
             audioPlayer.pause()
             playbackState = .paused(asset.id)
@@ -194,6 +200,7 @@ final class CatalogAudioLibraryModel {
             let isStreaming = cacheState(for: asset) == .availableRemotely
             audioPlayer.play(url: url, assetID: asset.id, streaming: isStreaming)
             playbackState = isStreaming ? .streaming(asset.id) : .playing(asset.id)
+            appModel?.selectCatalogAsset(asset)
         } catch CatalogAudioBoundaryError.offline {
             playbackState = .offlineFallback(asset.id)
             actionMessage = "This preview is unavailable offline because the audio has not been downloaded."
@@ -443,7 +450,9 @@ struct CatalogAudioLibraryView: View {
             initialValue: CatalogAudioLibraryModel(
                 service: service,
                 networkAvailable: networkAvailable,
-                uiTestScenario: scenario
+                uiTestScenario: scenario,
+                audioPlayer: appModel?.catalogAudioPlayer,
+                appModel: appModel
             )
         )
     }
@@ -817,6 +826,7 @@ struct CatalogAudioLibraryView: View {
 
     private func startSelectedBedtimeSession() {
         if let asset = model.assets.first(where: { $0.id == model.selectedBedtimeAssetID }) {
+            appModel?.selectCatalogAsset(asset)
             Task {
                 await model.togglePlayback(asset)
             }
@@ -829,6 +839,7 @@ struct CatalogAudioLibraryView: View {
             $0.category == .secondSleep || $0.id == "second-sleep"
         }) {
             model.selectedBedtimeAssetID = secondSleep.id
+            appModel?.selectCatalogAsset(secondSleep)
             Task {
                 await model.togglePlayback(secondSleep)
             }
@@ -846,65 +857,66 @@ private struct BedtimeAudioCard: View {
     let onSelect: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
-            ZStack {
-                cardBackground
-
-                VStack(alignment: .leading, spacing: 0) {
-                    // Top Controls Row
-                    HStack(alignment: .top) {
-                        downloadOrOfflineBadge
-
-                        Spacer()
-
-                        playPauseButton
-                    }
-
-                    Spacer(minLength: 28)
-
-                    // Track Title
-                    Text(asset.title)
-                        .font(AppFont.inter(size: 22, relativeTo: .title2, weight: .bold))
-                        .foregroundStyle(.white)
-
-                    // Duration
-                    Text(durationText)
-                        .font(AppFont.inter(size: 15, relativeTo: .subheadline, weight: .regular))
-                        .foregroundStyle(.white.opacity(0.68))
-                        .padding(.top, 4)
-
-                    if asset.category == .morningAlarm {
-                        Button(
-                            action: { Task { await model.selectAlarm(asset) } },
-                            label: { Label(alarmButtonTitle, systemImage: "alarm") }
-                        )
-                        .font(AppFont.inter(size: 13, relativeTo: .caption, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(Capsule())
-                        .accessibilityIdentifier("catalogAudio.selectAlarm.\(asset.category.rawValue)")
-                        .disabled(!canSetAlarm)
-                        .padding(.top, 8)
-                    }
-
-                    // Accessibility hidden state indicators
-                    accessibleTestStatus
+        ZStack {
+            cardBackground
+                .contentShape(RoundedRectangle(cornerRadius: 24))
+                .onTapGesture {
+                    onSelect()
                 }
-                .padding(22)
-            }
-            .frame(minHeight: 180)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .overlay {
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(
-                        isSelected ? Color.white.opacity(0.38) : Color.white.opacity(0.08),
-                        lineWidth: isSelected ? 1.5 : 1
+
+            VStack(alignment: .leading, spacing: 0) {
+                // Top Controls Row
+                HStack(alignment: .top) {
+                    downloadOrOfflineBadge
+
+                    Spacer()
+
+                    playPauseButton
+                }
+
+                Spacer(minLength: 28)
+
+                // Track Title
+                Text(asset.title)
+                    .font(AppFont.inter(size: 22, relativeTo: .title2, weight: .bold))
+                    .foregroundStyle(.white)
+
+                // Duration
+                Text(durationText)
+                    .font(AppFont.inter(size: 15, relativeTo: .subheadline, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.68))
+                    .padding(.top, 4)
+
+                if asset.category == .morningAlarm {
+                    Button(
+                        action: { Task { await model.selectAlarm(asset) } },
+                        label: { Label(alarmButtonTitle, systemImage: "alarm") }
                     )
+                    .font(AppFont.inter(size: 13, relativeTo: .caption, weight: .medium))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Capsule())
+                    .accessibilityIdentifier("catalogAudio.selectAlarm.\(asset.category.rawValue)")
+                    .disabled(!canSetAlarm)
+                    .padding(.top, 8)
+                }
+
+                // Accessibility hidden state indicators
+                accessibleTestStatus
             }
+            .padding(22)
         }
-        .buttonStyle(.plain)
+        .frame(minHeight: 180)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(
+                    isSelected ? Color.white.opacity(0.38) : Color.white.opacity(0.08),
+                    lineWidth: isSelected ? 1.5 : 1
+                )
+        }
         .accessibilityIdentifier("catalogAudio.row.\(asset.category.rawValue)")
     }
 

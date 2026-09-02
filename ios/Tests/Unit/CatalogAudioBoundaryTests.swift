@@ -310,6 +310,17 @@ final class CatalogAudioBoundaryTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testCatalogAudioPlayerPropertiesAndSeek() {
+        let player = CatalogAudioPlayer()
+        XCTAssertEqual(player.currentTime, 0)
+        XCTAssertEqual(player.duration, 0)
+        XCTAssertEqual(player.state, .idle)
+        player.seek(to: 10)
+        player.skip(by: 15)
+        XCTAssertEqual(player.currentTime, 0)
+    }
+
     private func makeAsset(id: String, data: Data = Data("audio".utf8)) -> CatalogAudioAsset {
         CatalogAudioAsset(
             id: id,

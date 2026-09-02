@@ -504,4 +504,27 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
         let schedule = ScheduleUIModel.newSleep
         XCTAssertEqual(schedule.snoozeMinutes, 9)
     }
+
+    @MainActor
+    func testAppModelDynamicCatalogAssetTitleAndPlayback() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        guard let quickUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "quick-unwind" }),
+              let slowUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "slow-unwind" })
+        else {
+            XCTFail("Missing bundled unwind assets in manifest")
+            return
+        }
+
+        model.selectCatalogAsset(quickUnwind)
+        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
+        XCTAssertEqual(model.activeTrackSubtitle, quickUnwind.shortDescription)
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "quick-unwind")
+
+        model.selectCatalogAsset(slowUnwind)
+        XCTAssertEqual(model.activeTrackTitle, "Slow Unwind")
+        XCTAssertEqual(model.activeTrackSubtitle, slowUnwind.shortDescription)
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "slow-unwind")
+    }
 }

@@ -70,6 +70,28 @@ final class CatalogAudioPlayer: NSObject {
         state = .playing(activeAssetID)
     }
 
+    var currentTime: TimeInterval {
+        guard let player else { return 0 }
+        let time = player.currentTime().seconds
+        return time.isFinite && time >= 0 ? time : 0
+    }
+
+    var duration: TimeInterval {
+        guard let item = player?.currentItem else { return 0 }
+        let seconds = item.duration.seconds
+        return seconds.isFinite && seconds > 0 ? seconds : 0
+    }
+
+    func seek(to time: TimeInterval) {
+        guard let player else { return }
+        let target = CMTime(seconds: time, preferredTimescale: 600)
+        player.seek(to: target)
+    }
+
+    func skip(by seconds: TimeInterval) {
+        seek(to: currentTime + seconds)
+    }
+
     func stop() {
         player?.pause()
         player?.replaceCurrentItem(with: nil)
@@ -86,14 +108,15 @@ final class CatalogAudioPlayer: NSObject {
             try session.setCategory(
                 .playback,
                 mode: .spokenAudio,
-                options: [.allowBluetoothHFP, .allowAirPlay]
+                options: [.allowAirPlay, .allowBluetoothA2DP]
             )
             try session.setActive(true)
             let nextPlayer = AVPlayer(url: url)
+            nextPlayer.automaticallyWaitsToMinimizeStalling = false
             player = nextPlayer
             activeAssetID = assetID
             state = streaming ? .streaming(assetID) : .playing(assetID)
-            nextPlayer.play()
+            nextPlayer.playImmediately(atRate: 1.0)
         } catch {
             player = nil
             activeAssetID = nil

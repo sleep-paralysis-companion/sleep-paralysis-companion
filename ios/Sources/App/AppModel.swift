@@ -37,6 +37,8 @@ final class AppModel {
     private(set) var isSleepSessionPresented = false
     private(set) var isRecording = false
     private(set) var catalogAudioService: any CatalogAudioLibraryServicing
+    @ObservationIgnored let catalogAudioPlayer = CatalogAudioPlayer()
+    var selectedCatalogAsset: CatalogAudioAsset?
     private(set) var exportURL: URL?
     private(set) var audioExportURL: URL?
     private(set) var selectedCheckInID: UUID?
@@ -807,6 +809,8 @@ final class AppModel {
     }
 
     func play(_ clip: PersonalAudioClipMetadata) {
+        selectedCatalogAsset = nil
+        catalogAudioPlayer.stop()
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
@@ -822,13 +826,62 @@ final class AppModel {
         }
     }
 
+    func selectCatalogAsset(_ asset: CatalogAudioAsset) {
+        selectedCatalogAsset = asset
+    }
+
+    func playCatalogAsset(_ asset: CatalogAudioAsset) {
+        selectedCatalogAsset = asset
+        audioController.stopPlayback()
+
+        #if DEBUG
+            if uiTestScenario != nil {
+                playbackState = .playing(asset.id)
+                updateSleepSessionLiveActivityForPlayback()
+                return
+            }
+        #endif
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let url = try await catalogAudioService.playbackURL(for: asset, networkAvailable: true)
+                let isStreaming = !url.isFileURL
+                catalogAudioPlayer.play(url: url, assetID: asset.id, streaming: isStreaming)
+                playbackState = .playing(asset.id)
+                updateSleepSessionLiveActivityForPlayback()
+            } catch {
+                playbackState = .visualFallback
+                updateSleepSessionLiveActivityForPlayback()
+            }
+        }
+    }
+
     func togglePlayback() {
+        if let selectedCatalogAsset {
+            switch catalogAudioPlayer.state {
+            case .playing, .streaming:
+                catalogAudioPlayer.pause()
+                playbackState = .paused(selectedCatalogAsset.id)
+            case .paused:
+                catalogAudioPlayer.resume()
+                playbackState = .playing(selectedCatalogAsset.id)
+            default:
+                playCatalogAsset(selectedCatalogAsset)
+            }
+            updateSleepSessionLiveActivityForPlayback()
+            return
+        }
+
         audioController.togglePause()
         playbackState = audioController.playbackState
         updateSleepSessionLiveActivityForPlayback()
     }
 
     var activeTrackTitle: String {
+        if let selectedCatalogAsset {
+            return selectedCatalogAsset.title
+        }
         if case let .playing(id) = playbackState {
             if id == "quick-unwind" {
                 return "Quick Unwind"
@@ -864,10 +917,13 @@ final class AppModel {
         if !personalClips.isEmpty {
             return "Personal Voice Guide"
         }
-        return "Felt Dawn"
+        return "Quick Unwind"
     }
 
     var activeTrackSubtitle: String {
+        if let selectedCatalogAsset {
+            return selectedCatalogAsset.shortDescription
+        }
         if case let .playing(id) = playbackState {
             if id == "quick-unwind" {
                 return "Settling into restful calmness"
@@ -907,19 +963,37 @@ final class AppModel {
     }
 
     var playbackCurrentTime: TimeInterval {
-        audioController.currentTime
+        if selectedCatalogAsset != nil {
+            return catalogAudioPlayer.currentTime
+        }
+        return audioController.currentTime
     }
 
     var playbackDuration: TimeInterval {
-        audioController.duration
+        if let selectedCatalogAsset {
+            let playerDur = catalogAudioPlayer.duration
+            if playerDur > 0 {
+                return playerDur
+            }
+            return Double(selectedCatalogAsset.durationMilliseconds) / 1000.0
+        }
+        return audioController.duration
     }
 
     func seekPlayback(to time: TimeInterval) {
-        audioController.seek(to: time)
+        if selectedCatalogAsset != nil {
+            catalogAudioPlayer.seek(to: time)
+        } else {
+            audioController.seek(to: time)
+        }
     }
 
     func skipPlayback(by seconds: TimeInterval) {
-        audioController.skip(by: seconds)
+        if selectedCatalogAsset != nil {
+            catalogAudioPlayer.skip(by: seconds)
+        } else {
+            audioController.skip(by: seconds)
+        }
     }
 
     func toggleHeroPlayback() {
@@ -929,7 +1003,11 @@ final class AppModel {
         case .paused:
             togglePlayback()
         default:
-            playSelectedRecoveryAudio()
+            if let selectedCatalogAsset {
+                playCatalogAsset(selectedCatalogAsset)
+            } else {
+                playSelectedRecoveryAudio()
+            }
         }
     }
 
@@ -963,6 +1041,7 @@ final class AppModel {
     func stopPlayback() {
         cancelSleepTimer()
         audioController.stopPlayback()
+        catalogAudioPlayer.stop()
         playbackState = .idle
         updateSleepSessionLiveActivityForPlayback()
     }
@@ -1101,32 +1180,23 @@ final class AppModel {
     func startUnwindSession() {
         guard launchDestination == .home else { return }
         let defaultSleep = settings?.defaultSleepSupport ?? .quickSleep
-        let fileName = defaultSleep == .longSleepAid
-            ? "spc_catalog_slow-unwind_v1.m4a"
-            : "spc_catalog_quick-unwind_v1.m4a"
         let trackID = defaultSleep == .longSleepAid ? "slow-unwind" : "quick-unwind"
 
-        if let url = SystemAudioAssets.bundledURL(for: fileName) {
-            try? audioController.play(url: url, identifier: trackID)
-            playbackState = audioController.playbackState
+        if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == trackID }) {
+            playCatalogAsset(asset)
         }
         startSleepSession()
         open(.audioPlayer)
     }
 
     func playCalmingSecondSleepAudio() {
-        let bundledName = "spc_catalog_slow-unwind_v1.m4a"
-        if let url = SystemAudioAssets.bundledURL(for: bundledName) ??
-            SystemAudioAssets.bundledURL(for: "spc_catalog_quick-unwind_v1.m4a")
-        {
-            do {
-                try audioController.play(url: url, identifier: "second-sleep")
-                playbackState = audioController.playbackState
-                updateSleepSessionLiveActivityForPlayback()
-                return
-            } catch {
-                // Fall through to visual fallback
-            }
+        if let secondSleep = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "second-sleep" }) {
+            playCatalogAsset(secondSleep)
+            return
+        }
+        if let quickUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "quick-unwind" }) {
+            playCatalogAsset(quickUnwind)
+            return
         }
         audioController.showVisualFallback()
         playbackState = .visualFallback
