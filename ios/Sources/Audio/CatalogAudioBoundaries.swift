@@ -322,9 +322,10 @@ actor CatalogAudioCacheCoordinator {
             }
         }
 
+        let fallbackState: AudioCacheState = networkAvailable ? .availableRemotely : .notAvailable
         let value = metadata(
             for: asset,
-            state: asset.delivery == .bundled ? .availableOffline : (networkAvailable ? .availableRemotely : .notAvailable)
+            state: asset.delivery == .bundled ? .availableOffline : fallbackState
         )
         try await index.save(value)
         return value

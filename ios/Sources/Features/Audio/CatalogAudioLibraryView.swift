@@ -398,9 +398,11 @@ final class CatalogAudioLibraryModel {
             relativeFileName: nil,
             verifiedAt: nil,
             byteCount: 0,
-            progress: 0,
-            failureReason: failureReason,
             lastAccessedAt: nil
+        )
+    }
+}
+
 struct CatalogAudioLibraryView: View {
     @Bindable var appModel: AppModel?
     private let openPersonalAudio: () -> Void
