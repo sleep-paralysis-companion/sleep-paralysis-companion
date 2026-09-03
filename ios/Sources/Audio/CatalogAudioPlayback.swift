@@ -160,18 +160,33 @@ final class CatalogAudioPlayer: NSObject {
     }
 
     private func attachItemObservers(item: AVPlayerItem, player: AVPlayer, assetID _: String) {
-        itemStatusObserver = item.observe(\.status, options: [.new]) { [weak self] observedItem, _ in
+        itemStatusObserver = item.observe(
+            \.status,
+            options: [.new]
+        ) { [weak self] observedItem, _ in
             Task { @MainActor [weak self] in
-                guard let self, observedItem == self.player?.currentItem else { return }
+                guard let self,
+                      observedItem == self.player?.currentItem
+                else {
+                    return
+                }
                 if observedItem.status == .failed {
                     self.handlePlaybackFailure()
                 }
             }
         }
 
-        timeControlStatusObserver = player.observe(\.timeControlStatus, options: [.new]) { [weak self] observedPlayer, _ in
+        timeControlStatusObserver = player.observe(
+            \.timeControlStatus,
+            options: [.new]
+        ) { [weak self] observedPlayer, _ in
             Task { @MainActor [weak self] in
-                guard let self, observedPlayer == self.player, let activeAssetID = self.activeAssetID else { return }
+                guard let self,
+                      observedPlayer == self.player,
+                      let activeAssetID = self.activeAssetID
+                else {
+                    return
+                }
                 switch observedPlayer.timeControlStatus {
                 case .playing:
                     self.state = .playing(activeAssetID)
@@ -195,7 +210,9 @@ final class CatalogAudioPlayer: NSObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                guard let self, let activeAssetID = self.activeAssetID else { return }
+                guard let self, let activeAssetID = self.activeAssetID else {
+                    return
+                }
                 self.player?.seek(to: .zero)
                 self.state = .paused(activeAssetID)
             }
