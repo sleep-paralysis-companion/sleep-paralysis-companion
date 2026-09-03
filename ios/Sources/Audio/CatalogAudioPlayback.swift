@@ -6,18 +6,36 @@ final class CatalogAudioPlayer: NSObject {
     private let cache: CatalogAudioCacheCoordinator?
     private var player: AVPlayer?
     private var activeAssetID: String?
+    private var itemStatusObserver: NSKeyValueObservation?
+    private var timeControlStatusObserver: NSKeyValueObservation?
+    private var endObserver: NSObjectProtocol?
+    private var failureObserver: NSObjectProtocol?
 
-    private(set) var state: CatalogAudioPlaybackState = .idle
+    var playbackStateDidChange: (@MainActor @Sendable (CatalogAudioPlaybackState) -> Void)?
+
+    private(set) var state: CatalogAudioPlaybackState = .idle {
+        didSet {
+            guard state != oldValue else { return }
+            playbackStateDidChange?(state)
+        }
+    }
 
     init(cache: CatalogAudioCacheCoordinator? = nil) {
         self.cache = cache
         super.init()
         observeAudioSession()
-        observePlaybackFailures()
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        itemStatusObserver?.invalidate()
+        timeControlStatusObserver?.invalidate()
+        if let endObserver {
+            NotificationCenter.default.removeObserver(endObserver)
+        }
+        if let failureObserver {
+            NotificationCenter.default.removeObserver(failureObserver)
+        }
     }
 
     func play(asset: CatalogAudioAsset, networkAvailable: Bool) async {
@@ -66,6 +84,7 @@ final class CatalogAudioPlayer: NSObject {
 
     func resume() {
         guard let player, let activeAssetID else { return }
+        try? AVAudioSession.sharedInstance().setActive(true)
         player.play()
         state = .playing(activeAssetID)
     }
@@ -84,7 +103,8 @@ final class CatalogAudioPlayer: NSObject {
 
     func seek(to time: TimeInterval) {
         guard let player else { return }
-        let target = CMTime(seconds: time, preferredTimescale: 600)
+        let clampedTime = max(0, time)
+        let target = CMTime(seconds: clampedTime, preferredTimescale: 600)
         player.seek(to: target)
     }
 
@@ -93,35 +113,102 @@ final class CatalogAudioPlayer: NSObject {
     }
 
     func stop() {
-        player?.pause()
-        player?.replaceCurrentItem(with: nil)
-        player = nil
-        activeAssetID = nil
+        cleanCurrentPlayer()
         state = .idle
         deactivateAudioSession()
     }
 
+    private func cleanCurrentPlayer() {
+        itemStatusObserver?.invalidate()
+        itemStatusObserver = nil
+        timeControlStatusObserver?.invalidate()
+        timeControlStatusObserver = nil
+        if let endObserver {
+            NotificationCenter.default.removeObserver(endObserver)
+            self.endObserver = nil
+        }
+        if let failureObserver {
+            NotificationCenter.default.removeObserver(failureObserver)
+            self.failureObserver = nil
+        }
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        player = nil
+        activeAssetID = nil
+    }
+
     private func start(url: URL, assetID: String, streaming: Bool) throws {
-        stop()
+        cleanCurrentPlayer()
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(
-                .playback,
-                mode: .spokenAudio,
-                options: [.allowAirPlay, .allowBluetoothA2DP]
-            )
+            try session.setCategory(.playback, mode: .spokenAudio)
             try session.setActive(true)
-            let nextPlayer = AVPlayer(url: url)
-            nextPlayer.automaticallyWaitsToMinimizeStalling = false
+            let item = AVPlayerItem(url: url)
+            let nextPlayer = AVPlayer(playerItem: item)
+            nextPlayer.automaticallyWaitsToMinimizeStalling = true
             player = nextPlayer
             activeAssetID = assetID
             state = streaming ? .streaming(assetID) : .playing(assetID)
-            nextPlayer.playImmediately(atRate: 1.0)
+            attachItemObservers(item: item, player: nextPlayer, assetID: assetID)
+            nextPlayer.play()
         } catch {
-            player = nil
-            activeAssetID = nil
+            cleanCurrentPlayer()
+            state = .failed(assetID, .playerItemFailed)
             deactivateAudioSession()
             throw CatalogAudioBoundaryError.playbackFailed
+        }
+    }
+
+    private func attachItemObservers(item: AVPlayerItem, player: AVPlayer, assetID _: String) {
+        itemStatusObserver = item.observe(\.status, options: [.new]) { [weak self] observedItem, _ in
+            Task { @MainActor [weak self] in
+                guard let self, observedItem == self.player?.currentItem else { return }
+                if observedItem.status == .failed {
+                    self.handlePlaybackFailure()
+                }
+            }
+        }
+
+        timeControlStatusObserver = player.observe(\.timeControlStatus, options: [.new]) { [weak self] observedPlayer, _ in
+            Task { @MainActor [weak self] in
+                guard let self, observedPlayer == self.player, let activeAssetID = self.activeAssetID else { return }
+                switch observedPlayer.timeControlStatus {
+                case .playing:
+                    self.state = .playing(activeAssetID)
+                case .paused:
+                    if case .playing = self.state {
+                        self.state = .paused(activeAssetID)
+                    }
+                case .waitingToPlayAtSpecifiedRate:
+                    if case .playing = self.state {
+                        self.state = .streaming(activeAssetID)
+                    }
+                @unknown default:
+                    break
+                }
+            }
+        }
+
+        endObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, let activeAssetID = self.activeAssetID else { return }
+                self.player?.seek(to: .zero)
+                self.state = .paused(activeAssetID)
+            }
+        }
+
+        failureObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.handlePlaybackFailure()
+            }
         }
     }
 
@@ -141,22 +228,6 @@ final class CatalogAudioPlayer: NSObject {
         )
     }
 
-    private func observePlaybackFailures() {
-        let center = NotificationCenter.default
-        center.addObserver(
-            self,
-            selector: #selector(handlePlaybackFailureNotification(_:)),
-            name: .AVPlayerItemFailedToPlayToEndTime,
-            object: nil
-        )
-        center.addObserver(
-            self,
-            selector: #selector(handlePlaybackFailureNotification(_:)),
-            name: .AVPlayerItemPlaybackStalled,
-            object: nil
-        )
-    }
-
     @objc private func handleInterruptionNotification(_ notification: Notification) {
         let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
         Task { @MainActor [weak self] in
@@ -168,12 +239,6 @@ final class CatalogAudioPlayer: NSObject {
         let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
         Task { @MainActor [weak self] in
             self?.handleRouteChange(reasonValue: reasonValue)
-        }
-    }
-
-    @objc private func handlePlaybackFailureNotification(_: Notification) {
-        Task { @MainActor [weak self] in
-            self?.handlePlaybackFailure()
         }
     }
 

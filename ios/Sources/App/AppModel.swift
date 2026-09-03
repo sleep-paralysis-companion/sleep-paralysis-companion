@@ -157,6 +157,26 @@ final class AppModel {
             self?.playbackState = state
             self?.updateSleepSessionLiveActivityForPlayback()
         }
+        self.catalogAudioPlayer.playbackStateDidChange = { [weak self] state in
+            guard let self else { return }
+            switch state {
+            case let .playing(id), let .streaming(id):
+                self.playbackState = .playing(id)
+            case let .paused(id):
+                self.playbackState = .paused(id)
+            case let .interrupted(id):
+                self.playbackState = .interrupted(id)
+            case .failed:
+                self.playbackState = .visualFallback
+            case .idle, .offlineFallback:
+                if case .playing = self.playbackState {
+                    self.playbackState = .idle
+                } else if case .paused = self.playbackState {
+                    self.playbackState = .idle
+                }
+            }
+            self.updateSleepSessionLiveActivityForPlayback()
+        }
         SleepSessionAudioIntentBridge.shared.install { [weak self] action in
             self?.performSleepSessionAudioAction(action, presentSession: false) ?? false
         }
@@ -848,7 +868,11 @@ final class AppModel {
                 let url = try await catalogAudioService.playbackURL(for: asset, networkAvailable: true)
                 let isStreaming = !url.isFileURL
                 catalogAudioPlayer.play(url: url, assetID: asset.id, streaming: isStreaming)
-                playbackState = .playing(asset.id)
+                if case .failed = catalogAudioPlayer.state {
+                    playbackState = .visualFallback
+                } else {
+                    playbackState = .playing(asset.id)
+                }
                 updateSleepSessionLiveActivityForPlayback()
             } catch {
                 playbackState = .visualFallback
@@ -1192,6 +1216,10 @@ final class AppModel {
     func playCalmingSecondSleepAudio() {
         if let secondSleep = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "second-sleep" }) {
             playCatalogAsset(secondSleep)
+            return
+        }
+        if let selectedCatalogAsset, selectedCatalogAsset.id == "second-sleep" {
+            playCatalogAsset(selectedCatalogAsset)
             return
         }
         if let quickUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "quick-unwind" }) {

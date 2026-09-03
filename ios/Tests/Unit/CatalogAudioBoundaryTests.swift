@@ -321,6 +321,21 @@ final class CatalogAudioBoundaryTests: XCTestCase {
         XCTAssertEqual(player.currentTime, 0)
     }
 
+    @MainActor
+    func testCatalogAudioPlayerPlaybackStateDidChangeCallback() {
+        let player = CatalogAudioPlayer()
+        var observedStates: [CatalogAudioPlaybackState] = []
+        player.playbackStateDidChange = { state in
+            observedStates.append(state)
+        }
+
+        player.pause()
+        XCTAssertTrue(observedStates.isEmpty)
+
+        player.stop()
+        XCTAssertTrue(observedStates.isEmpty)
+    }
+
     private func makeAsset(id: String, data: Data = Data("audio".utf8)) -> CatalogAudioAsset {
         CatalogAudioAsset(
             id: id,
