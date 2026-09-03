@@ -28,14 +28,6 @@ final class CatalogAudioPlayer: NSObject {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        itemStatusObserver?.invalidate()
-        timeControlStatusObserver?.invalidate()
-        if let endObserver {
-            NotificationCenter.default.removeObserver(endObserver)
-        }
-        if let failureObserver {
-            NotificationCenter.default.removeObserver(failureObserver)
-        }
     }
 
     func play(asset: CatalogAudioAsset, networkAvailable: Bool) async {
