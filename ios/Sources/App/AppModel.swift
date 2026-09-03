@@ -162,10 +162,8 @@ final class AppModel {
             switch state {
             case let .playing(id), let .streaming(id):
                 self.playbackState = .playing(id)
-            case let .paused(id):
+            case let .paused(id), let .interrupted(id):
                 self.playbackState = .paused(id)
-            case let .interrupted(id):
-                self.playbackState = .interrupted(id)
             case .failed:
                 self.playbackState = .visualFallback
             case .idle, .offlineFallback:
