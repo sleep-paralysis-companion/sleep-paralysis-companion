@@ -300,6 +300,11 @@ final class AppModel {
         func setLaunchDestinationForTesting(_ destination: LaunchDestination) {
             launchDestination = destination
         }
+
+        func setSessionForTesting(profileID: UUID?, userID: UUID?) {
+            self.profileID = profileID
+            self.userID = userID
+        }
     #endif
 
     private func configureCatalogAudioServiceIfAvailable() async {
@@ -1289,9 +1294,10 @@ final class AppModel {
 
     @discardableResult
     func submitCheckIn(_ form: MorningCheckInForm, editing: SubmittedCheckIn? = nil) async -> Bool {
-        guard let profileID, let userID, let occurrence = form.occurrence, form.canSubmit else {
+        guard let profileID, let occurrence = form.occurrence, form.canSubmit else {
             return false
         }
+        let effectiveUserID = userID ?? profileID
         let now = Date()
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -1315,7 +1321,7 @@ final class AppModel {
             deletedAt: nil
         )
         do {
-            try await store.saveCheckIn(value, userID: userID)
+            try await store.saveCheckIn(value, userID: effectiveUserID)
             checkIns.removeAll { $0.id == value.id }
             checkIns.insert(value, at: 0)
             return true
@@ -1331,11 +1337,12 @@ final class AppModel {
     }
 
     func deleteCheckIn(_ value: SubmittedCheckIn) {
-        guard let userID else { return }
+        guard let profileID else { return }
+        let effectiveUserID = userID ?? profileID
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                try await store.deleteCheckIn(value, userID: userID)
+                try await store.deleteCheckIn(value, userID: effectiveUserID)
                 checkIns.removeAll { $0.id == value.id }
                 path.removeAll { $0 == .checkInDetail }
             } catch {
