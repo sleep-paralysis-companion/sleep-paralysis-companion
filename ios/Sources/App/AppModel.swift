@@ -46,7 +46,7 @@ final class AppModel {
     @ObservationIgnored private var sleepTimerTask: Task<Void, Never>?
     var isAlarmRinging: Bool = false
     private(set) var ringingAlarmSchedule: ScheduleUIModel?
-    @ObservationIgnored private var alarmSnoozeTask: Task<Void, Never>?
+    @ObservationIgnored var alarmSnoozeTask: Task<Void, Never>?
     var profile: LocalProfile?
     var settings: AppSettings?
 
