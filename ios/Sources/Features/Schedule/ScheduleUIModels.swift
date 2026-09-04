@@ -254,7 +254,9 @@ nonisolated extension ScheduleUIModel {
         }
         let resolvedName: String = {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty { return trimmed }
+            if !trimmed.isEmpty {
+                return trimmed
+            }
             return self.kind == .sleep ? "Sleep schedule" : "Wake up"
         }()
         return AlarmSchedule(
