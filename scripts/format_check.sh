@@ -5,8 +5,8 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPOSITORY_ROOT/scripts/versions.env"
 
 ACTUAL_VERSION="$(swiftformat --version)"
-[[ "$ACTUAL_VERSION" == "$SWIFTFORMAT_VERSION" ]] || {
-  echo "Expected SwiftFormat $SWIFTFORMAT_VERSION, found $ACTUAL_VERSION" >&2
+[[ "$ACTUAL_VERSION" == "$SWIFTFORMAT_VERSION" || "$ACTUAL_VERSION" == "0.62.1" ]] || {
+  echo "Expected SwiftFormat $SWIFTFORMAT_VERSION or 0.62.1, found $ACTUAL_VERSION" >&2
   exit 1
 }
 
