@@ -28,9 +28,19 @@ final class SleepPlayerTests: XCTestCase {
         let saved = model.saveScheduleUI(schedule, autoStartUnwind: true)
         XCTAssertTrue(saved)
         XCTAssertTrue(model.alarmSchedules.contains(where: { $0.id == schedule.id }))
-        XCTAssertTrue(model.path.contains(.audioPlayer), "Sleep Player should be presented upon saving")
-        XCTAssertFalse(model.isSleepSessionPresented, "Second Sleep screen must not be presented for bedtime unwind")
-        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind", "Default unwind track should be Quick Unwind")
+        XCTAssertTrue(
+            model.path.contains(.audioPlayer),
+            "Sleep Player should be presented upon saving"
+        )
+        XCTAssertFalse(
+            model.isSleepSessionPresented,
+            "Second Sleep screen must not be presented for bedtime unwind"
+        )
+        XCTAssertEqual(
+            model.activeTrackTitle,
+            "Quick Unwind",
+            "Default unwind track should be Quick Unwind"
+        )
     }
 
     @MainActor
@@ -38,8 +48,12 @@ final class SleepPlayerTests: XCTestCase {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
 
-        guard let quickUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "quick-unwind" }),
-              let slowUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "slow-unwind" })
+        guard let quickUnwind = CatalogAudioManifest.bundled.assets.first(
+            where: { $0.id == "quick-unwind" }
+        ),
+            let slowUnwind = CatalogAudioManifest.bundled.assets.first(
+                where: { $0.id == "slow-unwind" }
+            )
         else {
             XCTFail("Missing bundled unwind assets")
             return
@@ -88,7 +102,10 @@ final class SleepPlayerTests: XCTestCase {
         _ = model.performSleepSessionAudioAction(.startOrResume, presentSession: false)
 
         model.beginManualGrounding()
-        XCTAssertTrue(model.path.contains(.grounding), "Manual grounding must be invoked from Second Sleep CTA")
+        XCTAssertTrue(
+            model.path.contains(.grounding),
+            "Manual grounding must be invoked from Second Sleep CTA"
+        )
 
         model.endSleepSession()
         XCTAssertFalse(model.isSleepSessionPresented)

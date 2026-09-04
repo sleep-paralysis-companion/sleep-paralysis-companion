@@ -197,10 +197,17 @@ struct AudioPlayerView: View {
                 // Play / Pause status indicator
                 ZStack {
                     Circle()
-                        .fill(active ? HomeScreenPalette.accent.opacity(0.35) : HomeScreenPalette.cardSecondary)
+                        .fill(
+                            active
+                                ? HomeScreenPalette.accent.opacity(0.35)
+                                : HomeScreenPalette.cardSecondary
+                        )
                         .frame(width: 44, height: 44)
                         .overlay {
-                            Circle().stroke(active ? HomeScreenPalette.accent : HomeScreenPalette.cardBorder, lineWidth: 1)
+                            Circle().stroke(
+                                active ? HomeScreenPalette.accent : HomeScreenPalette.cardBorder,
+                                lineWidth: 1
+                            )
                         }
 
                     Image(systemName: playing ? "pause.fill" : "play.fill")

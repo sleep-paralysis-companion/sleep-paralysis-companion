@@ -1113,7 +1113,9 @@ final class AppModel {
     }
 
     func isSleepTrackDownloaded(_ asset: CatalogAudioAsset) -> Bool {
-        if asset.delivery == .bundled { return true }
+        if asset.delivery == .bundled {
+            return true
+        }
         if let resourceName = asset.bundledResourceName,
            SystemAudioAssets.bundledURL(for: resourceName) != nil
         {
