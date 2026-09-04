@@ -130,7 +130,11 @@ struct HomeView: View {
 
     private var scheduleSummary: some View {
         Button {
-            model.beginNewSchedule()
+            if let active = model.alarmSchedules.first(where: { $0.isEnabled }) ?? model.alarmSchedules.first {
+                model.editSchedule(ScheduleUIModel(active))
+            } else {
+                model.beginNewSchedule()
+            }
             model.open(.alarmScheduleEditor)
         } label: {
             HomeScheduleSummary(
@@ -381,6 +385,7 @@ private struct HomeScheduleSummary: View {
             horizontalLayout
             verticalLayout
         }
+        .accessibilityIdentifier("home.sleepSchedule")
     }
 
     private var horizontalLayout: some View {

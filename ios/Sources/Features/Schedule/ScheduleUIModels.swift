@@ -163,12 +163,11 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
             && (0 ... 59).contains(bedtimeMinute)
             && (0 ... 23).contains(wakeHour)
             && (0 ... 59).contains(wakeMinute)
-        let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         switch kind {
         case .sleep:
-            return validTime && hasName && repeatWeekdaysMask != 0
+            return validTime && repeatWeekdaysMask != 0
         case .wakeOnly:
-            return validTime && hasName && oneTimeDate != nil
+            return validTime && oneTimeDate != nil
         }
     }
 
@@ -253,10 +252,15 @@ nonisolated extension ScheduleUIModel {
                 return selection
             } ?? .defaultBundled
         }
+        let resolvedName: String = {
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { return trimmed }
+            return self.kind == .sleep ? "Sleep schedule" : "Wake up"
+        }()
         return AlarmSchedule(
             id: id,
             profileID: profileID,
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            name: resolvedName,
             kind: kind,
             bedtimeHour: kind == .sleep ? bedtimeHour : nil,
             bedtimeMinute: kind == .sleep ? bedtimeMinute : nil,

@@ -516,6 +516,7 @@ final class AppModel {
         let previous = alarmSchedules
         alarmSchedules = proposed.sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
         selectedAlarmScheduleID = schedule.id
+        selectedTab = .sleep
         updateLegacyScheduleSummary()
         Task { @MainActor [weak self] in
             guard let self else { return }
