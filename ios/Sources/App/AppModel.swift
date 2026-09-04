@@ -1107,9 +1107,9 @@ final class AppModel {
     func sleepTrackDurationText(for asset: CatalogAudioAsset) -> String {
         switch asset.category {
         case .quickUnwind:
-            "15 min"
+            return "15 min"
         case .slowUnwind:
-            "1 hr 15 min"
+            return "1 hr 15 min"
         default:
             let totalSeconds = max(0, asset.durationMilliseconds / 1000)
             let mins = totalSeconds / 60
