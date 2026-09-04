@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 @testable import SleepParalysisCompanion
 import XCTest
 
@@ -100,6 +100,9 @@ final class AlarmFlowTests: XCTestCase {
     func testSaveSchedulePersistsAndUpdatesLegacySummary() {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
 
         let newSchedule = ScheduleUIModel(
             name: "Weekday Rhythm",
