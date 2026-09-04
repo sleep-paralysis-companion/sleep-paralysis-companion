@@ -77,6 +77,7 @@ final class CatalogAudioPlayer: NSObject {
     func resume() {
         guard let player, let activeAssetID else { return }
         try? AVAudioSession.sharedInstance().setActive(true)
+        player.volume = 1.0
         player.play()
         state = .playing(activeAssetID)
     }
@@ -102,6 +103,14 @@ final class CatalogAudioPlayer: NSObject {
 
     func skip(by seconds: TimeInterval) {
         seek(to: currentTime + seconds)
+    }
+
+    func setVolume(_ volume: Float) {
+        player?.volume = max(0, min(1, volume))
+    }
+
+    var volume: Float {
+        player?.volume ?? 1.0
     }
 
     func stop() {
@@ -138,6 +147,7 @@ final class CatalogAudioPlayer: NSObject {
             let item = AVPlayerItem(url: url)
             let nextPlayer = AVPlayer(playerItem: item)
             nextPlayer.automaticallyWaitsToMinimizeStalling = true
+            nextPlayer.volume = 1.0
             player = nextPlayer
             activeAssetID = assetID
             state = streaming ? .streaming(assetID) : .playing(assetID)

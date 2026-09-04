@@ -69,30 +69,23 @@ struct SleepSessionView: View {
         return ZStack(alignment: .topLeading) {
             SleepSessionClock()
                 .frame(width: canvasSize.width - 40 * scale, height: 156 * scale)
-                .position(x: canvasSize.width / 2, y: 238 * scale)
-
-            Image("SleepSessionMoon")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 226 * scale, height: 226 * scale)
-                .position(x: canvasSize.width / 2, y: 440 * scale)
-                .accessibilityHidden(true)
+                .position(x: canvasSize.width / 2, y: 280 * scale)
 
             episodeButton
                 .frame(width: 329 * scale, height: 120 * scale)
-                .position(x: canvasSize.width / 2, y: 673 * scale)
+                .position(x: canvasSize.width / 2, y: 530 * scale)
 
             HStack(spacing: 6) {
                 Image(systemName: "lock.open.fill")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.white.opacity(0.45))
-                Text("No unlock required")
+                Text("No unlock required for audio controls")
                     .font(AppTypographyRole.footnote)
                     .foregroundStyle(.white.opacity(0.55))
             }
             .accessibilityHidden(true)
-            .frame(width: 220 * scale)
-            .position(x: canvasSize.width / 2, y: 762 * scale)
+            .frame(width: 260 * scale)
+            .position(x: canvasSize.width / 2, y: 620 * scale)
         }
         .frame(width: canvasSize.width, height: canvasSize.height)
         .position(x: size.width / 2, y: size.height / 2)
@@ -102,18 +95,13 @@ struct SleepSessionView: View {
         ScrollView {
             VStack(spacing: AppSpacing.spacious) {
                 SleepSessionClock()
-                Image("SleepSessionMoon")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: 226)
-                    .accessibilityHidden(true)
                 episodeButton
                     .frame(maxWidth: 329, minHeight: 120)
                 HStack(spacing: 6) {
                     Image(systemName: "lock.open.fill")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.white.opacity(0.5))
-                    Text("Authenticate when requested")
+                    Text("Authenticate with Face ID when requested")
                         .font(AppTypographyRole.footnote)
                         .foregroundStyle(.white.opacity(0.6))
                 }

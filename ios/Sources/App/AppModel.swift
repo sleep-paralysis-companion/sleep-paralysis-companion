@@ -498,7 +498,7 @@ final class AppModel {
     }
 
     @discardableResult
-    func saveScheduleUI(_ value: ScheduleUIModel) -> Bool {
+    func saveScheduleUI(_ value: ScheduleUIModel, autoStartUnwind: Bool = false) -> Bool {
         guard let profileID, let userID else { return false }
         let existing = alarmSchedules.first(where: { $0.id == value.id })
         let schedule = value.domainValue(
@@ -554,6 +554,9 @@ final class AppModel {
                 updateLegacyScheduleSummary()
                 feedbackMessage = "The schedule could not be saved. Nothing was replaced."
             }
+        }
+        if autoStartUnwind {
+            startUnwindSession()
         }
         return true
     }
@@ -1039,14 +1042,16 @@ final class AppModel {
         }
     }
 
-    func setSleepTimer(minutes: Int) {
+    func setSleepTimer(seconds: TimeInterval) {
         sleepTimerTask?.cancel()
-        guard minutes > 0 else {
+        guard seconds > 0 else {
             sleepTimerRemaining = nil
+            catalogAudioPlayer.setVolume(1.0)
             return
         }
-        var secondsRemaining = TimeInterval(minutes * 60)
+        var secondsRemaining = seconds
         sleepTimerRemaining = secondsRemaining
+        catalogAudioPlayer.setVolume(1.0)
 
         sleepTimerTask = Task { @MainActor [weak self] in
             while secondsRemaining > 0 {
@@ -1054,24 +1059,67 @@ final class AppModel {
                 guard !Task.isCancelled else { return }
                 secondsRemaining -= 1
                 self?.sleepTimerRemaining = secondsRemaining
+
+                if secondsRemaining <= 5, let self {
+                    let fraction = Float(max(0, secondsRemaining)) / 5.0
+                    self.catalogAudioPlayer.setVolume(fraction)
+                }
             }
             self?.sleepTimerRemaining = nil
+            self?.catalogAudioPlayer.setVolume(0.0)
             self?.stopPlayback()
+            self?.catalogAudioPlayer.setVolume(1.0)
         }
+    }
+
+    func setSleepTimer(minutes: Int) {
+        setSleepTimer(seconds: TimeInterval(minutes * 60))
+    }
+
+    func setSleepTimerToEndOfTrack() {
+        let duration = playbackDuration > 0 ? playbackDuration : 900
+        let remaining = max(1, duration - playbackCurrentTime)
+        setSleepTimer(seconds: remaining)
     }
 
     func cancelSleepTimer() {
         sleepTimerTask?.cancel()
         sleepTimerTask = nil
         sleepTimerRemaining = nil
+        catalogAudioPlayer.setVolume(1.0)
     }
 
     func stopPlayback() {
         cancelSleepTimer()
         audioController.stopPlayback()
         catalogAudioPlayer.stop()
+        catalogAudioPlayer.setVolume(1.0)
         playbackState = .idle
         updateSleepSessionLiveActivityForPlayback()
+    }
+
+    var sleepPlayerTracks: [CatalogAudioAsset] {
+        CatalogAudioManifest.bundled.assets.filter {
+            $0.category == .quickUnwind || $0.category == .slowUnwind
+        }
+    }
+
+    func sleepTrackDurationText(for asset: CatalogAudioAsset) -> String {
+        switch asset.category {
+        case .quickUnwind: "15 min"
+        case .slowUnwind: "1 hr 15 min"
+        default: asset.durationText
+        }
+    }
+
+    func isSleepTrackDownloaded(_ asset: CatalogAudioAsset) -> Bool {
+        if asset.delivery == .bundled { return true }
+        if let resourceName = asset.bundledResourceName,
+           SystemAudioAssets.bundledURL(for: resourceName) != nil
+        {
+            return true
+        }
+        return false
     }
 
     func beginManualGrounding() {
@@ -1213,7 +1261,7 @@ final class AppModel {
         if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == trackID }) {
             playCatalogAsset(asset)
         }
-        startSleepSession()
+        isSleepSessionPresented = false
         open(.audioPlayer)
     }
 

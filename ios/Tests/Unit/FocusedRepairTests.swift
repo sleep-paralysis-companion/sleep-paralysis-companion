@@ -491,12 +491,12 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
     }
 
     @MainActor
-    func testStartUnwindSessionActivatesSleepSessionAndNavigatesToPlayer() {
+    func testStartUnwindSessionNavigatesToSleepPlayerWithoutSecondSleep() {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
 
         model.startUnwindSession()
-        XCTAssertNotNil(model.sleepSessionStartedAt)
+        XCTAssertFalse(model.isSleepSessionPresented)
         XCTAssertTrue(model.path.contains(.audioPlayer))
     }
 

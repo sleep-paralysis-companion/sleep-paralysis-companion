@@ -3,11 +3,9 @@ import SwiftUI
 struct AudioPlayerView: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isSeeking = false
     @State private var seekValue: Double = 0
-    @State private var isBreathingExpanded = false
     @State private var showSleepTimerPicker = false
     @State private var showGroundingTips = false
 
@@ -19,28 +17,47 @@ struct AudioPlayerView: View {
                 topNavigationBar
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
+                    .padding(.bottom, 12)
 
-                Spacer(minLength: 12)
-
-                ambientVisualizer
-                    .padding(.vertical, 20)
-
-                Spacer(minLength: 12)
-
-                trackMetadata
-                    .padding(.horizontal, 24)
-
-                scrubberSection
-                    .padding(.horizontal, 24)
-                    .padding(.top, 24)
-
-                mainPlaybackControls
-                    .padding(.top, 24)
-
-                bottomUtilities
-                    .padding(.horizontal, 24)
-                    .padding(.top, 32)
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        trackListSection
+                            .padding(.horizontal, 20)
+                            .padding(.top, 6)
+                    }
                     .padding(.bottom, 24)
+                }
+                .frame(maxHeight: .infinity)
+
+                VStack(spacing: 0) {
+                    trackMetadata
+                        .padding(.horizontal, 24)
+                        .padding(.top, 12)
+
+                    scrubberSection
+                        .padding(.horizontal, 24)
+                        .padding(.top, 14)
+
+                    mainPlaybackControls
+                        .padding(.top, 16)
+
+                    bottomUtilities
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+                        .padding(.bottom, 24)
+                }
+                .background {
+                    LinearGradient(
+                        colors: [
+                            HomeScreenPalette.backgroundBottom.opacity(0.0),
+                            HomeScreenPalette.backgroundBottom.opacity(0.92),
+                            HomeScreenPalette.backgroundBottom,
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea(edges: .bottom)
+                }
             }
         }
         .foregroundStyle(.white)
@@ -49,20 +66,13 @@ struct AudioPlayerView: View {
         .accessibilityIdentifier("audioPlayer.screen")
         .sheet(isPresented: $showSleepTimerPicker) {
             sleepTimerSheet
-                .presentationDetents([.height(280)])
+                .presentationDetents([.height(340)])
                 .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showGroundingTips) {
             groundingTipsSheet
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-        }
-        .onAppear {
-            if !reduceMotion {
-                withAnimation(.easeInOut(duration: 4).repeatForever(autoreverses: true)) {
-                    isBreathingExpanded = true
-                }
-            }
         }
     }
 
@@ -78,16 +88,16 @@ struct AudioPlayerView: View {
             .ignoresSafeArea()
 
             Circle()
-                .fill(HomeScreenPalette.accent.opacity(0.18))
+                .fill(HomeScreenPalette.accent.opacity(0.14))
                 .frame(width: 320, height: 320)
                 .blur(radius: 80)
-                .offset(y: -100)
+                .offset(y: -120)
 
             Circle()
-                .fill(HomeScreenPalette.iconTint.opacity(0.12))
+                .fill(HomeScreenPalette.iconTint.opacity(0.10))
                 .frame(width: 260, height: 260)
                 .blur(radius: 70)
-                .offset(x: 100, y: 160)
+                .offset(x: 100, y: 140)
         }
     }
 
@@ -118,9 +128,14 @@ struct AudioPlayerView: View {
 
             Spacer()
 
-            Text("Now Playing")
-                .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
-                .foregroundStyle(HomeScreenPalette.textSecondary)
+            VStack(spacing: 2) {
+                Text("Sleep Player")
+                    .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("Bedtime Routine")
+                    .font(AppFont.inter(size: 12, relativeTo: .caption2, weight: .medium))
+                    .foregroundStyle(HomeScreenPalette.textSecondary)
+            }
 
             Spacer()
 
@@ -143,78 +158,158 @@ struct AudioPlayerView: View {
         }
     }
 
-    // MARK: - Center Visualizer
+    // MARK: - Track List Section
 
-    private var ambientVisualizer: some View {
-        ZStack {
-            // Outer pulsating ring
-            Circle()
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            HomeScreenPalette.accent.opacity(isPlaying ? 0.45 : 0.15),
-                            HomeScreenPalette.iconTint.opacity(isPlaying ? 0.35 : 0.10),
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: isPlaying && !reduceMotion ? (isBreathingExpanded ? 18 : 10) : 12
-                )
-                .frame(
-                    width: isPlaying && !reduceMotion ? (isBreathingExpanded ? 240 : 210) : 220,
-                    height: isPlaying && !reduceMotion ? (isBreathingExpanded ? 240 : 210) : 220
-                )
-                .animation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true), value: isBreathingExpanded)
-
-            // Inner glowing disc
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            HomeScreenPalette.card.opacity(0.95),
-                            HomeScreenPalette.iconBackground.opacity(0.85),
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 176, height: 176)
-                .overlay {
-                    Circle()
-                        .stroke(HomeScreenPalette.cardBorder, lineWidth: 1.2)
-                }
-                .shadow(
-                    color: HomeScreenPalette.accent.opacity(isPlaying ? 0.35 : 0.10),
-                    radius: isPlaying ? 24 : 8
-                )
-
-            // Center Symbol & Wave
-            VStack(spacing: 8) {
-                Image(systemName: isPlaying ? "waveform" : "waveform.circle")
-                    .font(.system(size: 44, weight: .light))
-                    .foregroundStyle(HomeScreenPalette.iconTint)
-                    .symbolEffect(.variableColor.iterative, isActive: isPlaying)
-
-                Text(isPlaying ? "Breathe slowly" : "Paused")
-                    .font(AppFont.inter(size: 13, relativeTo: .caption, weight: .medium))
+    private var trackListSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Bedtime Unwind Tracks")
+                    .font(AppFont.inter(size: 14, relativeTo: .subheadline, weight: .semibold))
                     .foregroundStyle(HomeScreenPalette.textSecondary)
+                Spacer()
+                Text("\(model.sleepPlayerTracks.count) tracks")
+                    .font(AppFont.inter(size: 12, relativeTo: .caption))
+                    .foregroundStyle(HomeScreenPalette.textSecondary.opacity(0.7))
+            }
+            .padding(.horizontal, 4)
+
+            ForEach(model.sleepPlayerTracks) { asset in
+                trackRow(for: asset)
             }
         }
-        .frame(height: 250)
+        .accessibilityIdentifier("audioPlayer.trackList")
+    }
+
+    private func trackRow(for asset: CatalogAudioAsset) -> some View {
+        let active = isCurrentTrack(asset)
+        let playing = isTrackPlaying(asset)
+        let duration = model.sleepTrackDurationText(for: asset)
+        let isDownloaded = model.isSleepTrackDownloaded(asset)
+
+        return Button {
+            if active {
+                model.togglePlayback()
+            } else {
+                model.playCatalogAsset(asset)
+            }
+        } label: {
+            HStack(spacing: 14) {
+                // Play / Pause status indicator
+                ZStack {
+                    Circle()
+                        .fill(active ? HomeScreenPalette.accent.opacity(0.35) : HomeScreenPalette.cardSecondary)
+                        .frame(width: 44, height: 44)
+                        .overlay {
+                            Circle().stroke(active ? HomeScreenPalette.accent : HomeScreenPalette.cardBorder, lineWidth: 1)
+                        }
+
+                    Image(systemName: playing ? "pause.fill" : "play.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(active ? .white : HomeScreenPalette.iconTint)
+                        .offset(x: playing ? 0 : 1)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(asset.title)
+                        .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                        .foregroundStyle(.white)
+
+                    HStack(spacing: 6) {
+                        Text(duration)
+                            .font(AppFont.inter(size: 13, relativeTo: .subheadline, weight: .medium))
+                            .foregroundStyle(HomeScreenPalette.textSecondary)
+
+                        Text("•")
+                            .font(.system(size: 10))
+                            .foregroundStyle(HomeScreenPalette.textSecondary.opacity(0.6))
+
+                        Text(asset.shortDescription)
+                            .font(AppFont.inter(size: 13, relativeTo: .footnote))
+                            .foregroundStyle(HomeScreenPalette.textSecondary.opacity(0.85))
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
+
+                // Dedicated Download / Offline status button
+                downloadOrOfflineButton(for: asset, isDownloaded: isDownloaded)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                LinearGradient(
+                    colors: [
+                        HomeScreenPalette.card,
+                        HomeScreenPalette.cardSecondary.opacity(0.9),
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(
+                        active ? HomeScreenPalette.accent : HomeScreenPalette.cardBorder.opacity(0.6),
+                        lineWidth: active ? 1.5 : 1
+                    )
+            }
+            .shadow(
+                color: active ? HomeScreenPalette.accent.opacity(0.25) : Color.clear,
+                radius: 10,
+                x: 0,
+                y: 4
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(asset.title), \(duration)")
+        .accessibilityHint(playing ? "Pauses audio" : "Plays this track")
+        .accessibilityIdentifier("audioPlayer.track.\(asset.id)")
+    }
+
+    @ViewBuilder
+    private func downloadOrOfflineButton(for asset: CatalogAudioAsset, isDownloaded: Bool) -> some View {
+        if isDownloaded {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(HomeScreenPalette.iconTint)
+            }
+            .frame(width: 36, height: 36)
+            .accessibilityLabel("Available offline")
+            .accessibilityIdentifier("audioPlayer.downloadState.\(asset.id)")
+        } else {
+            Button {
+                Task {
+                    _ = try? await model.catalogAudioService.download(asset)
+                }
+            } label: {
+                Image(systemName: "arrow.down.circle")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(HomeScreenPalette.textSecondary)
+                    .frame(width: 36, height: 36)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Download track")
+            .accessibilityIdentifier("audioPlayer.downloadAction.\(asset.id)")
+        }
     }
 
     // MARK: - Track Metadata
 
     private var trackMetadata: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             Text(model.activeTrackTitle)
-                .font(AppFont.latoBold(size: 24, relativeTo: .title2))
+                .font(AppFont.latoBold(size: 20, relativeTo: .title3))
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
+                .lineLimit(1)
                 .minimumScaleFactor(0.85)
 
             Text(model.activeTrackSubtitle)
-                .font(AppFont.inter(size: 15, relativeTo: .subheadline))
+                .font(AppFont.inter(size: 14, relativeTo: .subheadline))
                 .foregroundStyle(HomeScreenPalette.textSecondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(1)
@@ -350,7 +445,7 @@ struct AudioPlayerView: View {
                         Text(formatTimer(remaining))
                             .font(AppFont.inter(size: 14, relativeTo: .footnote, weight: .semibold))
                     } else {
-                        Text("Timer")
+                        Text("Fade Timer")
                             .font(AppFont.inter(size: 14, relativeTo: .footnote, weight: .medium))
                     }
                 }
@@ -390,7 +485,7 @@ struct AudioPlayerView: View {
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("View grounding guide")
+            .accessibilityLabel("Grounding support")
             .accessibilityIdentifier("audioPlayer.groundingTips")
         }
     }
@@ -402,22 +497,46 @@ struct AudioPlayerView: View {
             HomeScreenPalette.backgroundTop.ignoresSafeArea()
 
             VStack(spacing: 18) {
-                Text("Sleep Timer")
+                Text("Sleep Fade-Away Timer")
                     .font(AppFont.latoBold(size: 20, relativeTo: .headline))
                     .foregroundStyle(.white)
                     .padding(.top, 16)
 
-                Text("Audio will automatically fade and stop after the selected time.")
+                Text("Audio will gently fade out and stop after the selected duration.")
                     .font(AppFont.inter(size: 14, relativeTo: .footnote))
                     .foregroundStyle(HomeScreenPalette.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
 
-                HStack(spacing: 12) {
-                    timerButton(minutes: 5, label: "5m")
-                    timerButton(minutes: 15, label: "15m")
-                    timerButton(minutes: 30, label: "30m")
-                    timerButton(minutes: 60, label: "60m")
+                VStack(spacing: 10) {
+                    HStack(spacing: 10) {
+                        timerButton(minutes: 15, label: "15m")
+                        timerButton(minutes: 30, label: "30m")
+                        timerButton(minutes: 45, label: "45m")
+                        timerButton(minutes: 60, label: "60m")
+                    }
+
+                    Button {
+                        model.setSleepTimerToEndOfTrack()
+                        showSleepTimerPicker = false
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "forward.end.fill")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("End of track")
+                                .font(AppFont.inter(size: 15, relativeTo: .body, weight: .semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(HomeScreenPalette.card)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(HomeScreenPalette.cardBorder, lineWidth: 1.2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("audioPlayer.timer.endOfTrack")
                 }
                 .padding(.horizontal, 20)
 
@@ -431,6 +550,7 @@ struct AudioPlayerView: View {
                     .padding(.top, 4)
                 }
             }
+            .padding(.bottom, 16)
         }
     }
 
@@ -451,15 +571,16 @@ struct AudioPlayerView: View {
                 }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("audioPlayer.timer.\(minutes)m")
     }
 
     private var groundingTipsSheet: some View {
         ZStack {
             HomeScreenPalette.backgroundTop.ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 18) {
                 HStack {
-                    Text("Grounding Technique (5-4-3-2-1)")
+                    Text("Grounding Support")
                         .font(AppFont.latoBold(size: 20, relativeTo: .title3))
                         .foregroundStyle(.white)
                     Spacer()
@@ -472,11 +593,28 @@ struct AudioPlayerView: View {
                     }
                 }
 
-                Text("When coming out of an episode, gently bring your awareness to your senses:")
+                Button {
+                    showGroundingTips = false
+                    model.open(.grounding)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                        Text("Start Grounding Audio")
+                    }
+                    .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(HomeScreenPalette.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("audioPlayer.startGroundingFromTips")
+
+                Text("When feeling fear or disorientation, use the 5-4-3-2-1 technique:")
                     .font(AppFont.inter(size: 15, relativeTo: .body))
                     .foregroundStyle(HomeScreenPalette.textSecondary)
 
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
                     groundingStep(number: "5", text: "Look around for 5 things you can see.")
                     groundingStep(number: "4", text: "Notice 4 things you can physically feel.")
                     groundingStep(number: "3", text: "Listen for 3 distinct sounds around you.")
@@ -513,6 +651,31 @@ struct AudioPlayerView: View {
     private var isPlaying: Bool {
         if case .playing = model.playbackState {
             return true
+        }
+        return false
+    }
+
+    private func isCurrentTrack(_ asset: CatalogAudioAsset) -> Bool {
+        if let selected = model.selectedCatalogAsset {
+            return selected.id == asset.id
+        }
+        if case let .playing(id) = model.playbackState {
+            return id == asset.id
+        }
+        if case let .paused(id) = model.playbackState {
+            return id == asset.id
+        }
+        return false
+    }
+
+    private func isTrackPlaying(_ asset: CatalogAudioAsset) -> Bool {
+        if isCurrentTrack(asset) {
+            switch model.playbackState {
+            case .playing, .streaming:
+                return true
+            default:
+                return false
+            }
         }
         return false
     }
