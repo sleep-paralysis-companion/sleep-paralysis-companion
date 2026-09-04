@@ -1106,9 +1106,15 @@ final class AppModel {
 
     func sleepTrackDurationText(for asset: CatalogAudioAsset) -> String {
         switch asset.category {
-        case .quickUnwind: "15 min"
-        case .slowUnwind: "1 hr 15 min"
-        default: asset.durationText
+        case .quickUnwind:
+            "15 min"
+        case .slowUnwind:
+            "1 hr 15 min"
+        default:
+            let totalSeconds = max(0, asset.durationMilliseconds / 1000)
+            let mins = totalSeconds / 60
+            let secs = totalSeconds % 60
+            return String(format: "%d:%02d", mins, secs)
         }
     }
 
@@ -1122,6 +1128,15 @@ final class AppModel {
             return true
         }
         return false
+    }
+
+    func downloadSleepTrack(_ asset: CatalogAudioAsset) async {
+        guard asset.delivery == .downloadable else { return }
+        do {
+            _ = try await catalogAudioService.download(asset, progress: { _ in })
+        } catch {
+            feedbackMessage = "Could not download track for offline listening."
+        }
     }
 
     func beginManualGrounding() {

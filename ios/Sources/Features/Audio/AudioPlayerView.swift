@@ -291,7 +291,7 @@ struct AudioPlayerView: View {
         } else {
             Button {
                 Task {
-                    _ = try? await model.catalogAudioService.download(asset)
+                    await model.downloadSleepTrack(asset)
                 }
             } label: {
                 Image(systemName: "arrow.down.circle")
@@ -678,7 +678,7 @@ struct AudioPlayerView: View {
     private func isTrackPlaying(_ asset: CatalogAudioAsset) -> Bool {
         if isCurrentTrack(asset) {
             switch model.playbackState {
-            case .playing, .streaming:
+            case .playing:
                 return true
             default:
                 return false
