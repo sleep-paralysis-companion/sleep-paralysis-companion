@@ -723,12 +723,9 @@ struct CatalogAudioLibraryView: View {
 
     private var cardsSection: some View {
         VStack(spacing: 16) {
-            let userFacingAssets = model.displayedAssets
-            let primaryTracks = userFacingAssets.filter {
-                $0.category == .quickUnwind || $0.category == .slowUnwind || $0.category == .secondSleep
+            let displayTracks = model.displayedAssets.filter {
+                $0.category == .quickUnwind || $0.category == .secondSleep || $0.category == .slowUnwind
             }
-
-            let displayTracks = primaryTracks.isEmpty ? userFacingAssets : primaryTracks
 
             ForEach(displayTracks) { asset in
                 BedtimeAudioCard(
@@ -739,29 +736,6 @@ struct CatalogAudioLibraryView: View {
                         model.selectedBedtimeAssetID = asset.id
                     }
                 )
-            }
-
-            let otherTracks = userFacingAssets.filter {
-                $0.category == .morningAlarm
-            }
-            if !otherTracks.isEmpty, !primaryTracks.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("More audio & alarm sounds")
-                        .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.75))
-                        .padding(.top, 12)
-
-                    ForEach(otherTracks) { asset in
-                        BedtimeAudioCard(
-                            asset: asset,
-                            model: model,
-                            isSelected: model.selectedBedtimeAssetID == asset.id,
-                            onSelect: {
-                                model.selectedBedtimeAssetID = asset.id
-                            }
-                        )
-                    }
-                }
             }
         }
     }

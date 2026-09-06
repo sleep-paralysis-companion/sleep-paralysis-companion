@@ -209,6 +209,7 @@ final class AppModel {
         SleepSessionAudioIntentBridge.shared.install { [weak self] action in
             self?.performSleepSessionAudioAction(action, presentSession: false) ?? false
         }
+        SystemAudioAssets.ensureDefaultSoundsInstalled()
     }
 
     func activate(restoredState: String = "") {
@@ -513,6 +514,15 @@ final class AppModel {
 
     func editSchedule(_ schedule: ScheduleUIModel) {
         selectedAlarmScheduleID = schedule.id
+    }
+
+    func openAlarmScheduleSummary() {
+        if !alarmSchedules.isEmpty {
+            open(.alarmHistory)
+        } else {
+            beginNewSchedule()
+            open(.alarmScheduleEditor)
+        }
     }
 
     private func scheduleValidationFeedback(proposed: [AlarmSchedule]) -> String? {
@@ -1137,7 +1147,7 @@ final class AppModel {
 
     var sleepPlayerTracks: [CatalogAudioAsset] {
         CatalogAudioManifest.bundled.assets.filter {
-            $0.category == .quickUnwind || $0.category == .slowUnwind
+            $0.category == .quickUnwind || $0.category == .secondSleep || $0.category == .slowUnwind
         }
     }
 
@@ -1145,6 +1155,8 @@ final class AppModel {
         switch asset.category {
         case .quickUnwind:
             return "15 min"
+        case .secondSleep:
+            return "6 min"
         case .slowUnwind:
             return "1 hr 15 min"
         default:

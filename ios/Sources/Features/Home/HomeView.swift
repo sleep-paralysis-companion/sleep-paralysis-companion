@@ -88,12 +88,7 @@ struct HomeView: View {
 
     private var scheduleSummary: some View {
         Button {
-            if let active = model.alarmSchedules.first(where: { $0.isEnabled }) ?? model.alarmSchedules.first {
-                model.editSchedule(ScheduleUIModel(active))
-            } else {
-                model.beginNewSchedule()
-            }
-            model.open(.alarmScheduleEditor)
+            model.openAlarmScheduleSummary()
         } label: {
             HomeScheduleSummary(
                 sleep: time(hour: model.sleepSchedule.sleepHour, minute: model.sleepSchedule.sleepMinute),
@@ -102,7 +97,7 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Sleep schedule summary")
-        .accessibilityHint("Opens alarm schedule editor")
+        .accessibilityHint(model.alarmSchedules.isEmpty ? "Opens alarm schedule editor" : "Opens alarm history")
         .accessibilityIdentifier("home.scheduleSummary")
     }
 

@@ -148,6 +148,8 @@ private struct AppRouteDestinationView: View {
             }
         case .sleepSchedule:
             SleepScheduleView(model: model)
+                .toolbarColorScheme(.dark, for: .navigationBar)
+                .tint(.white)
         case .alarmHistory:
             AlarmHistoryView(
                 schedules: model.scheduleUIModels,

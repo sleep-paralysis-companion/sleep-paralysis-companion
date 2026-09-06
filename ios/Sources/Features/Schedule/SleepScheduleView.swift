@@ -25,6 +25,8 @@ struct SleepScheduleView: View {
         .navigationTitle(isOnboarding ? "" : "Sleep schedule")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(isOnboarding ? .hidden : .visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .tint(.white)
         .task {
             guard !initialized else { return }
             schedule = model.sleepSchedule

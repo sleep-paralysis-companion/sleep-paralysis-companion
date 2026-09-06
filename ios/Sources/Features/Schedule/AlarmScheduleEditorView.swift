@@ -16,6 +16,7 @@ struct AlarmScheduleEditorView: View {
     @State private var draft: ScheduleUIModel
     @State private var isDeleteConfirmationPresented = false
     @State private var isAudioExpanded = false
+    @State private var selectedNotificationAssetID: String
 
     init(
         schedule: ScheduleUIModel? = nil,
@@ -34,6 +35,10 @@ struct AlarmScheduleEditorView: View {
             initialDraft.gentleWakeLeadMinutes = 15
         }
         _draft = State(initialValue: initialDraft)
+        _selectedNotificationAssetID = State(
+            initialValue: AlarmSoundSelectionStore.selectedNotificationAssetID()
+                ?? SystemAudioAssets.defaultNotificationAssetID
+        )
     }
 
     var body: some View {
@@ -140,7 +145,12 @@ struct AlarmScheduleEditorView: View {
                         symbol: "moon.fill",
                         color: Color(red: 0.72, green: 0.58, blue: 1)
                     )
+
                     ScheduleTimeWheelPicker(hour: $draft.bedtimeHour, minute: $draft.bedtimeMinute)
+
+                    Divider().overlay(Color.white.opacity(0.10))
+
+                    bedtimeNotificationSoundMenu
                 }
             }
 
@@ -375,6 +385,60 @@ struct AlarmScheduleEditorView: View {
         }
     }
 
+    private var bedtimeNotificationSoundMenu: some View {
+        Menu {
+            Button("Gentle chime (SPCNotification)") {
+                selectedNotificationAssetID = SystemAudioAssets.defaultNotificationAssetID
+                AlarmSoundSelectionStore.selectNotification(
+                    assetID: SystemAudioAssets.defaultNotificationAssetID,
+                    fileName: SystemAudioAssets.defaultNotificationFileName
+                )
+            }
+
+            Button("System default sound") {
+                selectedNotificationAssetID = "system-default"
+                AlarmSoundSelectionStore.selectNotification(
+                    assetID: "system-default",
+                    fileName: "default"
+                )
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "bell.fill")
+                    .foregroundStyle(Color(red: 0.72, green: 0.57, blue: 1))
+                    .frame(width: 26)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Reminder sound")
+                        .font(AppTypographyRole.control)
+
+                    Text(notificationSoundTitle)
+                        .font(AppTypographyRole.footnote)
+                        .foregroundStyle(Color.white.opacity(0.55))
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.45))
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reminder sound")
+        .accessibilityValue(notificationSoundTitle)
+        .accessibilityIdentifier("schedule.editor.notificationSound")
+    }
+
+    private var notificationSoundTitle: String {
+        selectedNotificationAssetID == "system-default"
+            ? "System default sound"
+            : "Gentle chime (SPCNotification)"
+    }
+
     private var wakeUpWindowMenu: some View {
         reminderMenu(
             title: "Wake-up window",
@@ -561,7 +625,7 @@ private struct ScheduleTimeWheelPicker: View {
             )
 
             Text(":")
-                .font(AppFont.latoBold(size: 26, relativeTo: .title2))
+                .font(AppFont.latoBold(size: 32, relativeTo: .title))
                 .foregroundStyle(Color.white.opacity(0.55))
 
             ScheduleWheelColumn(
@@ -608,14 +672,20 @@ private struct ScheduleWheelColumn<Value: Hashable>: View {
     var body: some View {
         Picker("", selection: $selection) {
             ForEach(values, id: \.self) { value in
+                let isSelected = value == selection
                 Text(label(value))
-                    .font(AppFont.latoBold(size: 26, relativeTo: .title2))
+                    .font(
+                        isSelected
+                            ? AppFont.latoBold(size: 36, relativeTo: .title)
+                            : AppFont.inter(size: 22, relativeTo: .body, weight: .regular)
+                    )
+                    .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.40))
                     .tag(value)
             }
         }
         .pickerStyle(.wheel)
         .labelsHidden()
-        .frame(width: 80, height: 130)
+        .frame(width: 84, height: 160)
         .mask(
             LinearGradient(
                 stops: [

@@ -91,9 +91,32 @@ nonisolated enum SystemAudioAssets {
         )
     }
 
+    static func ensureDefaultSoundsInstalled() {
+        guard let bundled = bundledURL(for: defaultNotificationFileName) else { return }
+        do {
+            let soundsDirectory = try soundsDirectoryURL()
+            let destination = soundsDirectory.appendingPathComponent(
+                defaultNotificationFileName,
+                isDirectory: false
+            )
+            if !FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.copyItem(at: bundled, to: destination)
+                try SystemProtectedFileApplicator().applyProtection(
+                    to: destination,
+                    kind: .downloadedAudioCache
+                )
+            }
+        } catch {
+            // Graceful fallback remains in place if copy is not completed.
+        }
+    }
+
     static func notificationSound() -> UNNotificationSound {
         let requested = AlarmSoundSelectionStore.selectedNotificationSoundFileName()
             ?? defaultNotificationFileName
+        if requested == "default" || requested.isEmpty {
+            return .default
+        }
         if localURL(for: requested).map({ isUsable($0, role: .notification) }) == true {
             return UNNotificationSound(named: UNNotificationSoundName(rawValue: requested))
         }
@@ -104,9 +127,7 @@ nonisolated enum SystemAudioAssets {
                 named: UNNotificationSoundName(rawValue: defaultNotificationFileName)
             )
         }
-        return UNNotificationSound(
-            named: UNNotificationSoundName(rawValue: defaultNotificationFileName)
-        )
+        return .default
     }
 
     static func preflightNotification(resourceName: String) throws -> URL {
