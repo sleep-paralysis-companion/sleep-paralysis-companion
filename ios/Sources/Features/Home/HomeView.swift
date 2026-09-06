@@ -136,42 +136,41 @@ struct HomeView: View {
         .accessibilityIdentifier("home.editSchedule")
     }
 
+    @ViewBuilder
     private var quickActions: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(spacing: 16) {
-                    quickAction(
-                        title: "Calm your mind",
-                        detail: "Recovery audio",
-                        icon: "waveform",
-                        identifier: "home.calmYourMind",
-                        action: { model.startUnwindSession() }
-                    )
-                    quickAction(
-                        title: "Morning check-in",
-                        detail: "Start your day mindfully",
-                        icon: "sunrise",
-                        identifier: "home.morningCheckIn",
-                        action: { model.open(.morningCheckIn) }
-                    )
-                }
-            } else {
-                HStack(alignment: .top, spacing: 16) {
-                    quickAction(
-                        title: "Calm your mind",
-                        detail: "Recovery audio",
-                        icon: "waveform",
-                        identifier: "home.calmYourMind",
-                        action: { model.startUnwindSession() }
-                    )
-                    quickAction(
-                        title: "Morning\ncheck-in",
-                        detail: "Start your day\nmindfully",
-                        icon: "sunrise",
-                        identifier: "home.morningCheckIn",
-                        action: { model.open(.morningCheckIn) }
-                    )
-                }
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 16) {
+                quickAction(
+                    title: "Calm your mind",
+                    detail: "Recovery audio",
+                    icon: "waveform",
+                    identifier: "home.calmYourMind",
+                    action: { model.startUnwindSession() }
+                )
+                quickAction(
+                    title: "Morning check-in",
+                    detail: "Start your day mindfully",
+                    icon: "sunrise",
+                    identifier: "home.morningCheckIn",
+                    action: { model.open(.morningCheckIn) }
+                )
+            }
+        } else {
+            HStack(alignment: .top, spacing: 16) {
+                quickAction(
+                    title: "Calm your mind",
+                    detail: "Recovery audio",
+                    icon: "waveform",
+                    identifier: "home.calmYourMind",
+                    action: { model.startUnwindSession() }
+                )
+                quickAction(
+                    title: "Morning\ncheck-in",
+                    detail: "Start your day\nmindfully",
+                    icon: "sunrise",
+                    identifier: "home.morningCheckIn",
+                    action: { model.open(.morningCheckIn) }
+                )
             }
         }
     }
