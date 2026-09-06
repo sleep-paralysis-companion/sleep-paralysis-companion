@@ -170,6 +170,7 @@ struct HomeView: View {
                     action: { model.open(.morningCheckIn) }
                 )
             }
+            .accessibilityHidden(true)
         }
     }
 
@@ -202,6 +203,7 @@ struct HomeView: View {
             .padding(.bottom, 18)
             .frame(maxWidth: .infinity, minHeight: 185, alignment: .topLeading)
             .background(HomeScreenPalette.card)
+            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
