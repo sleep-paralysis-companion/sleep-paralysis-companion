@@ -101,6 +101,10 @@ final class SleepPlayerTests: XCTestCase {
 
         _ = model.performSleepSessionAudioAction(.startOrResume, presentSession: false)
 
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+        XCTAssertEqual(model.activeTrackTitle, "Calming Second Sleep")
+        XCTAssertEqual(model.activeTrackSubtitle, "Gentle guided recovery session")
+
         model.beginManualGrounding()
         XCTAssertTrue(
             model.path.contains(.grounding),
@@ -128,5 +132,16 @@ final class SleepPlayerTests: XCTestCase {
             XCTAssertTrue(model.isSleepTrackDownloaded(slow))
             XCTAssertEqual(model.sleepTrackDurationText(for: slow), "1 hr 15 min")
         }
+    }
+
+    @MainActor
+    func testPlayCalmingSecondSleepAudioSelectsAndPlaysSecondSleep() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.playCalmingSecondSleepAudio()
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+        XCTAssertEqual(model.activeTrackTitle, "Calming Second Sleep")
+        XCTAssertEqual(model.activeTrackSubtitle, "Gentle guided recovery session")
     }
 }

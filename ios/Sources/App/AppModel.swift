@@ -911,6 +911,9 @@ final class AppModel {
 
     var activeTrackTitle: String {
         if let selectedCatalogAsset {
+            if selectedCatalogAsset.id == "second-sleep" {
+                return "Calming Second Sleep"
+            }
             return selectedCatalogAsset.title
         }
         if case let .playing(id) = playbackState {
@@ -953,6 +956,9 @@ final class AppModel {
 
     var activeTrackSubtitle: String {
         if let selectedCatalogAsset {
+            if selectedCatalogAsset.id == "second-sleep" {
+                return "Gentle guided recovery session"
+            }
             return selectedCatalogAsset.shortDescription
         }
         if case let .playing(id) = playbackState {

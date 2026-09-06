@@ -104,7 +104,9 @@ nonisolated enum SystemAudioAssets {
                 named: UNNotificationSoundName(rawValue: defaultNotificationFileName)
             )
         }
-        return .default
+        return UNNotificationSound(
+            named: UNNotificationSoundName(rawValue: defaultNotificationFileName)
+        )
     }
 
     static func preflightNotification(resourceName: String) throws -> URL {

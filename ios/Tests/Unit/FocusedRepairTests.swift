@@ -511,7 +511,8 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
         model.setLaunchDestinationForTesting(.home)
 
         guard let quickUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "quick-unwind" }),
-              let slowUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "slow-unwind" })
+              let slowUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "slow-unwind" }),
+              let secondSleep = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "second-sleep" })
         else {
             XCTFail("Missing bundled unwind assets in manifest")
             return
@@ -526,5 +527,10 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
         XCTAssertEqual(model.activeTrackTitle, "Slow Unwind")
         XCTAssertEqual(model.activeTrackSubtitle, slowUnwind.shortDescription)
         XCTAssertEqual(model.selectedCatalogAsset?.id, "slow-unwind")
+
+        model.selectCatalogAsset(secondSleep)
+        XCTAssertEqual(model.activeTrackTitle, "Calming Second Sleep")
+        XCTAssertEqual(model.activeTrackSubtitle, "Gentle guided recovery session")
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
     }
 }

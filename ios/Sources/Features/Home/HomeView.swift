@@ -30,19 +30,22 @@ struct HomeView: View {
                     HomeHeroCard(
                         playbackState: model.playbackState,
                         onPlayPause: {
-                            model.open(.grounding)
+                            if case .playing = model.playbackState {
+                                model.togglePlayback()
+                            } else if case .paused = model.playbackState {
+                                model.togglePlayback()
+                            } else {
+                                model.playCalmingSecondSleepAudio()
+                            }
                         },
                         onOpenPlayer: {
                             model.startSleepSession()
-                        }
+                        },
                     )
                     .padding(.top, 16)
                     .padding(.bottom, -12)
 
                     VStack(spacing: 16) {
-                        if showsSleepSessionAction {
-                            sleepSessionAction
-                        }
                         scheduleSummary
                         editScheduleLink
                         quickActions
@@ -59,53 +62,6 @@ struct HomeView: View {
         .preferredColorScheme(.dark)
         .toolbar(.hidden, for: .navigationBar)
         .accessibilityIdentifier("home.screen")
-    }
-
-    private var sleepSessionAction: some View {
-        Button {
-            model.startSleepSession()
-        } label: {
-            HStack(spacing: 16) {
-                HomeIconBadge(systemImage: "bed.double.fill")
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(model.sleepSessionStartedAt == nil ? "Start sleep session" : "Return to sleep session")
-                        .font(AppFont.inter(size: 18, relativeTo: .headline, weight: .semibold))
-                    Text("Keep grounding audio available from the Lock Screen")
-                        .font(AppFont.inter(size: 14, relativeTo: .footnote))
-                        .foregroundStyle(HomeScreenPalette.textSecondary)
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 21, weight: .medium))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, minHeight: 82)
-            .background {
-                LinearGradient(
-                    colors: [HomeScreenPalette.card, HomeScreenPalette.iconBackground],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(HomeScreenPalette.accent.opacity(0.72), lineWidth: 1.2)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(
-            model.sleepSessionStartedAt == nil
-                ? "Opens sleep mode and starts its Lock Screen companion."
-                : "Returns to the active sleep session."
-        )
-        .accessibilityIdentifier("sleepSession.start")
     }
 
     private var header: some View {
@@ -301,7 +257,7 @@ private struct HomeHeroCard: View {
                         .font(AppFont.latoBold(size: 24, relativeTo: .title2))
                         .multilineTextAlignment(.center)
 
-                    Text("Keep grounding companion ready on your Lock Screen")
+                    Text("Keep post episode support ready on your lock screen")
                         .font(AppFont.inter(size: 17, relativeTo: .body))
                         .foregroundStyle(HomeScreenPalette.textSecondary)
                         .multilineTextAlignment(.center)
