@@ -559,8 +559,11 @@ final class ApplicationLaunchUITests: XCTestCase {
         while Date() < deadline, !element.isHittable {
             Thread.sleep(forTimeInterval: 0.2)
         }
-        for _ in 0 ..< 8 where !element.isHittable {
+        for _ in 0 ..< 8 where !element.isHittable || (
+            app.otherElements["app.tab.shell"].exists && element.frame.midY > 700
+        ) {
             swipeUp(in: app)
+            Thread.sleep(forTimeInterval: 0.3)
         }
         XCTAssertTrue(element.isHittable)
     }
