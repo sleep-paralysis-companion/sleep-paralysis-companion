@@ -91,7 +91,6 @@ function bundledAsset(
   };
 }
 
-// deno-lint-ignore no-unused-vars
 export function downloadableAsset(
   id: string,
   category: AudioCatalogAsset["category"],
