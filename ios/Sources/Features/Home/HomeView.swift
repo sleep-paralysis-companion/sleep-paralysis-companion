@@ -29,6 +29,7 @@ struct HomeView: View {
 
                     HomeHeroCard(
                         playbackState: model.playbackState,
+                        showsSleepSessionAction: showsSleepSessionAction,
                         onPlayPause: {
                             if case .playing = model.playbackState {
                                 model.togglePlayback()
@@ -141,12 +142,14 @@ struct HomeView: View {
                     title: "Calm your mind",
                     detail: "Recovery audio",
                     icon: "waveform",
+                    identifier: "home.calmYourMind",
                     action: { model.startUnwindSession() }
                 )
                 quickAction(
                     title: "Morning\ncheck-in",
                     detail: "Start your day\nmindfully",
                     icon: "sunrise",
+                    identifier: "home.morningCheckIn",
                     action: { model.open(.morningCheckIn) }
                 )
             }
@@ -156,12 +159,14 @@ struct HomeView: View {
                     title: "Calm your mind",
                     detail: "Recovery audio",
                     icon: "waveform",
+                    identifier: "home.calmYourMind",
                     action: { model.startUnwindSession() }
                 )
                 quickAction(
                     title: "Morning check-in",
                     detail: "Start your day mindfully",
                     icon: "sunrise",
+                    identifier: "home.morningCheckIn",
                     action: { model.open(.morningCheckIn) }
                 )
             }
@@ -172,6 +177,7 @@ struct HomeView: View {
         title: String,
         detail: String,
         icon: String,
+        identifier: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -205,6 +211,7 @@ struct HomeView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title.replacingOccurrences(of: "\n", with: " "))
         .accessibilityHint(detail.replacingOccurrences(of: "\n", with: " "))
+        .accessibilityIdentifier(identifier ?? title.replacingOccurrences(of: "\n", with: " "))
     }
 
     private var greeting: String {
@@ -234,6 +241,7 @@ private struct HomeBackground: View {
 
 private struct HomeHeroCard: View {
     let playbackState: GroundingPlaybackState
+    var showsSleepSessionAction: Bool = false
     let onPlayPause: () -> Void
     let onOpenPlayer: () -> Void
 
@@ -270,9 +278,13 @@ private struct HomeHeroCard: View {
             .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Enable Lock Screen")
-        .accessibilityHint("Starts sleep session and activates Lock Screen companion.")
-        .accessibilityIdentifier("home.heroCard")
+        .accessibilityLabel(showsSleepSessionAction ? "Start sleep session" : "Enable Lock Screen")
+        .accessibilityHint(
+            showsSleepSessionAction
+                ? "Opens sleep mode and starts its Lock Screen companion."
+                : "Starts sleep session and activates Lock Screen companion."
+        )
+        .accessibilityIdentifier(showsSleepSessionAction ? "sleepSession.start" : "home.heroCard")
         .overlay {
             GeometryReader { proxy in
                 Button(action: onPlayPause) {

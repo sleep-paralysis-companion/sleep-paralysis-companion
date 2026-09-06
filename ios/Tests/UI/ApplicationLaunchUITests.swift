@@ -158,8 +158,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 12))
 
         app.buttons["home.manualEpisode"].tap()
-        XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
-        app.buttons["Optional check-in"].tap()
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 4))
+        let checkInAction = app.buttons["home.morningCheckIn"]
+        makeHittable(checkInAction, in: app)
+        checkInAction.tap()
         XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
     }
 
@@ -237,9 +239,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.buttons["home.manualEpisode"].tap()
 
-        XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
-        capture("13-grounding", app: app)
-        app.buttons["Optional check-in"].tap()
+        let checkInAction = app.buttons["home.morningCheckIn"]
+        makeHittable(checkInAction, in: app)
+        checkInAction.tap()
 
         XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
         capture("14-morning-check-in", app: app)
@@ -310,6 +312,14 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Manage subscription"].waitForExistence(timeout: 8))
         capture("19-me-settings", app: app)
         app.terminate()
+
+        captureRoute(
+            "grounding",
+            name: "13-grounding",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["Grounding"] }
+        )
 
         captureRoute(
             "edit-questionnaire",
