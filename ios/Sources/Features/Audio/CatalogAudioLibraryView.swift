@@ -737,6 +737,29 @@ struct CatalogAudioLibraryView: View {
                     }
                 )
             }
+
+            let otherTracks = model.displayedAssets.filter {
+                $0.category == .morningAlarm
+            }
+            if !otherTracks.isEmpty, !displayTracks.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("More audio & alarm sounds")
+                        .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .padding(.top, 12)
+
+                    ForEach(otherTracks) { asset in
+                        BedtimeAudioCard(
+                            asset: asset,
+                            model: model,
+                            isSelected: model.selectedBedtimeAssetID == asset.id,
+                            onSelect: {
+                                model.selectedBedtimeAssetID = asset.id
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 
