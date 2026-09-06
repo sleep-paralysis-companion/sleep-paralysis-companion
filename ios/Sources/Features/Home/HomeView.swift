@@ -40,7 +40,7 @@ struct HomeView: View {
                         },
                         onOpenPlayer: {
                             model.startSleepSession()
-                        },
+                        }
                     )
                     .padding(.top, 16)
                     .padding(.bottom, -12)
