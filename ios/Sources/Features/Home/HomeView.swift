@@ -14,6 +14,7 @@ enum HomeScreenPalette {
 }
 
 struct HomeView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var model: AppModel
     var showsSleepSessionAction = false
 
@@ -136,41 +137,42 @@ struct HomeView: View {
     }
 
     private var quickActions: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 32) {
-                quickAction(
-                    title: "Calm your mind",
-                    detail: "Recovery audio",
-                    icon: "waveform",
-                    identifier: "home.calmYourMind",
-                    action: { model.startUnwindSession() }
-                )
-                quickAction(
-                    title: "Morning\ncheck-in",
-                    detail: "Start your day\nmindfully",
-                    icon: "sunrise",
-                    identifier: "home.morningCheckIn",
-                    action: { model.open(.morningCheckIn) }
-                )
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 16) {
+                    quickAction(
+                        title: "Calm your mind",
+                        detail: "Recovery audio",
+                        icon: "waveform",
+                        identifier: "home.calmYourMind",
+                        action: { model.startUnwindSession() }
+                    )
+                    quickAction(
+                        title: "Morning check-in",
+                        detail: "Start your day mindfully",
+                        icon: "sunrise",
+                        identifier: "home.morningCheckIn",
+                        action: { model.open(.morningCheckIn) }
+                    )
+                }
+            } else {
+                HStack(alignment: .top, spacing: 16) {
+                    quickAction(
+                        title: "Calm your mind",
+                        detail: "Recovery audio",
+                        icon: "waveform",
+                        identifier: "home.calmYourMind",
+                        action: { model.startUnwindSession() }
+                    )
+                    quickAction(
+                        title: "Morning\ncheck-in",
+                        detail: "Start your day\nmindfully",
+                        icon: "sunrise",
+                        identifier: "home.morningCheckIn",
+                        action: { model.open(.morningCheckIn) }
+                    )
+                }
             }
-
-            VStack(spacing: 16) {
-                quickAction(
-                    title: "Calm your mind",
-                    detail: "Recovery audio",
-                    icon: "waveform",
-                    identifier: "home.calmYourMind",
-                    action: { model.startUnwindSession() }
-                )
-                quickAction(
-                    title: "Morning check-in",
-                    detail: "Start your day mindfully",
-                    icon: "sunrise",
-                    identifier: "home.morningCheckIn",
-                    action: { model.open(.morningCheckIn) }
-                )
-            }
-            .accessibilityHidden(true)
         }
     }
 
@@ -255,38 +257,41 @@ private struct HomeHeroCard: View {
     }
 
     var body: some View {
-        Button(action: onOpenPlayer) {
-            ZStack {
-                Image("HomeHero")
-                    .resizable()
-                    .scaledToFit()
-                    .accessibilityHidden(true)
+        ZStack {
+            Button(action: onOpenPlayer) {
+                ZStack {
+                    Image("HomeHero")
+                        .resizable()
+                        .scaledToFit()
+                        .accessibilityHidden(true)
 
-                VStack(spacing: 10) {
-                    Text("Enable Lock screen")
-                        .font(AppFont.latoBold(size: 24, relativeTo: .title2))
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 10) {
+                        Text("Enable Lock screen")
+                            .font(AppFont.latoBold(size: 24, relativeTo: .title2))
+                            .multilineTextAlignment(.center)
 
-                    Text("Keep post episode support ready on your lock screen")
-                        .font(AppFont.inter(size: 17, relativeTo: .body))
-                        .foregroundStyle(HomeScreenPalette.textSecondary)
-                        .multilineTextAlignment(.center)
+                        Text("Keep post episode support ready on your lock screen")
+                            .font(AppFont.inter(size: 17, relativeTo: .body))
+                            .foregroundStyle(HomeScreenPalette.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 52)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 52)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .aspectRatio(860.0 / 586.0, contentMode: .fit)
+                .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             }
-            .aspectRatio(860.0 / 586.0, contentMode: .fit)
-            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .buttonStyle(.plain)
+            .accessibilityLabel(showsSleepSessionAction ? "Start sleep session" : "Enable Lock Screen")
+            .accessibilityHint(
+                showsSleepSessionAction
+                    ? "Opens sleep mode and starts its Lock Screen companion."
+                    : "Starts sleep session and activates Lock Screen companion."
+            )
+            .accessibilityIdentifier(showsSleepSessionAction ? "sleepSession.start" : "home.heroCard")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(showsSleepSessionAction ? "Start sleep session" : "Enable Lock Screen")
-        .accessibilityHint(
-            showsSleepSessionAction
-                ? "Opens sleep mode and starts its Lock Screen companion."
-                : "Starts sleep session and activates Lock Screen companion."
-        )
-        .accessibilityIdentifier(showsSleepSessionAction ? "sleepSession.start" : "home.heroCard")
+        .aspectRatio(860.0 / 586.0, contentMode: .fit)
         .overlay {
             GeometryReader { proxy in
                 Button(action: onPlayPause) {

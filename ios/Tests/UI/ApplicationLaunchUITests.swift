@@ -159,11 +159,11 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         app.buttons["home.manualEpisode"].tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 4))
-        let checkInAction = app.buttons.matching(identifier: "home.morningCheckIn").firstMatch
+        let checkInAction = app.buttons["home.morningCheckIn"]
         makeHittable(checkInAction, in: app)
         checkInAction.tap()
         XCTAssertTrue(
-            app.otherElements.matching(identifier: "morningCheckIn.flow").firstMatch.waitForExistence(timeout: 8)
+            app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8)
         )
     }
 
@@ -241,12 +241,12 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.buttons["home.manualEpisode"].tap()
 
-        let checkInAction = app.buttons.matching(identifier: "home.morningCheckIn").firstMatch
+        let checkInAction = app.buttons["home.morningCheckIn"]
         makeHittable(checkInAction, in: app)
         checkInAction.tap()
 
         XCTAssertTrue(
-            app.otherElements.matching(identifier: "morningCheckIn.flow").firstMatch.waitForExistence(timeout: 8)
+            app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8)
         )
         capture("14-morning-check-in", app: app)
         app.buttons["No, I did not have an episode"].tap()
@@ -596,6 +596,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let allowButton = springboard.buttons["Allow"]
         if allowButton.waitForExistence(timeout: 3) {
+            allowButton.tap()
+        }
+        if allowButton.waitForExistence(timeout: 2) {
             allowButton.tap()
         }
     }
