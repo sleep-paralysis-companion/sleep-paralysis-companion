@@ -159,6 +159,7 @@ final class ApplicationLaunchUITests: XCTestCase {
 
         app.buttons["home.manualEpisode"].tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 4))
+        swipeUp(in: app)
         let checkInAction = app.buttons["home.morningCheckIn"]
         makeHittable(checkInAction, in: app)
         checkInAction.tap()
@@ -240,6 +241,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.buttons["schedule.history.back"].tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.buttons["home.manualEpisode"].tap()
+        swipeUp(in: app)
 
         let checkInAction = app.buttons["home.morningCheckIn"]
         makeHittable(checkInAction, in: app)
@@ -559,9 +561,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         while Date() < deadline, !element.isHittable {
             Thread.sleep(forTimeInterval: 0.2)
         }
-        for _ in 0 ..< 8 where !element.isHittable || (
-            app.otherElements["app.tab.shell"].exists && element.frame.midY > 700
-        ) {
+        for _ in 0 ..< 8 where !element.isHittable || element.frame.midY > 680 {
             swipeUp(in: app)
             Thread.sleep(forTimeInterval: 0.3)
         }
