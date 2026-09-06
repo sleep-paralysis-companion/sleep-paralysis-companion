@@ -162,7 +162,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         let checkInAction = app.buttons.matching(identifier: "home.morningCheckIn").firstMatch
         makeHittable(checkInAction, in: app)
         checkInAction.tap()
-        XCTAssertTrue(app.otherElements.matching(identifier: "morningCheckIn.flow").firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.otherElements.matching(identifier: "morningCheckIn.flow").firstMatch.waitForExistence(timeout: 8)
+        )
     }
 
     @MainActor
