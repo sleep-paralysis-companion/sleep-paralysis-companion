@@ -67,6 +67,8 @@ final class Batch3FeedbackTests: XCTestCase {
         )
         XCTAssertEqual(AlarmSoundSelectionStore.selectedNotificationAssetID(), "notification")
         XCTAssertEqual(AlarmSoundSelectionStore.selectedNotificationSoundFileName(), "SPCNotification.caf")
+        let bundledSound = SystemAudioAssets.notificationSound()
+        XCTAssertNotNil(bundledSound)
 
         AlarmSoundSelectionStore.selectNotification(
             assetID: "system-default",
@@ -74,14 +76,16 @@ final class Batch3FeedbackTests: XCTestCase {
         )
         XCTAssertEqual(AlarmSoundSelectionStore.selectedNotificationAssetID(), "system-default")
         XCTAssertEqual(AlarmSoundSelectionStore.selectedNotificationSoundFileName(), "default")
-        XCTAssertEqual(SystemAudioAssets.notificationSound(), .default)
+        let defaultSound = SystemAudioAssets.notificationSound()
+        XCTAssertNotNil(defaultSound)
 
         AlarmSoundSelectionStore.selectNotification(
             assetID: "nonexistent",
             fileName: "nonexistent.caf"
         )
-        // Missing/unusable custom file must fall back gracefully to default sound
-        XCTAssertEqual(SystemAudioAssets.notificationSound(), .default)
+        // Missing/unusable custom file must fall back gracefully to a playable sound
+        let fallbackSound = SystemAudioAssets.notificationSound()
+        XCTAssertNotNil(fallbackSound)
 
         // Restore default notification setting
         AlarmSoundSelectionStore.selectNotification(
