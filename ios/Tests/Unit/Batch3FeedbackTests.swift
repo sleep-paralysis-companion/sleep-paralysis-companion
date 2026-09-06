@@ -102,7 +102,7 @@ final class Batch3FeedbackTests: XCTestCase {
         XCTAssertEqual(tracks.count, 3, "Calming audios must strictly contain 3 tracks")
 
         let trackIDs = Set(tracks.map(\.id))
-        let expectedIDs: Set<String> = ["quick-unwind", "second-sleep", "slow-unwind"]
+        let expectedIDs = Set(["quick-unwind", "second-sleep", "slow-unwind"])
         XCTAssertEqual(trackIDs, expectedIDs)
 
         XCTAssertFalse(
