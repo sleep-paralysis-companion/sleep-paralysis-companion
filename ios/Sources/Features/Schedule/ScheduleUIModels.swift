@@ -87,10 +87,12 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
     var repeatWeekdaysMask: Int
     var bedtimeReminderLeadMinutes: Int?
     var gentleWakeLeadMinutes: Int?
+
     var preWakeReminderLeadMinutes: Int? {
         get { gentleWakeLeadMinutes }
         set { gentleWakeLeadMinutes = newValue }
     }
+
     var wakeAudio: ScheduleUIAudioSelection
     var isEnabled: Bool
     var snoozeMinutes: Int?
@@ -190,10 +192,13 @@ nonisolated extension ScheduleUIModel {
         case let .some(selection):
             switch selection.reference {
             case let .bundled(resourceName):
-                let isDefault = resourceName == SystemAudioAssets.defaultAlarmFileName
-                    || resourceName == SystemAudioAssets.defaultAlarmAssetID
-                let normalizedID = isDefault ? SystemAudioAssets.defaultAlarmAssetID : resourceName
-                .bundled(id: normalizedID, title: "Gentle rise")
+                .bundled(
+                    id: (resourceName == SystemAudioAssets.defaultAlarmFileName
+                        || resourceName == SystemAudioAssets.defaultAlarmAssetID)
+                        ? SystemAudioAssets.defaultAlarmAssetID
+                        : resourceName,
+                    title: "Gentle rise"
+                )
             case let .catalog(assetID, _):
                 .catalog(id: assetID, title: "Downloaded sound", isAvailable: selection.isAvailableOnThisDevice)
             case let .personal(clipID):

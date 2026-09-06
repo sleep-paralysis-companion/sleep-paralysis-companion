@@ -92,7 +92,7 @@ final class AppModel {
             let normalizedID = canonicalAudioID(for: option)
             let normalizedTitle = option.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
-            if !seenIDs.contains(normalizedID) && !seenTitles.contains(normalizedTitle) {
+            if !seenIDs.contains(normalizedID), !seenTitles.contains(normalizedTitle) {
                 seenIDs.insert(normalizedID)
                 seenTitles.insert(normalizedTitle)
                 deduplicated.append(option)

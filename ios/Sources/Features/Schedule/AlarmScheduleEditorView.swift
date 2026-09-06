@@ -483,7 +483,7 @@ struct AlarmScheduleEditorView: View {
 
         for choice in combined {
             let normalizedTitle = choice.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if !seenIDs.contains(choice.id) && !seenTitles.contains(normalizedTitle) {
+            if !seenIDs.contains(choice.id), !seenTitles.contains(normalizedTitle) {
                 seenIDs.insert(choice.id)
                 seenTitles.insert(normalizedTitle)
                 deduplicated.append(choice)
