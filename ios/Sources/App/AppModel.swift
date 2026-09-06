@@ -68,7 +68,8 @@ final class AppModel {
             .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
         ]
         if let selectedID = AlarmSoundSelectionStore.selectedAlarmAssetID(),
-           selectedID != SystemAudioAssets.defaultAlarmAssetID
+           selectedID != SystemAudioAssets.defaultAlarmAssetID,
+           selectedID != SystemAudioAssets.defaultAlarmFileName
         {
             result.append(.catalog(id: selectedID, title: "Downloaded sound", isAvailable: true))
         }
@@ -79,7 +80,37 @@ final class AppModel {
                 isAvailable: clip.availability == .ready
             )
         })
-        return result
+        return deduplicatedAudioSelections(result)
+    }
+
+    private func deduplicatedAudioSelections(_ options: [ScheduleUIAudioSelection]) -> [ScheduleUIAudioSelection] {
+        var seenIDs = Set<String>()
+        var seenTitles = Set<String>()
+        var deduplicated: [ScheduleUIAudioSelection] = []
+
+        for option in options {
+            let normalizedID = canonicalAudioID(for: option)
+            let normalizedTitle = option.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+            if !seenIDs.contains(normalizedID) && !seenTitles.contains(normalizedTitle) {
+                seenIDs.insert(normalizedID)
+                seenTitles.insert(normalizedTitle)
+                deduplicated.append(option)
+            }
+        }
+        return deduplicated
+    }
+
+    private func canonicalAudioID(for option: ScheduleUIAudioSelection) -> String {
+        switch option {
+        case let .bundled(id, _):
+            if id == SystemAudioAssets.defaultAlarmAssetID || id == SystemAudioAssets.defaultAlarmFileName {
+                return "bundled:\(SystemAudioAssets.defaultAlarmAssetID)"
+            }
+            return option.id
+        default:
+            return option.id
+        }
     }
 
     func updatePartnerContact(_ contact: PartnerContact?) {

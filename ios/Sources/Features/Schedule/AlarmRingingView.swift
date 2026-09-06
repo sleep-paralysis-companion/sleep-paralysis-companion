@@ -25,6 +25,7 @@ struct AlarmRingingView: View {
         }
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
+        .interactiveDismissDisabled(true)
         .onAppear {
             if !reduceMotion {
                 withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
@@ -62,10 +63,10 @@ struct AlarmRingingView: View {
     private var actionButtons: some View {
         VStack(spacing: 16) {
             Button {
-                model.snoozeAlarm()
+                model.snoozeAlarm(minutes: 9)
             } label: {
                 VStack(spacing: 4) {
-                    Text("Snooze")
+                    Text("Snooze (9 min)")
                         .font(AppFont.inter(size: 20, relativeTo: .headline, weight: .semibold))
                     Text("Ring again in 9 minutes")
                         .font(AppFont.inter(size: 14, relativeTo: .footnote))
@@ -80,9 +81,9 @@ struct AlarmRingingView: View {
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Snooze alarm")
+            .accessibilityLabel("Snooze (9 min)")
             .accessibilityHint("Pauses the alarm and rings again in 9 minutes.")
-            .accessibilityIdentifier("alarm.ringing.snooze")
+            .accessibilityIdentifier("alarm.snooze")
 
             Button {
                 model.stopAlarm()
@@ -114,7 +115,7 @@ struct AlarmRingingView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Stop alarm")
             .accessibilityHint("Dismisses the alarm and immediately opens the morning questionnaire.")
-            .accessibilityIdentifier("alarm.ringing.stop")
+            .accessibilityIdentifier("alarm.stop")
         }
     }
 

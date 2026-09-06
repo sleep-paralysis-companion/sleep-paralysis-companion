@@ -86,7 +86,11 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
     /// Sunday is bit 0, matching `Calendar`'s weekday component.
     var repeatWeekdaysMask: Int
     var bedtimeReminderLeadMinutes: Int?
-    var preWakeReminderLeadMinutes: Int?
+    var gentleWakeLeadMinutes: Int?
+    var preWakeReminderLeadMinutes: Int? {
+        get { gentleWakeLeadMinutes }
+        set { gentleWakeLeadMinutes = newValue }
+    }
     var wakeAudio: ScheduleUIAudioSelection
     var isEnabled: Bool
     var snoozeMinutes: Int?
@@ -103,7 +107,8 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         wakeMinute: Int,
         repeatWeekdaysMask: Int,
         bedtimeReminderLeadMinutes: Int?,
-        preWakeReminderLeadMinutes: Int?,
+        gentleWakeLeadMinutes: Int? = nil,
+        preWakeReminderLeadMinutes: Int? = nil,
         wakeAudio: ScheduleUIAudioSelection,
         isEnabled: Bool,
         snoozeMinutes: Int? = 9,
@@ -118,7 +123,7 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         self.wakeMinute = wakeMinute
         self.repeatWeekdaysMask = repeatWeekdaysMask
         self.bedtimeReminderLeadMinutes = bedtimeReminderLeadMinutes
-        self.preWakeReminderLeadMinutes = preWakeReminderLeadMinutes
+        self.gentleWakeLeadMinutes = gentleWakeLeadMinutes ?? preWakeReminderLeadMinutes ?? (kind == .sleep ? 15 : nil)
         self.wakeAudio = wakeAudio
         self.isEnabled = isEnabled
         self.snoozeMinutes = snoozeMinutes
@@ -185,7 +190,10 @@ nonisolated extension ScheduleUIModel {
         case let .some(selection):
             switch selection.reference {
             case let .bundled(resourceName):
-                .bundled(id: resourceName, title: "Gentle rise")
+                let isDefault = resourceName == SystemAudioAssets.defaultAlarmFileName
+                    || resourceName == SystemAudioAssets.defaultAlarmAssetID
+                let normalizedID = isDefault ? SystemAudioAssets.defaultAlarmAssetID : resourceName
+                .bundled(id: normalizedID, title: "Gentle rise")
             case let .catalog(assetID, _):
                 .catalog(id: assetID, title: "Downloaded sound", isAvailable: selection.isAvailableOnThisDevice)
             case let .personal(clipID):
@@ -205,7 +213,7 @@ nonisolated extension ScheduleUIModel {
             wakeMinute: schedule.wakeMinute,
             repeatWeekdaysMask: schedule.weekdaysMask,
             bedtimeReminderLeadMinutes: schedule.bedtimeReminderLeadMinutes,
-            preWakeReminderLeadMinutes: schedule.wakeReminderLeadMinutes,
+            gentleWakeLeadMinutes: schedule.wakeReminderLeadMinutes ?? 15,
             wakeAudio: audio,
             isEnabled: schedule.isEnabled,
             oneTimeDate: schedule.oneTimeDate?.date()
@@ -271,7 +279,7 @@ nonisolated extension ScheduleUIModel {
             weekdaysMask: kind == .wakeOnlyOneTime ? 0 : repeatWeekdaysMask,
             oneTimeDate: kind == .wakeOnlyOneTime ? oneTimeDate.map { AlarmLocalDate(date: $0) } : nil,
             bedtimeReminderLeadMinutes: kind == .sleep ? bedtimeReminderLeadMinutes : nil,
-            wakeReminderLeadMinutes: preWakeReminderLeadMinutes,
+            wakeReminderLeadMinutes: gentleWakeLeadMinutes,
             finalWakeAlarmEnabled: true,
             wakeAudio: audio,
             isEnabled: isEnabled,

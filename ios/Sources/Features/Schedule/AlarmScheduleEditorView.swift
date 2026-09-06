@@ -29,7 +29,11 @@ struct AlarmScheduleEditorView: View {
         self.onCancel = onCancel
         self.onSave = onSave
         self.onDelete = onDelete
-        _draft = State(initialValue: schedule ?? .newSleep)
+        var initialDraft = schedule ?? .newSleep
+        if initialDraft.gentleWakeLeadMinutes == nil {
+            initialDraft.gentleWakeLeadMinutes = 15
+        }
+        _draft = State(initialValue: initialDraft)
     }
 
     var body: some View {
@@ -240,6 +244,11 @@ struct AlarmScheduleEditorView: View {
                     Divider().overlay(Color.white.opacity(0.10))
                 }
 
+                // Wake-up window (gentle pre-wake lead)
+                wakeUpWindowMenu
+
+                Divider().overlay(Color.white.opacity(0.10))
+
                 // Audio Selection
                 audioSection
 
@@ -366,16 +375,36 @@ struct AlarmScheduleEditorView: View {
         }
     }
 
+    private var wakeUpWindowMenu: some View {
+        reminderMenu(
+            title: "Wake-up window",
+            selection: Binding(
+                get: { draft.gentleWakeLeadMinutes ?? 15 },
+                set: { draft.gentleWakeLeadMinutes = $0 }
+            ),
+            options: [5, 10, 15, 30],
+            identifier: "schedule.editor.wakeUpWindow",
+            includeOff: false
+        )
+    }
+
     private func reminderMenu(
         title: String,
         selection: Binding<Int?>,
         options: [Int],
-        identifier: String
+        identifier: String,
+        includeOff: Bool = true
     ) -> some View {
-        Menu {
-            Button("Off") { selection.wrappedValue = nil }
+        let isWakeUpWindow = title == "Wake-up window"
+        let displaySuffix = isWakeUpWindow ? " min" : " min before"
+        let menuSuffix = isWakeUpWindow ? " min" : " minutes before"
+
+        return Menu {
+            if includeOff {
+                Button("Off") { selection.wrappedValue = nil }
+            }
             ForEach(options, id: \.self) { option in
-                Button("\(option) minutes before") {
+                Button("\(option)\(menuSuffix)") {
                     selection.wrappedValue = option
                 }
             }
@@ -388,7 +417,7 @@ struct AlarmScheduleEditorView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(AppTypographyRole.control)
-                    Text(selection.wrappedValue.map { "\($0) min before" } ?? "Off")
+                    Text(selection.wrappedValue.map { "\($0)\(displaySuffix)" } ?? "Off")
                         .font(AppTypographyRole.footnote)
                         .foregroundStyle(Color.white.opacity(0.55))
                 }
@@ -402,7 +431,7 @@ struct AlarmScheduleEditorView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
-        .accessibilityValue(selection.wrappedValue.map { "\($0) minutes before" } ?? "Off")
+        .accessibilityValue(selection.wrappedValue.map { "\($0)\(menuSuffix)" } ?? "Off")
         .accessibilityIdentifier(identifier)
     }
 
@@ -424,6 +453,9 @@ struct AlarmScheduleEditorView: View {
                     if draft.bedtimeReminderLeadMinutes == nil {
                         draft.bedtimeReminderLeadMinutes = 15
                     }
+                    if draft.gentleWakeLeadMinutes == nil {
+                        draft.gentleWakeLeadMinutes = 15
+                    }
                 }
             }
         )
@@ -437,11 +469,39 @@ struct AlarmScheduleEditorView: View {
     }
 
     private var audioChoices: [ScheduleUIAudioSelection] {
-        let choices = audioOptions.isEmpty
+        let baseChoices = audioOptions.isEmpty
             ? [.bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise")]
             : audioOptions
-        guard !choices.contains(where: { $0.id == draft.wakeAudio.id }) else { return choices }
-        return [draft.wakeAudio] + choices
+
+        var combined: [ScheduleUIAudioSelection] = []
+        combined.append(normalizeAudioSelection(draft.wakeAudio))
+        combined.append(contentsOf: baseChoices.map(normalizeAudioSelection))
+
+        var seenIDs = Set<String>()
+        var seenTitles = Set<String>()
+        var deduplicated: [ScheduleUIAudioSelection] = []
+
+        for choice in combined {
+            let normalizedTitle = choice.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if !seenIDs.contains(choice.id) && !seenTitles.contains(normalizedTitle) {
+                seenIDs.insert(choice.id)
+                seenTitles.insert(normalizedTitle)
+                deduplicated.append(choice)
+            }
+        }
+        return deduplicated
+    }
+
+    private func normalizeAudioSelection(_ selection: ScheduleUIAudioSelection) -> ScheduleUIAudioSelection {
+        switch selection {
+        case let .bundled(id, _):
+            if id == SystemAudioAssets.defaultAlarmAssetID || id == SystemAudioAssets.defaultAlarmFileName {
+                return .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise")
+            }
+            return selection
+        default:
+            return selection
+        }
     }
 
     private func cancel() {
