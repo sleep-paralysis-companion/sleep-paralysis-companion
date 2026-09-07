@@ -4,7 +4,9 @@ enum SleepTabMode: String, CaseIterable, Identifiable, Sendable {
     case sleep
     case wakeOnly
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 }
 
 struct SleepTabView: View {
@@ -78,7 +80,7 @@ struct SleepTabView: View {
                     draft.repeatWeekdaysMask = 0b0111_1111
                 }
                 draft.oneTimeDate = nil
-                if draft.bedtimeHour == 0 && draft.bedtimeMinute == 0 {
+                if draft.bedtimeHour == 0, draft.bedtimeMinute == 0 {
                     draft.bedtimeHour = model.sleepSchedule.sleepHour
                     draft.bedtimeMinute = model.sleepSchedule.sleepMinute
                 }
