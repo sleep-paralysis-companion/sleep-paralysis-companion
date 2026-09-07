@@ -12,7 +12,7 @@ public struct NativeBackGestureEnabler: UIViewControllerRepresentable {
         NativeBackGestureController(coordinator: context.coordinator)
     }
 
-    public func updateUIViewController(_ uiViewController: NativeBackGestureController, context: Context) {
+    public func updateUIViewController(_ uiViewController: NativeBackGestureController, context _: Context) {
         uiViewController.configureNavigationController()
     }
 
@@ -36,7 +36,7 @@ public struct NativeBackGestureEnabler: UIViewControllerRepresentable {
             navigationController.interactivePopGestureRecognizer?.delegate = self
         }
 
-        public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        public func gestureRecognizerShouldBegin(_: UIGestureRecognizer) -> Bool {
             guard let navigationController else { return false }
 
             // 1. Root Controller Freeze Prevention:
@@ -56,8 +56,8 @@ public struct NativeBackGestureEnabler: UIViewControllerRepresentable {
         }
 
         public func gestureRecognizer(
-            _ gestureRecognizer: UIGestureRecognizer,
-            shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+            _: UIGestureRecognizer,
+            shouldBeRequiredToFailBy _: UIGestureRecognizer
         ) -> Bool {
             // 3. Gesture Priority:
             // Ensure edge swipes are not swallowed by child horizontal ScrollViews, carousels, or sliders.
@@ -65,8 +65,8 @@ public struct NativeBackGestureEnabler: UIViewControllerRepresentable {
         }
 
         public func gestureRecognizer(
-            _ gestureRecognizer: UIGestureRecognizer,
-            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+            _: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith _: UIGestureRecognizer
         ) -> Bool {
             false
         }
@@ -85,7 +85,7 @@ public final class NativeBackGestureController: UIViewController {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
