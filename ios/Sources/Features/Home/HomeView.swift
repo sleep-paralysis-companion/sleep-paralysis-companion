@@ -16,7 +16,7 @@ enum HomeScreenPalette {
 struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var model: AppModel
-    var showsSleepSessionAction = false
+    var showsSleepSessionAction = true
 
     var body: some View {
         ZStack {

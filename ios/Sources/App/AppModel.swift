@@ -47,13 +47,16 @@ final class AppModel {
     var isAlarmRinging: Bool = false
     private(set) var ringingAlarmSchedule: ScheduleUIModel?
     @ObservationIgnored var alarmSnoozeTask: Task<Void, Never>?
+    @ObservationIgnored private var tonightScheduleSaveTask: Task<Void, Never>?
+    @ObservationIgnored private var fallbackTonightScheduleID = UUID()
+    private(set) var tonightScheduleID: UUID?
     var profile: LocalProfile?
     var settings: AppSettings?
 
     var scheduleUIModels: [ScheduleUIModel] {
         alarmSchedules
             .sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
-            .map(ScheduleUIModel.init)
+            .map { ScheduleUIModel($0) }
     }
 
     var selectedScheduleUIModel: ScheduleUIModel? {
@@ -61,6 +64,92 @@ final class AppModel {
               let schedule = alarmSchedules.first(where: { $0.id == selectedAlarmScheduleID })
         else { return nil }
         return ScheduleUIModel(schedule)
+    }
+
+    var tonightSchedule: AlarmSchedule? {
+        guard !alarmSchedules.isEmpty else { return nil }
+
+        let now = Date()
+        let calendar = Calendar.current
+        let todayLocalDate = AlarmLocalDate(date: now, calendar: calendar)
+        let tomorrowLocalDate = todayLocalDate.addingDays(1, calendar: calendar)
+        let todayWeekday = todayLocalDate.date(in: calendar).map { calendar.component(.weekday, from: $0) }
+            ?? calendar.component(.weekday, from: now)
+        let tomorrowWeekday = (todayWeekday % 7) + 1
+        let currentMinuteOfDay = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
+
+        let matchingEnabled = alarmSchedules.filter { schedule in
+            guard schedule.isEnabled else { return false }
+            switch schedule.kind {
+            case .sleep:
+                let matchesTonightBedtime = (schedule.weekdaysMask & (1 << (todayWeekday - 1))) != 0
+                let yesterdayWeekday = ((todayWeekday + 5) % 7) + 1
+                let matchesLastNightBedtime = currentMinuteOfDay < (schedule.wakeHour * 60 + schedule.wakeMinute)
+                    && (schedule.weekdaysMask & (1 << (yesterdayWeekday - 1))) != 0
+                return matchesTonightBedtime || matchesLastNightBedtime
+            case .wakeOnlyRecurring:
+                let matchesTomorrowWake = (schedule.weekdaysMask & (1 << (tomorrowWeekday - 1))) != 0
+                let matchesTodayWake = currentMinuteOfDay < (schedule.wakeHour * 60 + schedule.wakeMinute)
+                    && (schedule.weekdaysMask & (1 << (todayWeekday - 1))) != 0
+                return matchesTomorrowWake || matchesTodayWake
+            case .wakeOnlyOneTime:
+                let matchesTodayOneTime = currentMinuteOfDay < (schedule.wakeHour * 60 + schedule.wakeMinute)
+                    && schedule.oneTimeDate == todayLocalDate
+                return schedule.oneTimeDate == tomorrowLocalDate || matchesTodayOneTime
+            }
+        }
+
+        if let primary = matchingEnabled.first(where: { $0.kind == .sleep }) {
+            tonightScheduleID = primary.id
+            return primary
+        }
+        if let primary = matchingEnabled.first {
+            tonightScheduleID = primary.id
+            return primary
+        }
+
+        if let tonightScheduleID,
+           let existingTonight = alarmSchedules.first(where: { $0.id == tonightScheduleID })
+        {
+            return existingTonight
+        }
+
+        if let enabledSleep = alarmSchedules.first(where: { $0.isEnabled && $0.kind == .sleep }) {
+            tonightScheduleID = enabledSleep.id
+            return enabledSleep
+        }
+        if let enabled = alarmSchedules.first(where: { $0.isEnabled }) {
+            tonightScheduleID = enabled.id
+            return enabled
+        }
+        if let sleep = alarmSchedules.first(where: { $0.kind == .sleep }) {
+            tonightScheduleID = sleep.id
+            return sleep
+        }
+
+        let fallback = alarmSchedules.first
+        tonightScheduleID = fallback?.id
+        return fallback
+    }
+
+    var tonightScheduleUIModel: ScheduleUIModel {
+        if let schedule = tonightSchedule {
+            return ScheduleUIModel(schedule)
+        }
+        return ScheduleUIModel(
+            id: fallbackTonightScheduleID,
+            name: "Sleep schedule",
+            kind: .sleep,
+            bedtimeHour: sleepSchedule.sleepHour,
+            bedtimeMinute: sleepSchedule.sleepMinute,
+            wakeHour: sleepSchedule.wakeHour,
+            wakeMinute: sleepSchedule.wakeMinute,
+            repeatWeekdaysMask: sleepSchedule.weekdaysMask == 0 ? 0b0111_1111 : sleepSchedule.weekdaysMask,
+            bedtimeReminderLeadMinutes: sleepSchedule.reminderLeadMinutes == 0 ? 15 : sleepSchedule.reminderLeadMinutes,
+            preWakeReminderLeadMinutes: sleepSchedule.wakeReminderLeadMinutes ?? 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: sleepSchedule.isEnabled
+        )
     }
 
     var scheduleAudioOptions: [ScheduleUIAudioSelection] {
@@ -608,6 +697,82 @@ final class AppModel {
         _ = saveScheduleUI(draft)
     }
 
+    func saveTonightScheduleDraft(_ draft: ScheduleUIModel, immediate: Bool = false) {
+        guard let profileID, let userID else { return }
+        let existing = alarmSchedules.first(where: { $0.id == draft.id })
+        let schedule = draft.domainValue(
+            profileID: profileID,
+            existing: existing,
+            sortOrder: existing?.sortOrder ?? 0
+        )
+        var proposed = alarmSchedules.filter { $0.id != schedule.id }
+        proposed.append(schedule)
+        if let message = scheduleValidationFeedback(proposed: proposed) {
+            feedbackMessage = message
+            return
+        }
+
+        tonightScheduleID = schedule.id
+        alarmSchedules = proposed.sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
+        updateLegacyScheduleSummary()
+
+        tonightScheduleSaveTask?.cancel()
+        tonightScheduleSaveTask = Task { @MainActor [weak self] in
+            if !immediate {
+                do {
+                    try await Task.sleep(nanoseconds: 500_000_000)
+                } catch {
+                    return
+                }
+            }
+            guard let self else { return }
+            defer { self.tonightScheduleSaveTask = nil }
+            do {
+                var storedSchedule = schedule
+                if case let .personal(clipID)? = storedSchedule.wakeAudio?.reference {
+                    if let clip = self.personalClips.first(where: { $0.id == clipID }) {
+                        let prepared = try await self.personalAlarmAudioPreparer.prepare(clip: clip)
+                        storedSchedule.wakeAudio?.localFileName = prepared.fileName
+                        storedSchedule.wakeAudio?.availability = .available
+                    } else {
+                        storedSchedule.wakeAudio?.localFileName = nil
+                        storedSchedule.wakeAudio?.availability = .unavailableOnThisDevice
+                    }
+                    if let index = self.alarmSchedules.firstIndex(where: { $0.id == storedSchedule.id }) {
+                        self.alarmSchedules[index] = storedSchedule
+                    }
+                }
+                let persisted = try await self.store.saveAlarmSchedule(
+                    storedSchedule,
+                    profileID: profileID,
+                    userID: userID
+                )
+                if let index = self.alarmSchedules.firstIndex(where: { $0.id == persisted.id }) {
+                    self.alarmSchedules[index] = persisted
+                }
+                try await self.refreshScheduleDeviceArtifacts(requestPermission: false)
+                if storedSchedule.wakeAudioIsUnavailableOnThisDevice, storedSchedule.isEnabled {
+                    self.feedbackMessage =
+                        "Audio unavailable on this device. " +
+                        "Choose another sound before this alarm can be scheduled."
+                }
+            } catch {
+                self.feedbackMessage = "The schedule could not be saved. Nothing was replaced."
+            }
+        }
+    }
+
+    func toggleTonightSchedule(enabled: Bool) {
+        var draft = tonightScheduleUIModel
+        draft.isEnabled = enabled
+        saveTonightScheduleDraft(draft, immediate: true)
+    }
+
+    func flushTonightScheduleSave() {
+        guard let task = tonightScheduleSaveTask, !task.isCancelled else { return }
+        saveTonightScheduleDraft(tonightScheduleUIModel, immediate: true)
+    }
+
     func deleteScheduleUI(_ value: ScheduleUIModel) {
         guard let profileID, let userID,
               alarmSchedules.contains(where: { $0.id == value.id })
@@ -617,6 +782,9 @@ final class AppModel {
         alarmSchedules.removeAll { $0.id == value.id }
         if selectedAlarmScheduleID == value.id {
             selectedAlarmScheduleID = nil
+        }
+        if tonightScheduleID == value.id {
+            tonightScheduleID = nil
         }
         updateLegacyScheduleSummary()
         Task { @MainActor [weak self] in
@@ -670,8 +838,11 @@ final class AppModel {
     }
 
     private func updateLegacyScheduleSummary() {
-        guard let schedule = alarmSchedules.first(where: { $0.kind == .sleep && $0.isEnabled })
+        guard let schedule = tonightSchedule
+            ?? alarmSchedules.first(where: { $0.isEnabled && $0.kind == .sleep })
+            ?? alarmSchedules.first(where: { $0.isEnabled })
             ?? alarmSchedules.first(where: { $0.kind == .sleep })
+            ?? alarmSchedules.first
         else { return }
         sleepSchedule = SleepSchedule(schedule)
     }

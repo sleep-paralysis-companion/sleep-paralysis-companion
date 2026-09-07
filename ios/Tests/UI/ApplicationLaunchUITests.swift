@@ -262,12 +262,25 @@ final class ApplicationLaunchUITests: XCTestCase {
         returnHome.tap()
 
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
-        app.buttons["Sleep"].tap()
-        XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["home.manualEpisode"].exists)
-        XCTAssertTrue(app.buttons["home.scheduleSummary"].exists)
+        let sleepTab = app.buttons["Sleep"]
+        XCTAssertTrue(sleepTab.waitForExistence(timeout: 8))
+        makeHittable(sleepTab, in: app)
+        sleepTab.tap()
+        XCTAssertTrue(app.otherElements["sleep.tab"].waitForExistence(timeout: 8))
+        let masterToggle = app.switches["sleep.masterToggle"].exists
+            ? app.switches["sleep.masterToggle"]
+            : app.buttons["sleep.masterToggle"]
+        XCTAssertTrue(masterToggle.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.otherElements["sleep.fullAlarmPage"].exists)
         XCTAssertTrue(app.buttons["home.editSchedule"].exists)
         capture("15-sleep-tab", app: app)
+
+        let homeTabForSession = app.buttons["Home"]
+        XCTAssertTrue(homeTabForSession.waitForExistence(timeout: 8))
+        makeHittable(homeTabForSession, in: app)
+        homeTabForSession.tap()
+
+        XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
         app.buttons["sleepSession.start"].tap()
 
         let activeSleepSession = app.otherElements["sleepSession.active"]
@@ -297,10 +310,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Activity tracking is coming soon."].exists)
         capture("16-activity-tab", app: app)
 
-        let sleepTab = app.buttons["Sleep"]
-        XCTAssertTrue(sleepTab.waitForExistence(timeout: 8))
-        makeHittable(sleepTab, in: app)
-        sleepTab.tap()
+        let homeTab = app.buttons["Home"]
+        XCTAssertTrue(homeTab.waitForExistence(timeout: 8))
+        makeHittable(homeTab, in: app)
+        homeTab.tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         capture("17-home-tab", app: app)
 

@@ -7,7 +7,7 @@ struct AppTabShellView: View {
         ZStack {
             switch model.selectedTab {
             case .sleep:
-                HomeView(model: model, showsSleepSessionAction: true)
+                SleepTabView(model: model)
             case .journal:
                 ComingSoonView(
                     title: "Journal",
@@ -15,7 +15,7 @@ struct AppTabShellView: View {
                     systemImage: "book.closed"
                 )
             case .home:
-                HomeView(model: model)
+                HomeView(model: model, showsSleepSessionAction: true)
             case .activity:
                 ComingSoonView(
                     title: "Activity",
