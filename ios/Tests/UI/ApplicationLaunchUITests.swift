@@ -158,9 +158,14 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 12))
 
         app.buttons["home.manualEpisode"].tap()
-        XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
-        app.buttons["Optional check-in"].tap()
-        XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 4))
+        swipeUp(in: app)
+        let checkInAction = app.buttons["home.morningCheckIn"]
+        makeHittable(checkInAction, in: app)
+        checkInAction.tap()
+        XCTAssertTrue(
+            app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8)
+        )
     }
 
     @MainActor
@@ -236,12 +241,15 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.buttons["schedule.history.back"].tap()
         XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
         app.buttons["home.manualEpisode"].tap()
+        swipeUp(in: app)
 
-        XCTAssertTrue(app.navigationBars["Grounding"].waitForExistence(timeout: 8))
-        capture("13-grounding", app: app)
-        app.buttons["Optional check-in"].tap()
+        let checkInAction = app.buttons["home.morningCheckIn"]
+        makeHittable(checkInAction, in: app)
+        checkInAction.tap()
 
-        XCTAssertTrue(app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            app.otherElements["morningCheckIn.flow"].waitForExistence(timeout: 8)
+        )
         capture("14-morning-check-in", app: app)
         app.buttons["No, I did not have an episode"].tap()
         let noSleepHelp = app.buttons.matching(
@@ -310,6 +318,14 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Manage subscription"].waitForExistence(timeout: 8))
         capture("19-me-settings", app: app)
         app.terminate()
+
+        captureRoute(
+            "grounding",
+            name: "13-grounding",
+            namespace: namespace,
+            userID: userID,
+            expected: { $0.navigationBars["Grounding"] }
+        )
 
         captureRoute(
             "edit-questionnaire",
@@ -545,8 +561,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         while Date() < deadline, !element.isHittable {
             Thread.sleep(forTimeInterval: 0.2)
         }
-        for _ in 0 ..< 8 where !element.isHittable {
+        for _ in 0 ..< 8 where !element.isHittable || element.frame.midY > 680 {
             swipeUp(in: app)
+            Thread.sleep(forTimeInterval: 0.3)
         }
         XCTAssertTrue(element.isHittable)
     }
@@ -582,6 +599,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let allowButton = springboard.buttons["Allow"]
         if allowButton.waitForExistence(timeout: 3) {
+            allowButton.tap()
+        }
+        if allowButton.waitForExistence(timeout: 2) {
             allowButton.tap()
         }
     }

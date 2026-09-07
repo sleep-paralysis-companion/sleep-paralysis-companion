@@ -86,7 +86,13 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
     /// Sunday is bit 0, matching `Calendar`'s weekday component.
     var repeatWeekdaysMask: Int
     var bedtimeReminderLeadMinutes: Int?
-    var preWakeReminderLeadMinutes: Int?
+    var gentleWakeLeadMinutes: Int?
+
+    var preWakeReminderLeadMinutes: Int? {
+        get { gentleWakeLeadMinutes }
+        set { gentleWakeLeadMinutes = newValue }
+    }
+
     var wakeAudio: ScheduleUIAudioSelection
     var isEnabled: Bool
     var snoozeMinutes: Int?
@@ -103,7 +109,8 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         wakeMinute: Int,
         repeatWeekdaysMask: Int,
         bedtimeReminderLeadMinutes: Int?,
-        preWakeReminderLeadMinutes: Int?,
+        gentleWakeLeadMinutes: Int? = nil,
+        preWakeReminderLeadMinutes: Int? = nil,
         wakeAudio: ScheduleUIAudioSelection,
         isEnabled: Bool,
         snoozeMinutes: Int? = 9,
@@ -118,7 +125,7 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         self.wakeMinute = wakeMinute
         self.repeatWeekdaysMask = repeatWeekdaysMask
         self.bedtimeReminderLeadMinutes = bedtimeReminderLeadMinutes
-        self.preWakeReminderLeadMinutes = preWakeReminderLeadMinutes
+        self.gentleWakeLeadMinutes = gentleWakeLeadMinutes ?? preWakeReminderLeadMinutes ?? (kind == .sleep ? 15 : nil)
         self.wakeAudio = wakeAudio
         self.isEnabled = isEnabled
         self.snoozeMinutes = snoozeMinutes
@@ -163,12 +170,11 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
             && (0 ... 59).contains(bedtimeMinute)
             && (0 ... 23).contains(wakeHour)
             && (0 ... 59).contains(wakeMinute)
-        let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         switch kind {
         case .sleep:
-            return validTime && hasName && repeatWeekdaysMask != 0
+            return validTime && repeatWeekdaysMask != 0
         case .wakeOnly:
-            return validTime && hasName && oneTimeDate != nil
+            return validTime && oneTimeDate != nil
         }
     }
 
@@ -186,7 +192,13 @@ nonisolated extension ScheduleUIModel {
         case let .some(selection):
             switch selection.reference {
             case let .bundled(resourceName):
-                .bundled(id: resourceName, title: "Gentle rise")
+                .bundled(
+                    id: (resourceName == SystemAudioAssets.defaultAlarmFileName
+                        || resourceName == SystemAudioAssets.defaultAlarmAssetID)
+                        ? SystemAudioAssets.defaultAlarmAssetID
+                        : resourceName,
+                    title: "Gentle rise"
+                )
             case let .catalog(assetID, _):
                 .catalog(id: assetID, title: "Downloaded sound", isAvailable: selection.isAvailableOnThisDevice)
             case let .personal(clipID):
@@ -206,7 +218,7 @@ nonisolated extension ScheduleUIModel {
             wakeMinute: schedule.wakeMinute,
             repeatWeekdaysMask: schedule.weekdaysMask,
             bedtimeReminderLeadMinutes: schedule.bedtimeReminderLeadMinutes,
-            preWakeReminderLeadMinutes: schedule.wakeReminderLeadMinutes,
+            gentleWakeLeadMinutes: schedule.wakeReminderLeadMinutes ?? 15,
             wakeAudio: audio,
             isEnabled: schedule.isEnabled,
             oneTimeDate: schedule.oneTimeDate?.date()
@@ -253,10 +265,17 @@ nonisolated extension ScheduleUIModel {
                 return selection
             } ?? .defaultBundled
         }
+        let resolvedName: String = {
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+            return self.kind == .sleep ? "Sleep schedule" : "Wake up"
+        }()
         return AlarmSchedule(
             id: id,
             profileID: profileID,
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            name: resolvedName,
             kind: kind,
             bedtimeHour: kind == .sleep ? bedtimeHour : nil,
             bedtimeMinute: kind == .sleep ? bedtimeMinute : nil,
@@ -265,7 +284,7 @@ nonisolated extension ScheduleUIModel {
             weekdaysMask: kind == .wakeOnlyOneTime ? 0 : repeatWeekdaysMask,
             oneTimeDate: kind == .wakeOnlyOneTime ? oneTimeDate.map { AlarmLocalDate(date: $0) } : nil,
             bedtimeReminderLeadMinutes: kind == .sleep ? bedtimeReminderLeadMinutes : nil,
-            wakeReminderLeadMinutes: preWakeReminderLeadMinutes,
+            wakeReminderLeadMinutes: gentleWakeLeadMinutes,
             finalWakeAlarmEnabled: true,
             wakeAudio: audio,
             isEnabled: isEnabled,

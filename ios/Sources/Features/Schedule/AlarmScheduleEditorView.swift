@@ -15,6 +15,8 @@ struct AlarmScheduleEditorView: View {
     @FocusState private var nameIsFocused: Bool
     @State private var draft: ScheduleUIModel
     @State private var isDeleteConfirmationPresented = false
+    @State private var isAudioExpanded = false
+    @State private var selectedNotificationAssetID: String
 
     init(
         schedule: ScheduleUIModel? = nil,
@@ -28,7 +30,15 @@ struct AlarmScheduleEditorView: View {
         self.onCancel = onCancel
         self.onSave = onSave
         self.onDelete = onDelete
-        _draft = State(initialValue: schedule ?? .newSleep)
+        var initialDraft = schedule ?? .newSleep
+        if initialDraft.gentleWakeLeadMinutes == nil {
+            initialDraft.gentleWakeLeadMinutes = 15
+        }
+        _draft = State(initialValue: initialDraft)
+        _selectedNotificationAssetID = State(
+            initialValue: AlarmSoundSelectionStore.selectedNotificationAssetID()
+                ?? SystemAudioAssets.defaultNotificationAssetID
+        )
     }
 
     var body: some View {
@@ -36,10 +46,9 @@ struct AlarmScheduleEditorView: View {
             NightBackground()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 20) {
                     header
                     editorTypePicker
-                    nameField
 
                     if draft.isWakeOnly {
                         wakeOnlyFields
@@ -47,8 +56,8 @@ struct AlarmScheduleEditorView: View {
                         sleepScheduleFields
                     }
 
-                    enabledField
-                    audioField
+                    optionsCard
+
                     saveButton
 
                     if originalSchedule != nil, onDelete != nil {
@@ -58,7 +67,7 @@ struct AlarmScheduleEditorView: View {
                 .padding(.horizontal, dynamicTypeSize.isAccessibilitySize ? 18 : 24)
                 .padding(.top, 18)
                 .padding(.bottom, 34)
-                .frame(maxWidth: 680, alignment: .leading)
+                .frame(maxWidth: 600, alignment: .leading)
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.hidden)
@@ -125,87 +134,81 @@ struct AlarmScheduleEditorView: View {
         }
     }
 
-    private var nameField: some View {
-        ScheduleEditorCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Name")
-                    .font(AppTypographyRole.label)
-                    .foregroundStyle(Color.white.opacity(0.58))
-                TextField("e.g. Work nights", text: $draft.name)
-                    .font(AppFont.inter(size: 18, relativeTo: .body))
-                    .focused($nameIsFocused)
-                    .textInputAutocapitalization(.words)
-                    .submitLabel(.done)
-                    .padding(.horizontal, 14)
-                    .frame(minHeight: 48)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    .accessibilityIdentifier("schedule.editor.name")
-            }
-        }
-    }
+    // MARK: - Sleep Schedule Fields
 
     private var sleepScheduleFields: some View {
         VStack(alignment: .leading, spacing: 18) {
             ScheduleEditorCard {
-                VStack(alignment: .leading, spacing: 13) {
-                    Text("Sleep times")
-                        .font(AppTypographyRole.subsectionTitle)
-                    timePickerRow(title: "Bedtime", symbol: "moon.fill", selection: bedtimeBinding)
+                VStack(alignment: .leading, spacing: 14) {
+                    scheduleSectionHeader(
+                        title: "Bedtime",
+                        symbol: "moon.fill",
+                        color: Color(red: 0.72, green: 0.58, blue: 1)
+                    )
+
+                    ScheduleTimeWheelPicker(hour: $draft.bedtimeHour, minute: $draft.bedtimeMinute)
+
                     Divider().overlay(Color.white.opacity(0.10))
-                    timePickerRow(title: "Wake time", symbol: "sun.max.fill", selection: wakeTimeBinding)
+
+                    bedtimeNotificationSoundMenu
                 }
             }
 
             ScheduleEditorCard {
-                VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .leading, spacing: 14) {
+                    scheduleSectionHeader(
+                        title: "Wake up time",
+                        symbol: "sun.max.fill",
+                        color: Color(red: 1, green: 0.67, blue: 0.24)
+                    )
+                    ScheduleTimeWheelPicker(hour: $draft.wakeHour, minute: $draft.wakeMinute)
+                }
+            }
+
+            ScheduleEditorCard {
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Repeat days")
-                        .font(AppTypographyRole.subsectionTitle)
+                        .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
                     WeekdaySelector(mask: $draft.repeatWeekdaysMask)
                     Text(weekdaySummary(draft.repeatWeekdaysMask))
                         .font(AppTypographyRole.footnote)
                         .foregroundStyle(Color.white.opacity(0.55))
                 }
             }
-
-            ScheduleEditorCard {
-                VStack(alignment: .leading, spacing: 2) {
-                    reminderMenu(
-                        title: "Bedtime reminder",
-                        selection: $draft.bedtimeReminderLeadMinutes,
-                        options: [5, 10, 15, 30, 60],
-                        identifier: "schedule.editor.bedtimeReminder"
-                    )
-                    Divider().overlay(Color.white.opacity(0.10))
-                    reminderMenu(
-                        title: "Wake-up reminder",
-                        selection: $draft.preWakeReminderLeadMinutes,
-                        options: [5, 10, 15, 30],
-                        identifier: "schedule.editor.preWakeReminder"
-                    )
-                }
-            }
         }
     }
+
+    // MARK: - Wake Only Fields
 
     private var wakeOnlyFields: some View {
         VStack(alignment: .leading, spacing: 18) {
             ScheduleEditorCard {
-                VStack(alignment: .leading, spacing: 13) {
-                    Text("One-time alarm")
-                        .font(AppTypographyRole.subsectionTitle)
+                VStack(alignment: .leading, spacing: 14) {
+                    scheduleSectionHeader(
+                        title: "Date",
+                        symbol: "calendar",
+                        color: Color(red: 0.72, green: 0.57, blue: 1)
+                    )
                     DatePicker(
                         "Date",
                         selection: oneTimeDateBinding,
+                        in: Calendar.current.startOfDay(for: .now)...,
                         displayedComponents: .date
                     )
-                    .datePickerStyle(.compact)
+                    .datePickerStyle(.graphical)
                     .tint(Color(red: 0.72, green: 0.57, blue: 1))
                     .accessibilityIdentifier("schedule.editor.oneTimeDate")
+                }
+            }
 
-                    Divider().overlay(Color.white.opacity(0.10))
-
-                    timePickerRow(title: "Wake time", symbol: "clock.fill", selection: wakeTimeBinding)
+            ScheduleEditorCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    scheduleSectionHeader(
+                        title: "Wake up time",
+                        symbol: "clock.fill",
+                        color: Color(red: 1, green: 0.67, blue: 0.24)
+                    )
+                    ScheduleTimeWheelPicker(hour: $draft.wakeHour, minute: $draft.wakeMinute)
                 }
             }
 
@@ -216,64 +219,136 @@ struct AlarmScheduleEditorView: View {
         }
     }
 
-    private var enabledField: some View {
-        ScheduleEditorCard {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Turn on after saving")
-                        .font(AppTypographyRole.control)
-                    Text(draft.isEnabled ? "This alarm will be scheduled." : "Save it as off for now.")
-                        .font(AppTypographyRole.footnote)
-                        .foregroundStyle(Color.white.opacity(0.55))
-                }
-                Spacer(minLength: 8)
-                ScheduleEditorToggle(isOn: $draft.isEnabled)
-            }
-        }
-        .accessibilityIdentifier("schedule.editor.enabled")
-    }
+    // MARK: - Options Card
 
-    private var audioField: some View {
+    private var optionsCard: some View {
         ScheduleEditorCard {
-            VStack(alignment: .leading, spacing: 13) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Wake-up audio")
-                            .font(AppTypographyRole.subsectionTitle)
-                        Text(draft.wakeAudio.sourceTitle)
+            VStack(alignment: .leading, spacing: 16) {
+                // Name Field
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Schedule name (optional)")
+                        .font(AppTypographyRole.label)
+                        .foregroundStyle(Color.white.opacity(0.58))
+                    TextField("e.g. Work nights", text: $draft.name)
+                        .font(AppFont.inter(size: 16, relativeTo: .body))
+                        .focused($nameIsFocused)
+                        .textInputAutocapitalization(.words)
+                        .submitLabel(.done)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 44)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .accessibilityIdentifier("schedule.editor.name")
+                }
+
+                Divider().overlay(Color.white.opacity(0.10))
+
+                // Bedtime reminder lead time
+                if !draft.isWakeOnly {
+                    reminderMenu(
+                        title: "Bedtime reminder",
+                        selection: $draft.bedtimeReminderLeadMinutes,
+                        options: [5, 10, 15, 30, 60],
+                        identifier: "schedule.editor.bedtimeReminder"
+                    )
+                    Divider().overlay(Color.white.opacity(0.10))
+                }
+
+                // Wake-up window (gentle pre-wake lead)
+                wakeUpWindowMenu
+
+                Divider().overlay(Color.white.opacity(0.10))
+
+                // Audio Selection
+                audioSection
+
+                Divider().overlay(Color.white.opacity(0.10))
+
+                // Enabled Toggle
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Turn on after saving")
+                            .font(AppTypographyRole.control)
+                        Text(draft.isEnabled ? "This alarm will be scheduled." : "Save it as off for now.")
                             .font(AppTypographyRole.footnote)
-                            .foregroundStyle(Color.white.opacity(0.54))
+                            .foregroundStyle(Color.white.opacity(0.55))
                     }
                     Spacer(minLength: 8)
+                    ScheduleEditorToggle(isOn: $draft.isEnabled)
+                }
+                .accessibilityIdentifier("schedule.editor.enabled")
+            }
+        }
+    }
+
+    // MARK: - Audio Section
+
+    private var audioSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    isAudioExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 12) {
                     Image(systemName: "music.note")
                         .foregroundStyle(Color(red: 0.72, green: 0.57, blue: 1))
+                        .frame(width: 26)
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Wake-up sound")
+                            .font(AppTypographyRole.control)
+                        Text(draft.wakeAudio.title)
+                            .font(AppTypographyRole.footnote)
+                            .foregroundStyle(Color.white.opacity(0.65))
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: isAudioExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.white.opacity(0.45))
                         .accessibilityHidden(true)
                 }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Wake-up sound: \(draft.wakeAudio.title)")
+            .accessibilityIdentifier("schedule.editor.audio")
 
+            if isAudioExpanded {
                 VStack(spacing: 0) {
                     ForEach(audioChoices) { option in
                         AudioChoiceRow(
                             option: option,
                             isSelected: option.id == draft.wakeAudio.id,
-                            action: { draft.wakeAudio = option }
+                            action: {
+                                draft.wakeAudio = option
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isAudioExpanded = false
+                                }
+                            }
                         )
                         if option.id != audioChoices.last?.id {
                             Divider().overlay(Color.white.opacity(0.10))
                         }
                     }
                 }
+                .padding(.top, 4)
+            }
 
-                if !draft.wakeAudio.isAvailable {
-                    Label("Audio unavailable on this device", systemImage: "exclamationmark.triangle.fill")
-                        .font(AppTypographyRole.footnote)
-                        .foregroundStyle(Color.orange.opacity(0.92))
-                        .padding(.top, 4)
-                        .accessibilityIdentifier("schedule.editor.audioUnavailable")
-                }
+            if !draft.wakeAudio.isAvailable {
+                Label("Audio unavailable on this device", systemImage: "exclamationmark.triangle.fill")
+                    .font(AppTypographyRole.footnote)
+                    .foregroundStyle(Color.orange.opacity(0.92))
+                    .padding(.top, 2)
+                    .accessibilityIdentifier("schedule.editor.audioUnavailable")
             }
         }
-        .accessibilityIdentifier("schedule.editor.audio")
     }
+
+    // MARK: - Save and Delete Buttons
 
     private var saveButton: some View {
         Button(action: save) {
@@ -296,37 +371,104 @@ struct AlarmScheduleEditorView: View {
         .accessibilityIdentifier("schedule.editor.delete")
     }
 
-    private func timePickerRow(title: String, symbol: String, selection: Binding<Date>) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .foregroundStyle(
-                    title == "Bedtime"
-                        ? Color(red: 0.72, green: 0.58, blue: 1)
-                        : Color(red: 1, green: 0.67, blue: 0.24)
-                )
-                .frame(width: 26)
-                .accessibilityHidden(true)
+    // MARK: - Helpers
 
+    private func scheduleSectionHeader(title: String, symbol: String, color: Color) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(color)
+                .frame(width: 24)
+                .accessibilityHidden(true)
             Text(title)
-                .font(AppTypographyRole.control)
-            Spacer(minLength: 8)
-            DatePicker(title, selection: selection, displayedComponents: .hourAndMinute)
-                .labelsHidden()
-                .datePickerStyle(.compact)
-                .tint(Color(red: 0.72, green: 0.57, blue: 1))
+                .font(AppFont.latoBold(size: 20, relativeTo: .title3))
         }
+    }
+
+    private var bedtimeNotificationSoundMenu: some View {
+        Menu {
+            Button("Gentle chime (SPCNotification)") {
+                selectedNotificationAssetID = SystemAudioAssets.defaultNotificationAssetID
+                AlarmSoundSelectionStore.selectNotification(
+                    assetID: SystemAudioAssets.defaultNotificationAssetID,
+                    fileName: SystemAudioAssets.defaultNotificationFileName
+                )
+            }
+
+            Button("System default sound") {
+                selectedNotificationAssetID = "system-default"
+                AlarmSoundSelectionStore.selectNotification(
+                    assetID: "system-default",
+                    fileName: "default"
+                )
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "bell.fill")
+                    .foregroundStyle(Color(red: 0.72, green: 0.57, blue: 1))
+                    .frame(width: 26)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Reminder sound")
+                        .font(AppTypographyRole.control)
+
+                    Text(notificationSoundTitle)
+                        .font(AppTypographyRole.footnote)
+                        .foregroundStyle(Color.white.opacity(0.55))
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.white.opacity(0.45))
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reminder sound")
+        .accessibilityValue(notificationSoundTitle)
+        .accessibilityIdentifier("schedule.editor.notificationSound")
+    }
+
+    private var notificationSoundTitle: String {
+        selectedNotificationAssetID == "system-default"
+            ? "System default sound"
+            : "Gentle chime (SPCNotification)"
+    }
+
+    private var wakeUpWindowMenu: some View {
+        reminderMenu(
+            title: "Wake-up window",
+            selection: Binding(
+                get: { draft.gentleWakeLeadMinutes ?? 15 },
+                set: { draft.gentleWakeLeadMinutes = $0 }
+            ),
+            options: [5, 10, 15, 30],
+            identifier: "schedule.editor.wakeUpWindow",
+            includeOff: false
+        )
     }
 
     private func reminderMenu(
         title: String,
         selection: Binding<Int?>,
         options: [Int],
-        identifier: String
+        identifier: String,
+        includeOff: Bool = true
     ) -> some View {
-        Menu {
-            Button("Off") { selection.wrappedValue = nil }
+        let isWakeUpWindow = title == "Wake-up window"
+        let displaySuffix = isWakeUpWindow ? " min" : " min before"
+        let menuSuffix = isWakeUpWindow ? " min" : " minutes before"
+
+        return Menu {
+            if includeOff {
+                Button("Off") { selection.wrappedValue = nil }
+            }
             ForEach(options, id: \.self) { option in
-                Button("\(option) minutes before") {
+                Button("\(option)\(menuSuffix)") {
                     selection.wrappedValue = option
                 }
             }
@@ -336,10 +478,10 @@ struct AlarmScheduleEditorView: View {
                     .foregroundStyle(Color(red: 0.72, green: 0.57, blue: 1))
                     .frame(width: 26)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(AppTypographyRole.control)
-                    Text(selection.wrappedValue.map { "\($0) min before" } ?? "Off")
+                    Text(selection.wrappedValue.map { "\($0)\(displaySuffix)" } ?? "Off")
                         .font(AppTypographyRole.footnote)
                         .foregroundStyle(Color.white.opacity(0.55))
                 }
@@ -353,15 +495,8 @@ struct AlarmScheduleEditorView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
-        .accessibilityValue(selection.wrappedValue.map { "\($0) minutes before" } ?? "Off")
+        .accessibilityValue(selection.wrappedValue.map { "\($0)\(menuSuffix)" } ?? "Off")
         .accessibilityIdentifier(identifier)
-    }
-
-    private var bedtimeBinding: Binding<Date> {
-        Binding(
-            get: { date(hour: draft.bedtimeHour, minute: draft.bedtimeMinute) },
-            set: { updateTime($0, bedtime: true) }
-        )
     }
 
     private var kindBinding: Binding<ScheduleUIKind> {
@@ -379,15 +514,14 @@ struct AlarmScheduleEditorView: View {
                     if draft.repeatWeekdaysMask == 0 {
                         draft.repeatWeekdaysMask = 0b0111_1111
                     }
+                    if draft.bedtimeReminderLeadMinutes == nil {
+                        draft.bedtimeReminderLeadMinutes = 15
+                    }
+                    if draft.gentleWakeLeadMinutes == nil {
+                        draft.gentleWakeLeadMinutes = 15
+                    }
                 }
             }
-        )
-    }
-
-    private var wakeTimeBinding: Binding<Date> {
-        Binding(
-            get: { date(hour: draft.wakeHour, minute: draft.wakeMinute) },
-            set: { updateTime($0, bedtime: false) }
         )
     }
 
@@ -399,32 +533,39 @@ struct AlarmScheduleEditorView: View {
     }
 
     private var audioChoices: [ScheduleUIAudioSelection] {
-        let choices = audioOptions.isEmpty
+        let baseChoices = audioOptions.isEmpty
             ? [.bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise")]
             : audioOptions
-        guard !choices.contains(where: { $0.id == draft.wakeAudio.id }) else { return choices }
-        return [draft.wakeAudio] + choices
-    }
 
-    private func updateTime(_ value: Date, bedtime: Bool) {
-        let components = Calendar.current.dateComponents([.hour, .minute], from: value)
-        guard let hour = components.hour, let minute = components.minute else { return }
-        if bedtime {
-            draft.bedtimeHour = hour
-            draft.bedtimeMinute = minute
-        } else {
-            draft.wakeHour = hour
-            draft.wakeMinute = minute
+        var combined: [ScheduleUIAudioSelection] = []
+        combined.append(normalizeAudioSelection(draft.wakeAudio))
+        combined.append(contentsOf: baseChoices.map(normalizeAudioSelection))
+
+        var seenIDs = Set<String>()
+        var seenTitles = Set<String>()
+        var deduplicated: [ScheduleUIAudioSelection] = []
+
+        for choice in combined {
+            let normalizedTitle = choice.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if !seenIDs.contains(choice.id), !seenTitles.contains(normalizedTitle) {
+                seenIDs.insert(choice.id)
+                seenTitles.insert(normalizedTitle)
+                deduplicated.append(choice)
+            }
         }
+        return deduplicated
     }
 
-    private func date(hour: Int, minute: Int) -> Date {
-        Calendar.current.date(
-            bySettingHour: hour,
-            minute: minute,
-            second: 0,
-            of: .now
-        ) ?? .now
+    private func normalizeAudioSelection(_ selection: ScheduleUIAudioSelection) -> ScheduleUIAudioSelection {
+        switch selection {
+        case let .bundled(id, _):
+            if id == SystemAudioAssets.defaultAlarmAssetID || id == SystemAudioAssets.defaultAlarmFileName {
+                return .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise")
+            }
+            return selection
+        default:
+            return selection
+        }
     }
 
     private func cancel() {
@@ -439,132 +580,5 @@ struct AlarmScheduleEditorView: View {
         }
         onSave(draft)
         dismiss()
-    }
-}
-
-private struct ScheduleEditorCard<Content: View>: View {
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        content
-            .padding(17)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-            }
-    }
-}
-
-private struct ScheduleEditorToggle: View {
-    @Binding var isOn: Bool
-
-    var body: some View {
-        Toggle("", isOn: $isOn)
-            .labelsHidden()
-            .tint(Color(red: 0.48, green: 0.20, blue: 0.94))
-            .accessibilityLabel("Turn on after saving")
-    }
-}
-
-private struct WeekdaySelector: View {
-    @Binding var mask: Int
-
-    var body: some View {
-        HStack(spacing: 7) {
-            ForEach(1 ... 7, id: \.self) { weekday in
-                Button {
-                    mask ^= 1 << (weekday - 1)
-                } label: {
-                    Text(shortLabel(for: weekday))
-                        .font(AppFont.inter(size: 12, relativeTo: .caption, weight: .semibold))
-                        .frame(width: 35, height: 35)
-                        .background(includes(weekday) ? Color.indigo.opacity(0.82) : Color.white.opacity(0.08))
-                        .clipShape(Circle())
-                        .overlay {
-                            Circle()
-                                .stroke(
-                                    includes(weekday)
-                                        ? Color(red: 0.66, green: 0.53, blue: 1)
-                                        : Color.white.opacity(0.16),
-                                    lineWidth: 1
-                                )
-                        }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(fullLabel(for: weekday))
-                .accessibilityValue(includes(weekday) ? "Selected" : "Not selected")
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("schedule.editor.repeatDays")
-    }
-
-    private func includes(_ weekday: Int) -> Bool {
-        mask & (1 << (weekday - 1)) != 0
-    }
-
-    private func shortLabel(for weekday: Int) -> String {
-        let symbols = Calendar.current.veryShortStandaloneWeekdaySymbols
-        return symbols.indices.contains(weekday - 1) ? symbols[weekday - 1] : "\(weekday)"
-    }
-
-    private func fullLabel(for weekday: Int) -> String {
-        let symbols = Calendar.current.standaloneWeekdaySymbols
-        return symbols.indices.contains(weekday - 1) ? symbols[weekday - 1] : "Day \(weekday)"
-    }
-}
-
-private struct AudioChoiceRow: View {
-    let option: ScheduleUIAudioSelection
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(isSelected ? Color(red: 0.76, green: 0.64, blue: 1) : Color.white.opacity(0.58))
-                    .frame(width: 26)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(option.title)
-                        .font(AppTypographyRole.control)
-                        .foregroundStyle(option.isAvailable ? .white : Color.white.opacity(0.52))
-                    Text(option.sourceTitle)
-                        .font(AppTypographyRole.caption)
-                        .foregroundStyle(Color.white.opacity(0.47))
-                }
-                Spacer(minLength: 8)
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color(red: 0.72, green: 0.57, blue: 1))
-                        .accessibilityHidden(true)
-                }
-            }
-            .padding(.vertical, 11)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!option.isAvailable)
-        .accessibilityLabel(option.title)
-        .accessibilityValue(isSelected ? "Selected" : option.sourceTitle)
-    }
-
-    private var icon: String {
-        switch option {
-        case .bundled:
-            "waveform"
-        case .catalog:
-            "music.note.list"
-        case .personal:
-            "person.wave.2"
-        case .unavailable:
-            "exclamationmark.triangle"
-        }
     }
 }

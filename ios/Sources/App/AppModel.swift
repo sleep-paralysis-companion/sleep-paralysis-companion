@@ -46,7 +46,7 @@ final class AppModel {
     @ObservationIgnored private var sleepTimerTask: Task<Void, Never>?
     var isAlarmRinging: Bool = false
     private(set) var ringingAlarmSchedule: ScheduleUIModel?
-    @ObservationIgnored private var alarmSnoozeTask: Task<Void, Never>?
+    @ObservationIgnored var alarmSnoozeTask: Task<Void, Never>?
     var profile: LocalProfile?
     var settings: AppSettings?
 
@@ -68,7 +68,8 @@ final class AppModel {
             .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
         ]
         if let selectedID = AlarmSoundSelectionStore.selectedAlarmAssetID(),
-           selectedID != SystemAudioAssets.defaultAlarmAssetID
+           selectedID != SystemAudioAssets.defaultAlarmAssetID,
+           selectedID != SystemAudioAssets.defaultAlarmFileName
         {
             result.append(.catalog(id: selectedID, title: "Downloaded sound", isAvailable: true))
         }
@@ -79,7 +80,37 @@ final class AppModel {
                 isAvailable: clip.availability == .ready
             )
         })
-        return result
+        return deduplicatedAudioSelections(result)
+    }
+
+    private func deduplicatedAudioSelections(_ options: [ScheduleUIAudioSelection]) -> [ScheduleUIAudioSelection] {
+        var seenIDs = Set<String>()
+        var seenTitles = Set<String>()
+        var deduplicated: [ScheduleUIAudioSelection] = []
+
+        for option in options {
+            let normalizedID = canonicalAudioID(for: option)
+            let normalizedTitle = option.title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+            if !seenIDs.contains(normalizedID), !seenTitles.contains(normalizedTitle) {
+                seenIDs.insert(normalizedID)
+                seenTitles.insert(normalizedTitle)
+                deduplicated.append(option)
+            }
+        }
+        return deduplicated
+    }
+
+    private func canonicalAudioID(for option: ScheduleUIAudioSelection) -> String {
+        switch option {
+        case let .bundled(id, _):
+            if id == SystemAudioAssets.defaultAlarmAssetID || id == SystemAudioAssets.defaultAlarmFileName {
+                return "bundled:\(SystemAudioAssets.defaultAlarmAssetID)"
+            }
+            return option.id
+        default:
+            return option.id
+        }
     }
 
     func updatePartnerContact(_ contact: PartnerContact?) {
@@ -178,6 +209,7 @@ final class AppModel {
         SleepSessionAudioIntentBridge.shared.install { [weak self] action in
             self?.performSleepSessionAudioAction(action, presentSession: false) ?? false
         }
+        SystemAudioAssets.ensureDefaultSoundsInstalled()
     }
 
     func activate(restoredState: String = "") {
@@ -299,6 +331,11 @@ final class AppModel {
 
         func setLaunchDestinationForTesting(_ destination: LaunchDestination) {
             launchDestination = destination
+        }
+
+        func setSessionForTesting(profileID: UUID?, userID: UUID?) {
+            self.profileID = profileID
+            self.userID = userID
         }
     #endif
 
@@ -479,6 +516,15 @@ final class AppModel {
         selectedAlarmScheduleID = schedule.id
     }
 
+    func openAlarmScheduleSummary() {
+        if !alarmSchedules.isEmpty {
+            open(.alarmHistory)
+        } else {
+            beginNewSchedule()
+            open(.alarmScheduleEditor)
+        }
+    }
+
     private func scheduleValidationFeedback(proposed: [AlarmSchedule]) -> String? {
         do {
             try AlarmScheduleValidator.validate(proposed)
@@ -493,7 +539,7 @@ final class AppModel {
     }
 
     @discardableResult
-    func saveScheduleUI(_ value: ScheduleUIModel) -> Bool {
+    func saveScheduleUI(_ value: ScheduleUIModel, autoStartUnwind: Bool = false) -> Bool {
         guard let profileID, let userID else { return false }
         let existing = alarmSchedules.first(where: { $0.id == value.id })
         let schedule = value.domainValue(
@@ -511,6 +557,7 @@ final class AppModel {
         let previous = alarmSchedules
         alarmSchedules = proposed.sorted { ($0.sortOrder, $0.createdAt) < ($1.sortOrder, $1.createdAt) }
         selectedAlarmScheduleID = schedule.id
+        selectedTab = .sleep
         updateLegacyScheduleSummary()
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -548,6 +595,9 @@ final class AppModel {
                 updateLegacyScheduleSummary()
                 feedbackMessage = "The schedule could not be saved. Nothing was replaced."
             }
+        }
+        if autoStartUnwind {
+            startUnwindSession()
         }
         return true
     }
@@ -902,6 +952,9 @@ final class AppModel {
 
     var activeTrackTitle: String {
         if let selectedCatalogAsset {
+            if selectedCatalogAsset.id == "second-sleep" {
+                return "Calming Second Sleep"
+            }
             return selectedCatalogAsset.title
         }
         if case let .playing(id) = playbackState {
@@ -944,6 +997,9 @@ final class AppModel {
 
     var activeTrackSubtitle: String {
         if let selectedCatalogAsset {
+            if selectedCatalogAsset.id == "second-sleep" {
+                return "Gentle guided recovery session"
+            }
             return selectedCatalogAsset.shortDescription
         }
         if case let .playing(id) = playbackState {
@@ -1033,14 +1089,16 @@ final class AppModel {
         }
     }
 
-    func setSleepTimer(minutes: Int) {
+    func setSleepTimer(seconds: TimeInterval) {
         sleepTimerTask?.cancel()
-        guard minutes > 0 else {
+        guard seconds > 0 else {
             sleepTimerRemaining = nil
+            catalogAudioPlayer.setVolume(1.0)
             return
         }
-        var secondsRemaining = TimeInterval(minutes * 60)
+        var secondsRemaining = seconds
         sleepTimerRemaining = secondsRemaining
+        catalogAudioPlayer.setVolume(1.0)
 
         sleepTimerTask = Task { @MainActor [weak self] in
             while secondsRemaining > 0 {
@@ -1048,24 +1106,86 @@ final class AppModel {
                 guard !Task.isCancelled else { return }
                 secondsRemaining -= 1
                 self?.sleepTimerRemaining = secondsRemaining
+
+                if secondsRemaining <= 5, let self {
+                    let fraction = Float(max(0, secondsRemaining)) / 5.0
+                    self.catalogAudioPlayer.setVolume(fraction)
+                }
             }
             self?.sleepTimerRemaining = nil
+            self?.catalogAudioPlayer.setVolume(0.0)
             self?.stopPlayback()
+            self?.catalogAudioPlayer.setVolume(1.0)
         }
+    }
+
+    func setSleepTimer(minutes: Int) {
+        setSleepTimer(seconds: TimeInterval(minutes * 60))
+    }
+
+    func setSleepTimerToEndOfTrack() {
+        let duration = playbackDuration > 0 ? playbackDuration : 900
+        let remaining = max(1, duration - playbackCurrentTime)
+        setSleepTimer(seconds: remaining)
     }
 
     func cancelSleepTimer() {
         sleepTimerTask?.cancel()
         sleepTimerTask = nil
         sleepTimerRemaining = nil
+        catalogAudioPlayer.setVolume(1.0)
     }
 
     func stopPlayback() {
         cancelSleepTimer()
         audioController.stopPlayback()
         catalogAudioPlayer.stop()
+        catalogAudioPlayer.setVolume(1.0)
         playbackState = .idle
         updateSleepSessionLiveActivityForPlayback()
+    }
+
+    var sleepPlayerTracks: [CatalogAudioAsset] {
+        CatalogAudioManifest.bundled.assets.filter {
+            $0.category == .quickUnwind || $0.category == .secondSleep || $0.category == .slowUnwind
+        }
+    }
+
+    func sleepTrackDurationText(for asset: CatalogAudioAsset) -> String {
+        switch asset.category {
+        case .quickUnwind:
+            return "15 min"
+        case .secondSleep:
+            return "6 min"
+        case .slowUnwind:
+            return "1 hr 15 min"
+        default:
+            let totalSeconds = max(0, asset.durationMilliseconds / 1000)
+            let mins = totalSeconds / 60
+            let secs = totalSeconds % 60
+            return String(format: "%d:%02d", mins, secs)
+        }
+    }
+
+    func isSleepTrackDownloaded(_ asset: CatalogAudioAsset) -> Bool {
+        if asset.delivery == .bundled {
+            return true
+        }
+        if let resourceName = asset.bundledResourceName,
+           SystemAudioAssets.bundledURL(for: resourceName) != nil
+        {
+            return true
+        }
+        return false
+    }
+
+    func downloadSleepTrack(_ asset: CatalogAudioAsset) async {
+        guard asset.delivery == .downloadable else { return }
+        do {
+            _ = try await catalogAudioService.download(asset, progress: { _ in })
+        } catch {
+            feedbackMessage = "Could not download track for offline listening."
+        }
     }
 
     func beginManualGrounding() {
@@ -1207,7 +1327,7 @@ final class AppModel {
         if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == trackID }) {
             playCatalogAsset(asset)
         }
-        startSleepSession()
+        isSleepSessionPresented = false
         open(.audioPlayer)
     }
 
@@ -1289,9 +1409,10 @@ final class AppModel {
 
     @discardableResult
     func submitCheckIn(_ form: MorningCheckInForm, editing: SubmittedCheckIn? = nil) async -> Bool {
-        guard let profileID, let userID, let occurrence = form.occurrence, form.canSubmit else {
+        guard let profileID, let occurrence = form.occurrence, form.canSubmit else {
             return false
         }
+        let effectiveUserID = userID ?? profileID
         let now = Date()
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -1315,7 +1436,7 @@ final class AppModel {
             deletedAt: nil
         )
         do {
-            try await store.saveCheckIn(value, userID: userID)
+            try await store.saveCheckIn(value, userID: effectiveUserID)
             checkIns.removeAll { $0.id == value.id }
             checkIns.insert(value, at: 0)
             return true
@@ -1331,11 +1452,12 @@ final class AppModel {
     }
 
     func deleteCheckIn(_ value: SubmittedCheckIn) {
-        guard let userID else { return }
+        guard let profileID else { return }
+        let effectiveUserID = userID ?? profileID
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                try await store.deleteCheckIn(value, userID: userID)
+                try await store.deleteCheckIn(value, userID: effectiveUserID)
                 checkIns.removeAll { $0.id == value.id }
                 path.removeAll { $0 == .checkInDetail }
             } catch {

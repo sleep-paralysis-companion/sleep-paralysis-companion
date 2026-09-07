@@ -13,7 +13,7 @@ struct MorningCheckInFlowView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 26) {
-                    MorningCheckInHeader(step: step)
+                    MorningCheckInHeader(step: step, occurrence: form.occurrence)
 
                     if case let .affirmation(occurrence) = step {
                         affirmationContent(for: occurrence)
@@ -226,22 +226,26 @@ struct MorningCheckInFlowView: View {
         case .spcOutcome:
             advance(to: .postEpisodeSupport)
         case .postEpisodeSupport:
-            saveAndShowAffirmation(for: .yes)
+            saveAndShowAffirmation(for: .yes, isSkipping: true)
         case .sleepHelp:
-            saveAndShowAffirmation(for: .no)
+            saveAndShowAffirmation(for: .no, isSkipping: true)
         case .affirmation:
             break
         }
     }
 
-    private func saveAndShowAffirmation(for occurrence: EpisodeOccurrence) {
+    private func saveAndShowAffirmation(for occurrence: EpisodeOccurrence, isSkipping: Bool = false) {
         isSaving = true
         Task {
             let saved = await model.submitCheckIn(form)
+            if isSkipping {
+                model.clearFeedback()
+            }
             isSaving = false
-            guard saved else { return }
-            withAnimation(.easeInOut(duration: 0.24)) {
-                step = .affirmation(occurrence)
+            if saved || isSkipping {
+                withAnimation(.easeInOut(duration: 0.24)) {
+                    step = .affirmation(occurrence)
+                }
             }
         }
     }
@@ -259,7 +263,7 @@ private struct AnswerOption {
     }
 }
 
-private enum MorningCheckInStep: Equatable {
+nonisolated enum MorningCheckInStep: Equatable, Sendable {
     case episode
     case feeling
     case spcOutcome
@@ -285,9 +289,13 @@ private enum MorningCheckInStep: Equatable {
     }
 
     var progressTitle: String? {
+        progressTitle(for: nil)
+    }
+
+    func progressTitle(for occurrence: EpisodeOccurrence?) -> String? {
         switch self {
         case .episode:
-            "QUESTION 1 OF 4"
+            occurrence == .no ? "QUESTION 1 OF 2" : "QUESTION 1 OF 4"
         case .feeling:
             "QUESTION 2 OF 4"
         case .spcOutcome:
@@ -312,8 +320,20 @@ private enum MorningCheckInStep: Equatable {
     }
 }
 
-private struct MorningCheckInHeader: View {
+struct MorningCheckInHeader: View {
     let step: MorningCheckInStep
+    var occurrence: EpisodeOccurrence?
+
+    nonisolated static func totalSteps(for step: MorningCheckInStep, occurrence: EpisodeOccurrence? = nil) -> Int {
+        if step == .sleepHelp || occurrence == .no {
+            return 2
+        }
+        return 4
+    }
+
+    nonisolated var totalSteps: Int {
+        Self.totalSteps(for: step, occurrence: occurrence)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -340,19 +360,19 @@ private struct MorningCheckInHeader: View {
                 .padding(.top, 12)
             }
 
-            if let progressTitle = step.progressTitle {
+            if let progressTitle = step.progressTitle(for: occurrence) {
                 Text(progressTitle)
                     .font(AppFont.inter(size: 14, relativeTo: .footnote, weight: .medium))
                     .foregroundStyle(Color(red: 0.57, green: 0.54, blue: 0.78))
                 HStack(spacing: 0) {
-                    ForEach(0 ..< 4, id: \.self) { index in
-                        progressMoon(index: index)
-                        if index < 3 {
+                    ForEach(0 ..< totalSteps, id: \.self) { index in
+                        progressMoon(index: index, currentIndex: step.progressIndex, total: totalSteps)
+                        if index < totalSteps - 1 {
                             Spacer(minLength: 0)
                         }
                     }
                 }
-                .padding(.horizontal, 62)
+                .padding(.horizontal, totalSteps == 2 ? 110 : 62)
             }
         }
     }
@@ -364,12 +384,12 @@ private struct MorningCheckInHeader: View {
         return "\(weekday) • \(monthDay)"
     }
 
-    private func progressMoon(index: Int) -> some View {
+    private func progressMoon(index: Int, currentIndex: Int, total _: Int) -> some View {
         ZStack {
             Circle()
                 .stroke(Color(red: 0.43, green: 0.35, blue: 0.76), lineWidth: 3)
                 .frame(width: 30, height: 30)
-            if index < step.progressIndex {
+            if index < currentIndex {
                 Circle()
                     .fill(Color(red: 0.42, green: 0.32, blue: 0.74))
                     .frame(width: 29, height: 29)
@@ -379,7 +399,7 @@ private struct MorningCheckInHeader: View {
                             .frame(width: 20, height: 29)
                             .offset(x: 7)
                     }
-            } else if index == step.progressIndex {
+            } else if index == currentIndex {
                 Circle()
                     .fill(Color(red: 0.71, green: 0.61, blue: 1))
                     .frame(width: 30, height: 30)

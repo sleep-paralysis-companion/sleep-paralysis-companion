@@ -289,8 +289,14 @@ private struct SleepWheelColumn<Value: Hashable>: View {
     var body: some View {
         Picker("", selection: $selection) {
             ForEach(values, id: \.self) { value in
+                let isSelected = value == selection
                 Text(label(value))
-                    .font(AppFont.latoBold(size: 30, relativeTo: .title2))
+                    .font(
+                        isSelected
+                            ? AppFont.latoBold(size: 36, relativeTo: .title)
+                            : AppFont.inter(size: 22, relativeTo: .body, weight: .regular)
+                    )
+                    .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.40))
                     .tag(value)
             }
         }

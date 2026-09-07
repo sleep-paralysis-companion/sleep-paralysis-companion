@@ -148,6 +148,8 @@ private struct AppRouteDestinationView: View {
             }
         case .sleepSchedule:
             SleepScheduleView(model: model)
+                .toolbarColorScheme(.dark, for: .navigationBar)
+                .tint(.white)
         case .alarmHistory:
             AlarmHistoryView(
                 schedules: model.scheduleUIModels,
@@ -175,10 +177,8 @@ private struct AppRouteDestinationView: View {
                 audioOptions: model.scheduleAudioOptions,
                 onCancel: dismissScheduleRoute,
                 onSave: { schedule in
-                    if model.saveScheduleUI(schedule) {
-                        dismissScheduleRoute()
-                        model.startUnwindSession()
-                    }
+                    dismissScheduleRoute()
+                    _ = model.saveScheduleUI(schedule, autoStartUnwind: true)
                 },
                 onDelete: { schedule in
                     model.deleteScheduleUI(schedule)

@@ -71,8 +71,12 @@ final class CatalogAudioLibraryModel {
         pathMonitor?.cancel()
     }
 
+    var displayedAssets: [CatalogAudioAsset] {
+        assets.filter { $0.category != .notification }
+    }
+
     var categories: [CatalogAudioCategory] {
-        CatalogAudioCategory.allCases
+        CatalogAudioCategory.allCases.filter { $0 != .notification }
     }
 
     func loadIfNeeded() async {
@@ -122,7 +126,7 @@ final class CatalogAudioLibraryModel {
     }
 
     func assets(for category: CatalogAudioCategory) -> [CatalogAudioAsset] {
-        assets.filter { $0.category == category }
+        assets.filter { $0.category == category && $0.category != .notification }
     }
 
     func cacheState(for asset: CatalogAudioAsset) -> AudioCacheState {
@@ -719,11 +723,9 @@ struct CatalogAudioLibraryView: View {
 
     private var cardsSection: some View {
         VStack(spacing: 16) {
-            let primaryTracks = model.assets.filter {
-                $0.category == .quickUnwind || $0.category == .slowUnwind || $0.category == .secondSleep
+            let displayTracks = model.displayedAssets.filter {
+                $0.category == .quickUnwind || $0.category == .secondSleep || $0.category == .slowUnwind
             }
-
-            let displayTracks = primaryTracks.isEmpty ? model.assets : primaryTracks
 
             ForEach(displayTracks) { asset in
                 BedtimeAudioCard(
@@ -736,10 +738,10 @@ struct CatalogAudioLibraryView: View {
                 )
             }
 
-            let otherTracks = model.assets.filter {
-                $0.category == .morningAlarm || $0.category == .notification
+            let otherTracks = model.displayedAssets.filter {
+                $0.category == .morningAlarm
             }
-            if !otherTracks.isEmpty, !primaryTracks.isEmpty {
+            if !otherTracks.isEmpty, !displayTracks.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("More audio & alarm sounds")
                         .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))

@@ -14,6 +14,7 @@ enum HomeScreenPalette {
 }
 
 struct HomeView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Bindable var model: AppModel
     var showsSleepSessionAction = false
 
@@ -29,8 +30,15 @@ struct HomeView: View {
 
                     HomeHeroCard(
                         playbackState: model.playbackState,
+                        showsSleepSessionAction: showsSleepSessionAction,
                         onPlayPause: {
-                            model.open(.grounding)
+                            if case .playing = model.playbackState {
+                                model.togglePlayback()
+                            } else if case .paused = model.playbackState {
+                                model.togglePlayback()
+                            } else {
+                                model.playCalmingSecondSleepAudio()
+                            }
                         },
                         onOpenPlayer: {
                             model.startSleepSession()
@@ -40,16 +48,13 @@ struct HomeView: View {
                     .padding(.bottom, -12)
 
                     VStack(spacing: 16) {
-                        if showsSleepSessionAction {
-                            sleepSessionAction
-                        }
                         scheduleSummary
                         editScheduleLink
                         quickActions
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
-                    .padding(.bottom, 84)
+                    .padding(.bottom, 180)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -59,53 +64,6 @@ struct HomeView: View {
         .preferredColorScheme(.dark)
         .toolbar(.hidden, for: .navigationBar)
         .accessibilityIdentifier("home.screen")
-    }
-
-    private var sleepSessionAction: some View {
-        Button {
-            model.startSleepSession()
-        } label: {
-            HStack(spacing: 16) {
-                HomeIconBadge(systemImage: "bed.double.fill")
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(model.sleepSessionStartedAt == nil ? "Start sleep session" : "Return to sleep session")
-                        .font(AppFont.inter(size: 18, relativeTo: .headline, weight: .semibold))
-                    Text("Keep grounding audio available from the Lock Screen")
-                        .font(AppFont.inter(size: 14, relativeTo: .footnote))
-                        .foregroundStyle(HomeScreenPalette.textSecondary)
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 21, weight: .medium))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, minHeight: 82)
-            .background {
-                LinearGradient(
-                    colors: [HomeScreenPalette.card, HomeScreenPalette.iconBackground],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(HomeScreenPalette.accent.opacity(0.72), lineWidth: 1.2)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(
-            model.sleepSessionStartedAt == nil
-                ? "Opens sleep mode and starts its Lock Screen companion."
-                : "Returns to the active sleep session."
-        )
-        .accessibilityIdentifier("sleepSession.start")
     }
 
     private var header: some View {
@@ -130,8 +88,7 @@ struct HomeView: View {
 
     private var scheduleSummary: some View {
         Button {
-            model.beginNewSchedule()
-            model.open(.alarmScheduleEditor)
+            model.openAlarmScheduleSummary()
         } label: {
             HomeScheduleSummary(
                 sleep: time(hour: model.sleepSchedule.sleepHour, minute: model.sleepSchedule.sleepMinute),
@@ -140,7 +97,7 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Sleep schedule summary")
-        .accessibilityHint("Opens alarm schedule editor")
+        .accessibilityHint(model.alarmSchedules.isEmpty ? "Opens alarm schedule editor" : "Opens alarm history")
         .accessibilityIdentifier("home.scheduleSummary")
     }
 
@@ -174,34 +131,39 @@ struct HomeView: View {
         .accessibilityIdentifier("home.editSchedule")
     }
 
+    @ViewBuilder
     private var quickActions: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 32) {
-                quickAction(
-                    title: "Calm your mind",
-                    detail: "Recovery audio",
-                    icon: "waveform",
-                    action: { model.startUnwindSession() }
-                )
-                quickAction(
-                    title: "Morning\ncheck-in",
-                    detail: "Start your day\nmindfully",
-                    icon: "sunrise",
-                    action: { model.open(.morningCheckIn) }
-                )
-            }
-
+        if dynamicTypeSize.isAccessibilitySize {
             VStack(spacing: 16) {
                 quickAction(
                     title: "Calm your mind",
                     detail: "Recovery audio",
                     icon: "waveform",
+                    identifier: "home.calmYourMind",
                     action: { model.startUnwindSession() }
                 )
                 quickAction(
                     title: "Morning check-in",
                     detail: "Start your day mindfully",
                     icon: "sunrise",
+                    identifier: "home.morningCheckIn",
+                    action: { model.open(.morningCheckIn) }
+                )
+            }
+        } else {
+            HStack(alignment: .top, spacing: 16) {
+                quickAction(
+                    title: "Calm your mind",
+                    detail: "Recovery audio",
+                    icon: "waveform",
+                    identifier: "home.calmYourMind",
+                    action: { model.startUnwindSession() }
+                )
+                quickAction(
+                    title: "Morning\ncheck-in",
+                    detail: "Start your day\nmindfully",
+                    icon: "sunrise",
+                    identifier: "home.morningCheckIn",
                     action: { model.open(.morningCheckIn) }
                 )
             }
@@ -212,6 +174,7 @@ struct HomeView: View {
         title: String,
         detail: String,
         icon: String,
+        identifier: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -236,6 +199,7 @@ struct HomeView: View {
             .padding(.bottom, 18)
             .frame(maxWidth: .infinity, minHeight: 185, alignment: .topLeading)
             .background(HomeScreenPalette.card)
+            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -245,6 +209,7 @@ struct HomeView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title.replacingOccurrences(of: "\n", with: " "))
         .accessibilityHint(detail.replacingOccurrences(of: "\n", with: " "))
+        .accessibilityIdentifier(identifier ?? title.replacingOccurrences(of: "\n", with: " "))
     }
 
     private var greeting: String {
@@ -274,6 +239,7 @@ private struct HomeBackground: View {
 
 private struct HomeHeroCard: View {
     let playbackState: GroundingPlaybackState
+    var showsSleepSessionAction: Bool = false
     let onPlayPause: () -> Void
     let onOpenPlayer: () -> Void
 
@@ -285,34 +251,41 @@ private struct HomeHeroCard: View {
     }
 
     var body: some View {
-        Button(action: onOpenPlayer) {
-            ZStack {
-                Image("HomeHero")
-                    .resizable()
-                    .scaledToFit()
-                    .accessibilityHidden(true)
+        ZStack {
+            Button(action: onOpenPlayer) {
+                ZStack {
+                    Image("HomeHero")
+                        .resizable()
+                        .scaledToFit()
+                        .accessibilityHidden(true)
 
-                VStack(spacing: 10) {
-                    Text("Enable Lock screen")
-                        .font(AppFont.latoBold(size: 24, relativeTo: .title2))
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 10) {
+                        Text("Enable Lock screen")
+                            .font(AppFont.latoBold(size: 24, relativeTo: .title2))
+                            .multilineTextAlignment(.center)
 
-                    Text("Keep grounding companion ready on your Lock Screen")
-                        .font(AppFont.inter(size: 17, relativeTo: .body))
-                        .foregroundStyle(HomeScreenPalette.textSecondary)
-                        .multilineTextAlignment(.center)
+                        Text("Keep post episode support ready on your lock screen")
+                            .font(AppFont.inter(size: 17, relativeTo: .body))
+                            .foregroundStyle(HomeScreenPalette.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 52)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 52)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .aspectRatio(860.0 / 586.0, contentMode: .fit)
+                .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             }
-            .aspectRatio(860.0 / 586.0, contentMode: .fit)
-            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .buttonStyle(.plain)
+            .accessibilityLabel(showsSleepSessionAction ? "Start sleep session" : "Enable Lock Screen")
+            .accessibilityHint(
+                showsSleepSessionAction
+                    ? "Opens sleep mode and starts its Lock Screen companion."
+                    : "Starts sleep session and activates Lock Screen companion."
+            )
+            .accessibilityIdentifier(showsSleepSessionAction ? "sleepSession.start" : "home.heroCard")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Enable Lock Screen")
-        .accessibilityHint("Starts sleep session and activates Lock Screen companion.")
-        .accessibilityIdentifier("home.heroCard")
+        .aspectRatio(860.0 / 586.0, contentMode: .fit)
         .overlay {
             GeometryReader { proxy in
                 Button(action: onPlayPause) {
@@ -381,6 +354,7 @@ private struct HomeScheduleSummary: View {
             horizontalLayout
             verticalLayout
         }
+        .accessibilityIdentifier("home.sleepSchedule")
     }
 
     private var horizontalLayout: some View {

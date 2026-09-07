@@ -294,8 +294,9 @@ final class CatalogAudioBoundaryTests: XCTestCase {
     func testBundledCatalogManifestIsValidAndIncludesUnwindAudio() throws {
         let manifest = CatalogAudioManifest.bundled
         XCTAssertEqual(manifest.manifestVersion, 1)
-        XCTAssertEqual(manifest.assets.count, 4)
+        XCTAssertEqual(manifest.assets.count, 5)
         XCTAssertTrue(manifest.assets.contains { $0.id == "quick-unwind" && $0.category == .quickUnwind })
+        XCTAssertTrue(manifest.assets.contains { $0.id == "second-sleep" && $0.category == .secondSleep })
         XCTAssertTrue(manifest.assets.contains { $0.id == "slow-unwind" && $0.category == .slowUnwind })
         XCTAssertNoThrow(try CatalogAudioManifestValidator.validate(manifest))
     }
@@ -334,6 +335,20 @@ final class CatalogAudioBoundaryTests: XCTestCase {
 
         player.stop()
         XCTAssertTrue(observedStates.isEmpty)
+    }
+
+    @MainActor
+    func testCatalogAudioLibraryFiltersOutNotificationCategory() {
+        let model = CatalogAudioLibraryModel()
+        XCTAssertFalse(model.categories.contains(.notification))
+        XCTAssertFalse(model.displayedAssets.contains { $0.category == .notification })
+        XCTAssertTrue(model.assets(for: .notification).isEmpty)
+    }
+
+    func testBedtimeNotificationSoundResolvesWithSPCNotificationCAF() {
+        XCTAssertEqual(SystemAudioAssets.defaultNotificationFileName, "SPCNotification.caf")
+        let sound = SystemAudioAssets.notificationSound()
+        XCTAssertNotNil(sound)
     }
 
     private func makeAsset(id: String, data: Data = Data("audio".utf8)) -> CatalogAudioAsset {

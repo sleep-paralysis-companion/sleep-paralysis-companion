@@ -91,7 +91,7 @@ function bundledAsset(
   };
 }
 
-function downloadableAsset(
+export function downloadableAsset(
   id: string,
   category: AudioCatalogAsset["category"],
   title: string,
@@ -248,7 +248,7 @@ export const catalogManifest: AudioCatalogManifest = {
       44100,
       2,
     ),
-    downloadableAsset(
+    bundledAsset(
       "second-sleep",
       "second_sleep",
       "Second Sleep",
@@ -256,8 +256,11 @@ export const catalogManifest: AudioCatalogManifest = {
       360048,
       8564581,
       "55afb320f05df055a95d150d9254a9cb807ed587bcf21ec242dd87ea2c9b4798",
-      "previews/second-sleep/v1/preview.m4a",
-      "catalog/second-sleep/v1/full.m4a",
+      "spc_catalog_second-sleep_v1.m4a",
+      "audio/mp4",
+      "aac-lc",
+      44100,
+      2,
     ),
     bundledAsset(
       "slow-unwind",
