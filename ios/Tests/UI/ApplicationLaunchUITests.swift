@@ -267,10 +267,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         makeHittable(sleepTab, in: app)
         sleepTab.tap()
         XCTAssertTrue(app.otherElements["sleep.tab"].waitForExistence(timeout: 8))
-        let masterToggle = app.switches["sleep.masterToggle"].exists
-            ? app.switches["sleep.masterToggle"]
-            : app.buttons["sleep.masterToggle"]
-        XCTAssertTrue(masterToggle.waitForExistence(timeout: 8))
+        let alarmToggle = app.switches["sleep.alarmToggle"].exists
+            ? app.switches["sleep.alarmToggle"]
+            : app.buttons["sleep.alarmToggle"]
+        XCTAssertTrue(alarmToggle.waitForExistence(timeout: 8))
         XCTAssertTrue(app.otherElements["sleep.fullAlarmPage"].exists)
         XCTAssertTrue(app.buttons["home.editSchedule"].exists)
         capture("15-sleep-tab", app: app)

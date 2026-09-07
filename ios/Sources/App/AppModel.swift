@@ -719,46 +719,50 @@ final class AppModel {
         tonightScheduleSaveTask?.cancel()
         tonightScheduleSaveTask = Task { @MainActor [weak self] in
             if !immediate {
-                do {
-                    try await Task.sleep(nanoseconds: 500_000_000)
-                } catch {
-                    return
-                }
+                try? await Task.sleep(nanoseconds: 500_000_000)
             }
-            guard let self else { return }
+            guard let self, !Task.isCancelled else { return }
             defer { self.tonightScheduleSaveTask = nil }
-            do {
-                var storedSchedule = schedule
-                if case let .personal(clipID)? = storedSchedule.wakeAudio?.reference {
-                    if let clip = self.personalClips.first(where: { $0.id == clipID }) {
-                        let prepared = try await self.personalAlarmAudioPreparer.prepare(clip: clip)
-                        storedSchedule.wakeAudio?.localFileName = prepared.fileName
-                        storedSchedule.wakeAudio?.availability = .available
-                    } else {
-                        storedSchedule.wakeAudio?.localFileName = nil
-                        storedSchedule.wakeAudio?.availability = .unavailableOnThisDevice
-                    }
-                    if let index = self.alarmSchedules.firstIndex(where: { $0.id == storedSchedule.id }) {
-                        self.alarmSchedules[index] = storedSchedule
-                    }
+            await self.persistTonightSchedule(schedule, profileID: profileID, userID: userID)
+        }
+    }
+
+    private func persistTonightSchedule(
+        _ schedule: AlarmSchedule,
+        profileID: UUID,
+        userID: UUID
+    ) async {
+        do {
+            var storedSchedule = schedule
+            if case let .personal(clipID)? = storedSchedule.wakeAudio?.reference {
+                if let clip = personalClips.first(where: { $0.id == clipID }) {
+                    let prepared = try await personalAlarmAudioPreparer.prepare(clip: clip)
+                    storedSchedule.wakeAudio?.localFileName = prepared.fileName
+                    storedSchedule.wakeAudio?.availability = .available
+                } else {
+                    storedSchedule.wakeAudio?.localFileName = nil
+                    storedSchedule.wakeAudio?.availability = .unavailableOnThisDevice
                 }
-                let persisted = try await self.store.saveAlarmSchedule(
-                    storedSchedule,
-                    profileID: profileID,
-                    userID: userID
-                )
-                if let index = self.alarmSchedules.firstIndex(where: { $0.id == persisted.id }) {
-                    self.alarmSchedules[index] = persisted
+                if let index = alarmSchedules.firstIndex(where: { $0.id == storedSchedule.id }) {
+                    alarmSchedules[index] = storedSchedule
                 }
-                try await self.refreshScheduleDeviceArtifacts(requestPermission: false)
-                if storedSchedule.wakeAudioIsUnavailableOnThisDevice, storedSchedule.isEnabled {
-                    self.feedbackMessage =
-                        "Audio unavailable on this device. " +
-                        "Choose another sound before this alarm can be scheduled."
-                }
-            } catch {
-                self.feedbackMessage = "The schedule could not be saved. Nothing was replaced."
             }
+            let persisted = try await store.saveAlarmSchedule(
+                storedSchedule,
+                profileID: profileID,
+                userID: userID
+            )
+            if let index = alarmSchedules.firstIndex(where: { $0.id == persisted.id }) {
+                alarmSchedules[index] = persisted
+            }
+            try await refreshScheduleDeviceArtifacts(requestPermission: false)
+            if storedSchedule.wakeAudioIsUnavailableOnThisDevice, storedSchedule.isEnabled {
+                feedbackMessage =
+                    "Audio unavailable on this device. " +
+                    "Choose another sound before this alarm can be scheduled."
+            }
+        } catch {
+            feedbackMessage = "The schedule could not be saved. Nothing was replaced."
         }
     }
 

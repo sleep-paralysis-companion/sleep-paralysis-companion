@@ -144,7 +144,7 @@ struct SleepTabView: View {
                 ))
                 .labelsHidden()
                 .tint(Color(red: 0.50, green: 0.28, blue: 0.94))
-                .accessibilityIdentifier("sleep.masterToggle")
+                .accessibilityIdentifier("sleep.alarmToggle")
             }
         }
     }

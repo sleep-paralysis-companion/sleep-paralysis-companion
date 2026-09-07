@@ -192,7 +192,7 @@ final class SleepTabTonightScheduleTests: XCTestCase {
 
         let initialID = model.tonightScheduleUIModel.id
 
-        // Turn master toggle OFF
+        // Turn primary alarm toggle OFF
         model.toggleTonightSchedule(enabled: false)
 
         // Must still be the same schedule in the OFF state, not jump to another
