@@ -12,7 +12,7 @@ import UIKit
 final class AppModel {
     private(set) var launchDestination = LaunchDestination.loading
     var path: [AppRoute] = []
-    var selectedTab = AppTab.home
+    var selectedTab = AppTab.sleep
     var isMorningCheckInPresented = false
     private(set) var presentedSheet: AppSheet?
     var feedbackMessage: String?
@@ -578,6 +578,7 @@ final class AppModel {
                 alarmSchedules = [namedSchedule]
                 launchDestination = .home
                 resetNavigation()
+                selectedTab = .home
                 do {
                     try await refreshScheduleDeviceArtifacts(requestPermission: requestPermission)
                 } catch {
@@ -1963,7 +1964,7 @@ final class AppModel {
     }
 
     private func resetNavigation() {
-        selectedTab = .home
+        selectedTab = .sleep
         path = []
         presentedSheet = nil
         isMorningCheckInPresented = false
