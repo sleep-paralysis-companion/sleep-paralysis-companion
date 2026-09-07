@@ -129,4 +129,36 @@ final class NavigationStateTests: XCTestCase {
         XCTAssertEqual(signedInModel.path, [.helpLegal])
         XCTAssertNil(signedInModel.feedbackMessage)
     }
+
+    @MainActor
+    func testMeTabAccountNavigationAndSignOutFlow() async {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        model.selectTab(.me)
+        XCTAssertEqual(model.selectedTab, .me)
+        XCTAssertEqual(model.path, [])
+
+        // User taps Account row
+        model.open(.account)
+        XCTAssertEqual(model.path, [.account])
+
+        // User pops back to Me
+        model.setPath(Array(model.path.dropLast()))
+        XCTAssertEqual(model.path, [])
+
+        // User taps Log Out and confirms in dialog
+        model.signOut()
+
+        await waitForAppModel {
+            model.launchDestination == .authentication
+        }
+
+        XCTAssertEqual(model.launchDestination, .authentication)
+        XCTAssertNil(model.profileID)
+        XCTAssertNil(model.userID)
+    }
 }

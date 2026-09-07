@@ -16,6 +16,7 @@ struct AppRootView: View {
             )
         ) {
             launchContent
+                .enableNativeBackGesture()
                 .navigationDestination(for: AppRoute.self, destination: destination)
         }
         .font(AppTypographyRole.body)
@@ -126,6 +127,7 @@ struct AppRootView: View {
 
     private func destination(_ route: AppRoute) -> some View {
         AppRouteDestinationView(model: model, route: route)
+            .enableNativeBackGesture()
     }
 }
 

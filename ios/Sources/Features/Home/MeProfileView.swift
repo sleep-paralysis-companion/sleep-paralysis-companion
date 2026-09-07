@@ -5,6 +5,7 @@ struct MeProfileView: View {
     @Bindable var model: AppModel
     @Environment(\.openURL) private var openURL
     @State private var confirmCancellation = false
+    @State private var confirmLogOut = false
 
     var body: some View {
         NightScreen {
@@ -23,6 +24,14 @@ struct MeProfileView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Apple manages subscriptions and cancellation.")
+        }
+        .confirmationDialog("Log Out?", isPresented: $confirmLogOut) {
+            Button("Log Out", role: .destructive) {
+                model.signOut()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Protected local data remains on this device and requires the same account to reopen.")
         }
     }
 
@@ -100,6 +109,7 @@ struct MeProfileView: View {
     private var menu: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("ACCOUNT").font(AppTypographyRole.label).foregroundStyle(.white.opacity(0.5)).padding(.bottom, 10)
+            row("👤", "Account") { model.open(.account) }
             row("📝", "Edit Profile") { model.open(.editProfile) }
             row("🔔", "Notifications", detail: model.reminderAuthorization == .authorized ? "On" : "Off") {
                 model.manageNotifications()
@@ -114,7 +124,31 @@ struct MeProfileView: View {
             row("🎧", "Audio library") { model.open(.curatedAudioLibrary) }
             row("🎙️", "Personal audio") { model.open(.audioLibrary) }
             row("⚙️", "Default Settings") { model.open(.defaultSettings) }
+            logoutRow { confirmLogOut = true }
         }
+    }
+
+    private func logoutRow(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(Color.red.opacity(0.85))
+                    .frame(width: 48, height: 48)
+                    .background(
+                        Color.red.opacity(0.15),
+                        in: RoundedRectangle(cornerRadius: 13)
+                    )
+                Text("Log Out")
+                    .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
+                    .foregroundStyle(Color.red.opacity(0.9))
+                Spacer()
+            }
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 16)
+        .accessibilityIdentifier("me.logOut")
     }
 
     private func row(
