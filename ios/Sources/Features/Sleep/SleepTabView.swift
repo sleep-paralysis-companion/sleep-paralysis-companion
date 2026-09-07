@@ -38,6 +38,7 @@ struct SleepTabView: View {
                     }
                     .scrollIndicators(.hidden)
                     .tag(SleepTabMode.sleep)
+                    .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("sleep.fullAlarmPage")
 
                     ScrollView {
@@ -48,6 +49,7 @@ struct SleepTabView: View {
                     }
                     .scrollIndicators(.hidden)
                     .tag(SleepTabMode.wakeOnly)
+                    .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("sleep.wakeOnlyPage")
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -61,6 +63,7 @@ struct SleepTabView: View {
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
         .toolbar(.hidden, for: .navigationBar)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("sleep.tab")
         .onAppear {
             if !isInitialized {
