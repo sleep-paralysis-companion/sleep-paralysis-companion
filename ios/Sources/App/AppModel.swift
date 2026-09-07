@@ -12,7 +12,7 @@ import UIKit
 final class AppModel {
     private(set) var launchDestination = LaunchDestination.loading
     var path: [AppRoute] = []
-    var selectedTab = AppTab.sleep
+    var selectedTab = AppTab.home
     var isMorningCheckInPresented = false
     private(set) var presentedSheet: AppSheet?
     var feedbackMessage: String?
@@ -1963,7 +1963,7 @@ final class AppModel {
     }
 
     private func resetNavigation() {
-        selectedTab = .sleep
+        selectedTab = .home
         path = []
         presentedSheet = nil
         isMorningCheckInPresented = false
