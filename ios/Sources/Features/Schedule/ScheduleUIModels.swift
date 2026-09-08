@@ -108,7 +108,7 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         wakeHour: Int,
         wakeMinute: Int,
         repeatWeekdaysMask: Int,
-        bedtimeReminderLeadMinutes: Int?,
+        bedtimeReminderLeadMinutes: Int? = 15,
         gentleWakeLeadMinutes: Int? = nil,
         preWakeReminderLeadMinutes: Int? = nil,
         wakeAudio: ScheduleUIAudioSelection,

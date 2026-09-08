@@ -551,11 +551,7 @@ final class AlarmFlowTests: XCTestCase {
         model.snoozeAlarm(minutes: 9)
         XCTAssertFalse(model.isAlarmRinging)
 
-        // AlarmKit deep link arrives at 07:00:15 (same minute)
-        guard let deepLinkURL = URL(string: "spc://alarm-ringing") else {
-            XCTFail("Invalid deep link URL")
-            return
-        }
+        // AlarmKit event arrives at 07:00:15 (same minute)
         // Simulating the minute key already registered for the schedule
         let occurrenceKey = WakeAlarmPlanner.occurrenceMinuteKey(for: schedule.id, at: triggerTime, calendar: calendar)
         XCTAssertTrue(model.firedAlarmMinuteKeys.contains(occurrenceKey))

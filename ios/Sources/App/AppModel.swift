@@ -434,6 +434,10 @@ final class AppModel {
             self.profileID = profileID
             self.userID = userID
         }
+
+        func setPlaybackStateForTesting(_ state: GroundingPlaybackState) {
+            playbackState = state
+        }
     #endif
 
     private func configureCatalogAudioServiceIfAvailable() async {

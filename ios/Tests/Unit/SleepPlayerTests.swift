@@ -291,7 +291,7 @@ final class SleepPlayerTests: XCTestCase {
         model.startSleepSession()
 
         // When idle or visualFallback, resume triggers recovery grounding
-        model.playbackState = .visualFallback
+        model.setPlaybackStateForTesting(.visualFallback)
         _ = model.performSleepSessionAudioAction(.resume, presentSession: false)
         XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
 
