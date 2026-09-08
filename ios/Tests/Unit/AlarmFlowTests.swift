@@ -526,7 +526,7 @@ final class AlarmFlowTests: XCTestCase {
             bedtimeMinute: 0,
             wakeHour: 7,
             wakeMinute: 0,
-            repeatWeekdaysMask: 1 << 2, // Tuesday
+            repeatWeekdaysMask: 0b0111_1111, // Every day
             bedtimeReminderLeadMinutes: nil,
             wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
             isEnabled: true

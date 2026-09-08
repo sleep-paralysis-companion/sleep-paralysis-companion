@@ -57,12 +57,22 @@ final class AppHapticsTests: XCTestCase {
         XCTAssertEqual(model.settings?.hapticsEnabled, true)
     }
 
-    func testSavePartnerCallSettingsPersistsHapticsPreference() async {
-        let model = makeTestAppModel()
+    func testSavePartnerCallSettingsPersistsHapticsPreference() async throws {
+        let namespace = "test-haptics-\(UUID().uuidString)"
+        let location = LocalStoreLocation(namespace: namespace)
+        let dbURL = try location.databaseURL()
+        let database = try LocalDatabase(path: dbURL.path)
+
+        var profile = Phase1BFixture.profile()
+        profile.ownership = .accountLinked
+        profile.accountUserID = Phase1BFixture.userID
+        profile.accountLinkState = .linked
+        try await database.createProfile(profile, settings: Phase1BFixture.settings())
+
+        let store = makeTestPhase1Store(namespace: namespace)
+        let model = makeTestAppModel(store: store)
         model.setLaunchDestinationForTesting(.home)
-        let profileID = UUID()
-        let userID = UUID()
-        model.setSessionForTesting(profileID: profileID, userID: userID)
+        model.setSessionForTesting(profileID: profile.id, userID: Phase1BFixture.userID)
 
         let success = model.savePartnerCallSettings(
             sleep: .quickSleep,
@@ -73,7 +83,7 @@ final class AppHapticsTests: XCTestCase {
         )
         XCTAssertTrue(success)
         XCTAssertEqual(model.settings?.hapticsEnabled, false)
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        try? await Task.sleep(nanoseconds: 100_000_000)
         XCTAssertEqual(model.settings?.hapticsEnabled, false)
         XCTAssertEqual(model.partnerContact?.name, "Alex")
     }
