@@ -60,7 +60,7 @@ final class WakeAlarmFoundationTests: XCTestCase {
         XCTAssertTrue(schedule.isValid)
     }
 
-    func testWakeAlarmDueDetectionForRecurringSchedule() {
+    func testWakeAlarmDueDetectionForRecurringSchedule() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
@@ -85,19 +85,19 @@ final class WakeAlarmFoundationTests: XCTestCase {
         components.hour = 7
         components.minute = 30
         components.second = 0
-        let matchingDate = calendar.date(from: components)!
+        let matchingDate = try XCTUnwrap(calendar.date(from: components))
 
         XCTAssertTrue(WakeAlarmPlanner.isWakeAlarmDue(for: schedule, at: matchingDate, calendar: calendar))
 
         // Non-matching minute: 07:31
         components.minute = 31
-        let nonMatchingMinute = calendar.date(from: components)!
+        let nonMatchingMinute = try XCTUnwrap(calendar.date(from: components))
         XCTAssertFalse(WakeAlarmPlanner.isWakeAlarmDue(for: schedule, at: nonMatchingMinute, calendar: calendar))
 
         // Non-matching weekday: Wednesday Sept 9 at 07:30
         components.day = 9
         components.minute = 30
-        let nonMatchingDay = calendar.date(from: components)!
+        let nonMatchingDay = try XCTUnwrap(calendar.date(from: components))
         XCTAssertFalse(WakeAlarmPlanner.isWakeAlarmDue(for: schedule, at: nonMatchingDay, calendar: calendar))
 
         // Disabled schedule
@@ -106,7 +106,7 @@ final class WakeAlarmFoundationTests: XCTestCase {
         XCTAssertFalse(WakeAlarmPlanner.isWakeAlarmDue(for: disabledSchedule, at: matchingDate, calendar: calendar))
     }
 
-    func testWakeAlarmDueDetectionForOneTimeSchedule() {
+    func testWakeAlarmDueDetectionForOneTimeSchedule() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
@@ -131,17 +131,17 @@ final class WakeAlarmFoundationTests: XCTestCase {
         components.hour = 8
         components.minute = 0
         components.second = 15
-        let matchingDate = calendar.date(from: components)!
+        let matchingDate = try XCTUnwrap(calendar.date(from: components))
 
         XCTAssertTrue(WakeAlarmPlanner.isWakeAlarmDue(for: schedule, at: matchingDate, calendar: calendar))
 
         // Wrong day
         components.day = 16
-        let wrongDay = calendar.date(from: components)!
+        let wrongDay = try XCTUnwrap(calendar.date(from: components))
         XCTAssertFalse(WakeAlarmPlanner.isWakeAlarmDue(for: schedule, at: wrongDay, calendar: calendar))
     }
 
-    func testOccurrenceMinuteKeyDeduplication() {
+    func testOccurrenceMinuteKeyDeduplication() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
@@ -154,13 +154,13 @@ final class WakeAlarmFoundationTests: XCTestCase {
         components.hour = 7
         components.minute = 30
         components.second = 5
-        let date1 = calendar.date(from: components)!
+        let date1 = try XCTUnwrap(calendar.date(from: components))
 
         components.second = 45
-        let date2 = calendar.date(from: components)!
+        let date2 = try XCTUnwrap(calendar.date(from: components))
 
         components.minute = 31
-        let date3 = calendar.date(from: components)!
+        let date3 = try XCTUnwrap(calendar.date(from: components))
 
         let key1 = WakeAlarmPlanner.occurrenceMinuteKey(for: id, at: date1, calendar: calendar)
         let key2 = WakeAlarmPlanner.occurrenceMinuteKey(for: id, at: date2, calendar: calendar)
@@ -171,7 +171,7 @@ final class WakeAlarmFoundationTests: XCTestCase {
         XCTAssertTrue(key1.contains("2026-9-8-7-30"))
     }
 
-    func testNextWakeDateCalculation() {
+    func testNextWakeDateCalculation() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
 
@@ -197,26 +197,26 @@ final class WakeAlarmFoundationTests: XCTestCase {
         comp.hour = 6
         comp.minute = 0
         comp.second = 0
-        let beforeWake = calendar.date(from: comp)!
+        let beforeWake = try XCTUnwrap(calendar.date(from: comp))
 
         let nextFromBefore = WakeAlarmPlanner.nextWakeDate(for: recurring, after: beforeWake, calendar: calendar)
         XCTAssertNotNil(nextFromBefore)
         comp.hour = 7
         comp.minute = 30
-        let expectedToday = calendar.date(from: comp)!
+        let expectedToday = try XCTUnwrap(calendar.date(from: comp))
         XCTAssertEqual(nextFromBefore, expectedToday)
 
         // Tuesday Sept 8, 2026 at 08:00 (past wake time -> next Tuesday Sept 15)
         comp.hour = 8
         comp.minute = 0
-        let afterWake = calendar.date(from: comp)!
+        let afterWake = try XCTUnwrap(calendar.date(from: comp))
 
         let nextFromAfter = WakeAlarmPlanner.nextWakeDate(for: recurring, after: afterWake, calendar: calendar)
         XCTAssertNotNil(nextFromAfter)
         comp.day = 15
         comp.hour = 7
         comp.minute = 30
-        let expectedNextWeek = calendar.date(from: comp)!
+        let expectedNextWeek = try XCTUnwrap(calendar.date(from: comp))
         XCTAssertEqual(nextFromAfter, expectedNextWeek)
 
         // One-time alarm: Sept 20, 2026 at 09:00
@@ -237,7 +237,7 @@ final class WakeAlarmFoundationTests: XCTestCase {
         comp.day = 20
         comp.hour = 9
         comp.minute = 0
-        let expectedOneTime = calendar.date(from: comp)!
+        let expectedOneTime = try XCTUnwrap(calendar.date(from: comp))
         XCTAssertEqual(nextOneTime, expectedOneTime)
 
         // Disabled schedule should return nil

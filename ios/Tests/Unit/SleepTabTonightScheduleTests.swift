@@ -213,9 +213,9 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         AppHaptics.selectionChanged(hapticsEnabled: true)
     }
 
-    func testDynamicWakeOnlyNextOccurrenceLaterToday() {
+    func testDynamicWakeOnlyNextOccurrenceLaterToday() throws {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         var components = DateComponents()
         components.year = 2026
         components.month = 9
@@ -223,10 +223,15 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         components.hour = 14
         components.minute = 30
         components.second = 0
-        let now = calendar.date(from: components)!
+        let now = try XCTUnwrap(calendar.date(from: components))
 
         // Wake time 16:30 is 2 hours ahead -> later today -> today
-        let targetToday = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 16, wakeMinute: 30, now: now, calendar: calendar)
+        let targetToday = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 16,
+            wakeMinute: 30,
+            now: now,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.day, from: targetToday), 8)
         XCTAssertEqual(calendar.component(.month, from: targetToday), 9)
         XCTAssertEqual(calendar.component(.year, from: targetToday), 2026)
@@ -241,9 +246,9 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         XCTAssertEqual(calendar.component(.day, from: targetMinuteAhead), 8)
     }
 
-    func testDynamicWakeOnlyNextOccurrenceEarlierToday() {
+    func testDynamicWakeOnlyNextOccurrenceEarlierToday() throws {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         var components = DateComponents()
         components.year = 2026
         components.month = 9
@@ -251,7 +256,7 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         components.hour = 14
         components.minute = 30
         components.second = 0
-        let now = calendar.date(from: components)!
+        let now = try XCTUnwrap(calendar.date(from: components))
 
         // Wake time 12:30 is 2 hours behind -> already passed -> tomorrow (Sept 9)
         let targetTomorrow = ScheduleUIModel.nextWakeOnlyDate(
@@ -283,16 +288,16 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         XCTAssertEqual(calendar.component(.day, from: targetMinuteBehind), 9)
     }
 
-    func testUpdateWakeOnlyNextOccurrenceOnScheduleUIModel() {
+    func testUpdateWakeOnlyNextOccurrenceOnScheduleUIModel() throws {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         var components = DateComponents()
         components.year = 2026
         components.month = 9
         components.day = 8
         components.hour = 10
         components.minute = 0
-        let now = calendar.date(from: components)!
+        let now = try XCTUnwrap(calendar.date(from: components))
 
         var draft = ScheduleUIModel(
             name: "Wake Test",
@@ -307,13 +312,14 @@ final class SleepTabTonightScheduleTests: XCTestCase {
             isEnabled: true
         )
         draft.updateWakeOnlyNextOccurrence(now: now, calendar: calendar)
-        XCTAssertNotNil(draft.oneTimeDate)
-        XCTAssertEqual(calendar.component(.day, from: draft.oneTimeDate!), 8)
+        let firstTarget = try XCTUnwrap(draft.oneTimeDate)
+        XCTAssertEqual(calendar.component(.day, from: firstTarget), 8)
 
         // Change wakeHour to 8 (earlier than 10)
         draft.wakeHour = 8
         draft.updateWakeOnlyNextOccurrence(now: now, calendar: calendar)
-        XCTAssertEqual(calendar.component(.day, from: draft.oneTimeDate!), 9)
+        let secondTarget = try XCTUnwrap(draft.oneTimeDate)
+        XCTAssertEqual(calendar.component(.day, from: secondTarget), 9)
     }
 
     @MainActor
@@ -351,9 +357,9 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         XCTAssertEqual(model.selectedAlarmScheduleID, model.tonightScheduleID)
     }
 
-    func testDynamicWakeOnlyNextOccurrenceMidnightBoundaryAndYearRollover() {
+    func testDynamicWakeOnlyNextOccurrenceMidnightBoundaryAndYearRollover() throws {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
 
         // Case A: 23:59 on Dec 31, 2026 for wake time 00:05 -> targets tomorrow (Jan 1, 2027)
         var components = DateComponents()
@@ -363,7 +369,7 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         components.hour = 23
         components.minute = 59
         components.second = 30
-        let newYearsEve = calendar.date(from: components)!
+        let newYearsEve = try XCTUnwrap(calendar.date(from: components))
 
         let targetNextDay = ScheduleUIModel.nextWakeOnlyDate(
             wakeHour: 0,
@@ -381,7 +387,7 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         components.day = 1
         components.hour = 0
         components.minute = 1
-        let justAfterMidnight = calendar.date(from: components)!
+        let justAfterMidnight = try XCTUnwrap(calendar.date(from: components))
 
         let targetLaterToday = ScheduleUIModel.nextWakeOnlyDate(
             wakeHour: 0,

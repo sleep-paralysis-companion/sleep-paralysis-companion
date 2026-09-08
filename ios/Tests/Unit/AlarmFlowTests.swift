@@ -259,7 +259,7 @@ final class AlarmFlowTests: XCTestCase {
     }
 
     @MainActor
-    func testForegroundWallClockAlarmTriggerCalculationAndDeduplication() {
+    func testForegroundWallClockAlarmTriggerCalculationAndDeduplication() throws {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
 
@@ -294,7 +294,7 @@ final class AlarmFlowTests: XCTestCase {
         comp.hour = 6
         comp.minute = 44
         comp.second = 30
-        let nonMatchingTime = calendar.date(from: comp)!
+        let nonMatchingTime = try XCTUnwrap(calendar.date(from: comp))
 
         model.checkForegroundAlarmTriggers(at: nonMatchingTime, calendar: calendar)
         XCTAssertFalse(model.isAlarmRinging)
@@ -302,7 +302,7 @@ final class AlarmFlowTests: XCTestCase {
         // Matching time: Tuesday at 06:45:00
         comp.minute = 45
         comp.second = 0
-        let matchingTime = calendar.date(from: comp)!
+        let matchingTime = try XCTUnwrap(calendar.date(from: comp))
 
         model.checkForegroundAlarmTriggers(at: matchingTime, calendar: calendar)
         XCTAssertTrue(model.isAlarmRinging)
@@ -313,7 +313,7 @@ final class AlarmFlowTests: XCTestCase {
 
         // Foreground observer ticks again during the same minute: 06:45:15
         comp.second = 15
-        let sameMinuteTime = calendar.date(from: comp)!
+        let sameMinuteTime = try XCTUnwrap(calendar.date(from: comp))
         model.checkForegroundAlarmTriggers(at: sameMinuteTime, calendar: calendar)
 
         // Must NOT re-trigger ringing for the same occurrence minute!
@@ -431,7 +431,7 @@ final class AlarmFlowTests: XCTestCase {
     }
 
     @MainActor
-    func testSnoozeWakeUpBypassesMinuteDeduplication() {
+    func testSnoozeWakeUpBypassesMinuteDeduplication() throws {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
 
@@ -463,7 +463,7 @@ final class AlarmFlowTests: XCTestCase {
         comp.hour = 7
         comp.minute = 0
         comp.second = 0
-        let triggerTime = calendar.date(from: comp)!
+        let triggerTime = try XCTUnwrap(calendar.date(from: comp))
 
         // Initial trigger
         model.triggerAlarmRinging(schedule: schedule, at: triggerTime, calendar: calendar)
@@ -508,7 +508,7 @@ final class AlarmFlowTests: XCTestCase {
     }
 
     @MainActor
-    func testAlarmKitDeepLinkDeduplicationAfterForegroundSnooze() {
+    func testAlarmKitDeepLinkDeduplicationAfterForegroundSnooze() throws {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
 
@@ -542,7 +542,7 @@ final class AlarmFlowTests: XCTestCase {
         comp.hour = 7
         comp.minute = 0
         comp.second = 5
-        let triggerTime = calendar.date(from: comp)!
+        let triggerTime = try XCTUnwrap(calendar.date(from: comp))
 
         model.checkForegroundAlarmTriggers(at: triggerTime, calendar: calendar)
         XCTAssertTrue(model.isAlarmRinging)
