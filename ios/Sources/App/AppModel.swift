@@ -430,9 +430,25 @@ final class AppModel {
             launchDestination = destination
         }
 
-        func setSessionForTesting(profileID: UUID?, userID: UUID?) {
+        func setSessionForTesting(profileID: UUID?, userID: UUID?, settings: AppSettings? = nil) {
             self.profileID = profileID
             self.userID = userID
+            if let profileID {
+                self.settings = settings ?? AppSettings(
+                    profileID: profileID,
+                    preferredGroundingAssetID: nil,
+                    preferredModality: .guidedMeditation,
+                    hapticsEnabled: true,
+                    lastSelectedHistoryPeriod: .sevenDays,
+                    diagnosticsEnabled: false,
+                    defaultSleepSupport: .quickSleep,
+                    defaultPostEpisodeSupport: .calmingAudio,
+                    updatedAt: Date(),
+                    revision: 1
+                )
+            } else {
+                self.settings = settings
+            }
         }
 
         func setPlaybackStateForTesting(_ state: GroundingPlaybackState) {
@@ -1121,7 +1137,10 @@ final class AppModel {
         audioController.stopPlayback()
 
         #if DEBUG
-            if ProcessInfo.processInfo.environment["SPC_UI_TEST_CATALOG_SCENARIO"] != nil {
+            if ProcessInfo.processInfo.environment["SPC_UI_TEST_CATALOG_SCENARIO"] != nil
+                || ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+                || NSClassFromString("XCTestCase") != nil
+            {
                 playbackState = .playing(asset.id)
                 updateSleepSessionLiveActivityForPlayback()
                 return
@@ -1149,15 +1168,24 @@ final class AppModel {
 
     func togglePlayback() {
         if let selectedCatalogAsset {
-            switch catalogAudioPlayer.state {
-            case .playing, .streaming:
+            switch playbackState {
+            case .playing:
                 catalogAudioPlayer.pause()
                 playbackState = .paused(selectedCatalogAsset.id)
             case .paused:
                 catalogAudioPlayer.resume()
                 playbackState = .playing(selectedCatalogAsset.id)
             default:
-                playCatalogAsset(selectedCatalogAsset)
+                switch catalogAudioPlayer.state {
+                case .playing, .streaming:
+                    catalogAudioPlayer.pause()
+                    playbackState = .paused(selectedCatalogAsset.id)
+                case .paused:
+                    catalogAudioPlayer.resume()
+                    playbackState = .playing(selectedCatalogAsset.id)
+                default:
+                    playCatalogAsset(selectedCatalogAsset)
+                }
             }
             updateSleepSessionLiveActivityForPlayback()
             return
