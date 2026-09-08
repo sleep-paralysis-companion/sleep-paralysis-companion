@@ -560,7 +560,7 @@ struct SleepTabView: View {
                 colors: [
                     Color(red: 0.03, green: 0.02, blue: 0.09).opacity(0),
                     Color(red: 0.03, green: 0.02, blue: 0.09).opacity(0.8),
-                    Color(red: 0.03, green: 0.02, blue: 0.09)
+                    Color(red: 0.03, green: 0.02, blue: 0.09),
                 ],
                 startPoint: .top,
                 endPoint: .bottom

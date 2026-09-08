@@ -1514,13 +1514,12 @@ final class AppModel {
         isSnooze: Bool = false
     ) {
         guard !isAlarmRinging else { return }
+        let dueSchedule = alarmSchedules.first {
+            $0.isEnabled && WakeAlarmPlanner.isWakeAlarmDue(for: $0, at: date, calendar: calendar)
+        }
         let targetSchedule = schedule
-            ?? alarmSchedules
-                .first(where: {
-                    $0.isEnabled && WakeAlarmPlanner.isWakeAlarmDue(for: $0, at: date, calendar: calendar)
-                })
-                .map { ScheduleUIModel($0) }
-            ?? scheduleUIModels.first(where: { $0.isEnabled })
+            ?? dueSchedule.map { ScheduleUIModel($0) }
+            ?? scheduleUIModels.first { $0.isEnabled }
 
         if let targetSchedule, !isSnooze {
             let key = WakeAlarmPlanner.occurrenceMinuteKey(for: targetSchedule.id, at: date, calendar: calendar)
@@ -1551,9 +1550,9 @@ final class AppModel {
                 try audioController.playAlarm(url: audioURL, identifier: "alarm-ringing")
                 playbackState = audioController.playbackState
             } catch {
-                if let defaultURL = SystemAudioAssets.alarmAudioURL(for: SystemAudioAssets.defaultAlarmFileName)
-                    ?? SystemAudioAssets.bundledURL(for: SystemAudioAssets.defaultAlarmFileName),
-                   defaultURL != audioURL {
+                let defaultURL = SystemAudioAssets.alarmAudioURL(for: SystemAudioAssets.defaultAlarmFileName)
+                    ?? SystemAudioAssets.bundledURL(for: SystemAudioAssets.defaultAlarmFileName)
+                if let defaultURL, defaultURL != audioURL {
                     do {
                         try audioController.playAlarm(url: defaultURL, identifier: "alarm-ringing")
                         playbackState = audioController.playbackState
@@ -1584,13 +1583,15 @@ final class AppModel {
                 }
             case .catalog:
                 if let fileName = domainAudio.localFileName,
-                   let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
+                   let url = SystemAudioAssets.alarmAudioURL(for: fileName)
+                {
                     return url
                 }
             case let .personal(clipID):
                 if let clip = personalClips.first(where: { $0.id == clipID }),
                    let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
-                   FileManager.default.fileExists(atPath: url.path) {
+                   FileManager.default.fileExists(atPath: url.path)
+                {
                     return url
                 }
             }
@@ -1617,14 +1618,16 @@ final class AppModel {
                     }
                     if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == id }),
                        let soundName = asset.systemSoundFileName,
-                       let url = SystemAudioAssets.alarmAudioURL(for: soundName) {
+                       let url = SystemAudioAssets.alarmAudioURL(for: soundName)
+                    {
                         return url
                     }
                 }
             case let .personal(clipID, _, isAvailable):
                 if isAvailable, let clip = personalClips.first(where: { $0.id == clipID }) {
                     if let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
-                       FileManager.default.fileExists(atPath: url.path) {
+                       FileManager.default.fileExists(atPath: url.path)
+                    {
                         return url
                     }
                 }
@@ -1713,9 +1716,12 @@ final class AppModel {
         }
 
         let isUnwindActive: Bool = {
-            if case let .playing(id) = playbackState, id == "quick-unwind" || id == "slow-unwind" { return true }
-            if case let .paused(id) = playbackState, id == "quick-unwind" || id == "slow-unwind" { return true }
-            return false
+            switch playbackState {
+            case let .playing(id), let .paused(id):
+                return id == "quick-unwind" || id == "slow-unwind"
+            default:
+                return false
+            }
         }()
 
         if !isUnwindActive {
