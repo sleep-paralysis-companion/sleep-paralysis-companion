@@ -685,13 +685,10 @@ final class AppModel {
                 }
                 try await refreshScheduleDeviceArtifacts(requestPermission: false)
                 if storedSchedule.isEnabled {
-                    if wakeAlarmOutcome == .denied {
-                        feedbackMessage = "Alarm authorization is not granted. Enable permissions in Settings so alarms can ring."
-                    } else if wakeAlarmOutcome == .fallbackScheduled || storedSchedule.wakeAudioIsUnavailableOnThisDevice {
-                        feedbackMessage = "The selected audio is unavailable on this device. Your alarm was scheduled with the default wake sound."
-                    } else if wakeAlarmOutcome == .failed {
-                        feedbackMessage = "The system could not schedule this alarm. Please verify permissions and settings."
-                    }
+                    applyWakeAlarmOutcomeFeedback(
+                        outcome: wakeAlarmOutcome,
+                        isUnavailable: storedSchedule.wakeAudioIsUnavailableOnThisDevice
+                    )
                 }
             } catch {
                 alarmSchedules = previous
@@ -703,6 +700,21 @@ final class AppModel {
             startUnwindSession()
         }
         return true
+    }
+
+    private func applyWakeAlarmOutcomeFeedback(
+        outcome: WakeAlarmSchedulingOutcome,
+        isUnavailable: Bool
+    ) {
+        feedbackMessage = if outcome == .denied {
+            "Alarm authorization is not granted. Enable permissions in Settings so alarms can ring."
+        } else if outcome == .fallbackScheduled || isUnavailable {
+            "The selected audio is unavailable on this device. Your alarm was scheduled with the default wake sound."
+        } else if outcome == .failed {
+            "The system could not schedule this alarm. Please verify permissions and settings."
+        } else {
+            feedbackMessage
+        }
     }
 
     func toggleScheduleUI(_ value: ScheduleUIModel, enabled: Bool) {
@@ -773,13 +785,10 @@ final class AppModel {
             }
             try await refreshScheduleDeviceArtifacts(requestPermission: false)
             if storedSchedule.isEnabled {
-                if wakeAlarmOutcome == .denied {
-                    feedbackMessage = "Alarm authorization is not granted. Enable permissions in Settings so alarms can ring."
-                } else if wakeAlarmOutcome == .fallbackScheduled || storedSchedule.wakeAudioIsUnavailableOnThisDevice {
-                    feedbackMessage = "The selected audio is unavailable on this device. Your alarm was scheduled with the default wake sound."
-                } else if wakeAlarmOutcome == .failed {
-                    feedbackMessage = "The system could not schedule this alarm. Please verify permissions and settings."
-                }
+                applyWakeAlarmOutcomeFeedback(
+                    outcome: wakeAlarmOutcome,
+                    isUnavailable: storedSchedule.wakeAudioIsUnavailableOnThisDevice
+                )
             }
         } catch {
             feedbackMessage = "The schedule could not be saved. Nothing was replaced."
@@ -1506,7 +1515,11 @@ final class AppModel {
     ) {
         guard !isAlarmRinging else { return }
         let targetSchedule = schedule
-            ?? alarmSchedules.first(where: { $0.isEnabled && WakeAlarmPlanner.isWakeAlarmDue(for: $0, at: date, calendar: calendar) }).map { ScheduleUIModel($0) }
+            ?? alarmSchedules
+                .first(where: {
+                    $0.isEnabled && WakeAlarmPlanner.isWakeAlarmDue(for: $0, at: date, calendar: calendar)
+                })
+                .map { ScheduleUIModel($0) }
             ?? scheduleUIModels.first(where: { $0.isEnabled })
 
         if let targetSchedule, !isSnooze {
@@ -1514,7 +1527,10 @@ final class AppModel {
             guard !firedAlarmMinuteKeys.contains(key) else { return }
             firedAlarmMinuteKeys.insert(key)
             if firedAlarmMinuteKeys.count > 200 {
-                let todayPrefix = "\(calendar.component(.year, from: date))-\(calendar.component(.month, from: date))-\(calendar.component(.day, from: date))"
+                let y = calendar.component(.year, from: date)
+                let m = calendar.component(.month, from: date)
+                let d = calendar.component(.day, from: date)
+                let todayPrefix = "\(y)-\(m)-\(d)"
                 firedAlarmMinuteKeys = firedAlarmMinuteKeys.filter { $0.contains(todayPrefix) }
             }
         }
@@ -1583,7 +1599,9 @@ final class AppModel {
         if let uiAudio = target?.wakeAudio {
             switch uiAudio {
             case let .bundled(id, _):
-                let fileName = (id == SystemAudioAssets.defaultAlarmAssetID || id == SystemAudioAssets.defaultAlarmFileName)
+                let isDefault = id == SystemAudioAssets.defaultAlarmAssetID
+                    || id == SystemAudioAssets.defaultAlarmFileName
+                let fileName = isDefault
                     ? SystemAudioAssets.defaultAlarmFileName
                     : (id.hasSuffix(".caf") ? id : "\(id).caf")
                 if let url = SystemAudioAssets.alarmAudioURL(for: fileName) {

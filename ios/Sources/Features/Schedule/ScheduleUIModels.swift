@@ -154,13 +154,12 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
     ) -> Date {
         let currentHour = calendar.component(.hour, from: now)
         let currentMinute = calendar.component(.minute, from: now)
-        let isLaterToday: Bool
-        if wakeHour > currentHour {
-            isLaterToday = true
+        let isLaterToday = if wakeHour > currentHour {
+            true
         } else if wakeHour == currentHour {
-            isLaterToday = wakeMinute > currentMinute
+            wakeMinute > currentMinute
         } else {
-            isLaterToday = false
+            false
         }
         let targetDate = isLaterToday ? now : (calendar.date(byAdding: .day, value: 1, to: now) ?? now)
         return calendar.startOfDay(for: targetDate)
@@ -310,7 +309,9 @@ nonisolated extension ScheduleUIModel {
             wakeHour: wakeHour,
             wakeMinute: wakeMinute,
             weekdaysMask: kind == .wakeOnlyOneTime ? 0 : repeatWeekdaysMask,
-            oneTimeDate: kind == .wakeOnlyOneTime ? oneTimeDate.map { AlarmLocalDate(date: $0, calendar: calendar) } : nil,
+            oneTimeDate: kind == .wakeOnlyOneTime
+                ? oneTimeDate.map { AlarmLocalDate(date: $0, calendar: calendar) }
+                : nil,
             bedtimeReminderLeadMinutes: kind == .sleep ? bedtimeReminderLeadMinutes : nil,
             wakeReminderLeadMinutes: gentleWakeLeadMinutes,
             finalWakeAlarmEnabled: true,

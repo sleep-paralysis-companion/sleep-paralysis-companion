@@ -235,7 +235,9 @@ struct AudioPlayerView: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(
-                        active ? Color(red: 0.35, green: 0.58, blue: 0.95) : Color(red: 0.22, green: 0.16, blue: 0.42).opacity(0.7),
+                        active
+                            ? Color(red: 0.35, green: 0.58, blue: 0.95)
+                            : Color(red: 0.22, green: 0.16, blue: 0.42).opacity(0.7),
                         lineWidth: active ? 1.5 : 1
                     )
             }
