@@ -1570,7 +1570,7 @@ final class AppModel {
         }
     }
 
-    private func resolveDomainAlarmAudioURL(_ domainAudio: AlarmWakeAudioSelection) -> URL? {
+    private func resolveDomainAlarmAudioURL(_ domainAudio: AlarmAudioSelection) -> URL? {
         switch domainAudio.reference {
         case let .bundled(resourceName):
             let fileName = domainAudio.localFileName ?? resourceName
