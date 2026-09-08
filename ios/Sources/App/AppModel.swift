@@ -1581,13 +1581,8 @@ final class AppModel {
             }
             return nil
         case let .personal(clipID):
-            guard let clip = personalClips.first(where: { $0.id == clipID }),
-                  let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
-                  FileManager.default.fileExists(atPath: url.path)
-            else {
-                return nil
-            }
-            return url
+            let fileName = domainAudio.localFileName ?? PersonalAlarmAudioContract.fileName(for: clipID)
+            return SystemAudioAssets.localURL(for: fileName)
         }
     }
 
@@ -1615,14 +1610,9 @@ final class AppModel {
             }
             return nil
         case let .personal(clipID, _, isAvailable):
-            guard isAvailable,
-                  let clip = personalClips.first(where: { $0.id == clipID }),
-                  let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
-                  FileManager.default.fileExists(atPath: url.path)
-            else {
-                return nil
-            }
-            return url
+            guard isAvailable else { return nil }
+            let fileName = PersonalAlarmAudioContract.fileName(for: clipID)
+            return SystemAudioAssets.localURL(for: fileName)
         case .unavailable:
             return nil
         }
