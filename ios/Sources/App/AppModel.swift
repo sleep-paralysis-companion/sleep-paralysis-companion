@@ -437,7 +437,7 @@ final class AppModel {
                 self.settings = settings ?? AppSettings(
                     profileID: profileID,
                     preferredGroundingAssetID: nil,
-                    preferredModality: .guidedMeditation,
+                    preferredModality: .audio,
                     hapticsEnabled: true,
                     lastSelectedHistoryPeriod: .sevenDays,
                     diagnosticsEnabled: false,
