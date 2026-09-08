@@ -232,7 +232,12 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         XCTAssertEqual(calendar.component(.year, from: targetToday), 2026)
 
         // Wake time 14:31 is 1 minute ahead -> later today -> today
-        let targetMinuteAhead = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 14, wakeMinute: 31, now: now, calendar: calendar)
+        let targetMinuteAhead = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 14,
+            wakeMinute: 31,
+            now: now,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.day, from: targetMinuteAhead), 8)
     }
 
@@ -249,17 +254,32 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         let now = calendar.date(from: components)!
 
         // Wake time 12:30 is 2 hours behind -> already passed -> tomorrow (Sept 9)
-        let targetTomorrow = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 12, wakeMinute: 30, now: now, calendar: calendar)
+        let targetTomorrow = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 12,
+            wakeMinute: 30,
+            now: now,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.day, from: targetTomorrow), 9)
         XCTAssertEqual(calendar.component(.month, from: targetTomorrow), 9)
         XCTAssertEqual(calendar.component(.year, from: targetTomorrow), 2026)
 
         // Wake time 14:30 exact minute -> already passed / now -> tomorrow (Sept 9)
-        let targetExact = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 14, wakeMinute: 30, now: now, calendar: calendar)
+        let targetExact = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 14,
+            wakeMinute: 30,
+            now: now,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.day, from: targetExact), 9)
 
         // Wake time 14:29 1 minute behind -> tomorrow (Sept 9)
-        let targetMinuteBehind = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 14, wakeMinute: 29, now: now, calendar: calendar)
+        let targetMinuteBehind = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 14,
+            wakeMinute: 29,
+            now: now,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.day, from: targetMinuteBehind), 9)
     }
 
@@ -345,7 +365,12 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         components.second = 30
         let newYearsEve = calendar.date(from: components)!
 
-        let targetNextDay = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 0, wakeMinute: 5, now: newYearsEve, calendar: calendar)
+        let targetNextDay = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 0,
+            wakeMinute: 5,
+            now: newYearsEve,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.year, from: targetNextDay), 2027)
         XCTAssertEqual(calendar.component(.month, from: targetNextDay), 1)
         XCTAssertEqual(calendar.component(.day, from: targetNextDay), 1)
@@ -358,13 +383,23 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         components.minute = 1
         let justAfterMidnight = calendar.date(from: components)!
 
-        let targetLaterToday = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 0, wakeMinute: 5, now: justAfterMidnight, calendar: calendar)
+        let targetLaterToday = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 0,
+            wakeMinute: 5,
+            now: justAfterMidnight,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.year, from: targetLaterToday), 2027)
         XCTAssertEqual(calendar.component(.month, from: targetLaterToday), 1)
         XCTAssertEqual(calendar.component(.day, from: targetLaterToday), 1)
 
         // Case C: Same minute (23:59 for 23:59) -> already started/passed -> next day
-        let targetExactMinute = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 23, wakeMinute: 59, now: newYearsEve, calendar: calendar)
+        let targetExactMinute = ScheduleUIModel.nextWakeOnlyDate(
+            wakeHour: 23,
+            wakeMinute: 59,
+            now: newYearsEve,
+            calendar: calendar
+        )
         XCTAssertEqual(calendar.component(.year, from: targetExactMinute), 2027)
         XCTAssertEqual(calendar.component(.day, from: targetExactMinute), 1)
     }

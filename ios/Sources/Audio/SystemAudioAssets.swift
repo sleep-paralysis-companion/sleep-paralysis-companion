@@ -165,7 +165,8 @@ nonisolated enum SystemAudioAssets {
 
     static func alarmAudioURL(for requestedFileName: String?) -> URL? {
         if let resolution = resolveAlarmSound(requestedFileName: requestedFileName),
-           let url = localURL(for: resolution.fileName) {
+           let url = localURL(for: resolution.fileName)
+        {
             return url
         }
         return localURL(for: defaultAlarmFileName) ?? bundledURL(for: defaultAlarmFileName)
@@ -175,7 +176,8 @@ nonisolated enum SystemAudioAssets {
         requestedFileName: String?
     ) -> (url: URL, usedFallback: Bool)? {
         if let resolution = resolveAlarmSound(requestedFileName: requestedFileName),
-           let url = localURL(for: resolution.fileName) {
+           let url = localURL(for: resolution.fileName)
+        {
             return (url: url, usedFallback: resolution.usedFallback)
         }
         if let fallback = localURL(for: defaultAlarmFileName) {

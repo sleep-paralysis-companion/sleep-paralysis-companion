@@ -206,7 +206,7 @@ final class SleepPlayerTests: XCTestCase {
 
         // Toggling playback pauses Second Sleep
         model.togglePlayback()
-        if case .paused(let id) = model.playbackState {
+        if case let .paused(id) = model.playbackState {
             XCTAssertEqual(id, "second-sleep")
         } else {
             XCTFail("Expected playbackState to be .paused(\"second-sleep\")")
@@ -214,7 +214,7 @@ final class SleepPlayerTests: XCTestCase {
 
         // Toggling playback again resumes Second Sleep
         model.togglePlayback()
-        if case .playing(let id) = model.playbackState {
+        if case let .playing(id) = model.playbackState {
             XCTAssertEqual(id, "second-sleep")
         } else {
             XCTFail("Expected playbackState to be .playing(\"second-sleep\")")
@@ -254,7 +254,8 @@ final class SleepPlayerTests: XCTestCase {
         XCTAssertEqual(model.sleepSessionStartedAt, initialStartedAt)
         XCTAssertEqual(model.selectedTab, .home)
 
-        // When already active, presentActiveSleepSession re-presents without changing startedAt or clobbering selectedTab
+        // When already active, presentActiveSleepSession re-presents without changing
+        // startedAt or clobbering selectedTab
         model.presentActiveSleepSession()
         XCTAssertTrue(model.isSleepSessionPresented)
         XCTAssertEqual(model.sleepSessionStartedAt, initialStartedAt)
@@ -296,13 +297,13 @@ final class SleepPlayerTests: XCTestCase {
 
         // When playing Second Sleep, pause pauses it
         _ = model.performSleepSessionAudioAction(.pause, presentSession: false)
-        if case .paused(let id) = model.playbackState {
+        if case let .paused(id) = model.playbackState {
             XCTAssertEqual(id, "second-sleep")
         }
 
         // When paused, resume toggles back to playing
         _ = model.performSleepSessionAudioAction(.resume, presentSession: false)
-        if case .playing(let id) = model.playbackState {
+        if case let .playing(id) = model.playbackState {
             XCTAssertEqual(id, "second-sleep")
         }
 
