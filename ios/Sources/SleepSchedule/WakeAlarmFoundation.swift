@@ -218,6 +218,101 @@ nonisolated enum WakeAlarmPlanner {
     private static func selectedWeekdays(_ mask: Int) -> [Int] {
         (1 ... 7).filter { mask & (1 << ($0 - 1)) != 0 }
     }
+
+    /// Determines if an enabled schedule has an active wake alarm due at the specified time.
+    static func isWakeAlarmDue(
+        for schedule: AlarmSchedule,
+        at date: Date,
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard schedule.isValid, schedule.isEnabled else { return false }
+        let plans = plans(for: schedule)
+        let currentHour = calendar.component(.hour, from: date)
+        let currentMinute = calendar.component(.minute, from: date)
+        let currentWeekday = calendar.component(.weekday, from: date)
+        let currentDate = AlarmLocalDate(date: date, calendar: calendar)
+
+        for plan in plans {
+            guard plan.role == .finalWake || (!schedule.finalWakeAlarmEnabled && plan.role == .gentleAudio) else {
+                continue
+            }
+            guard plan.hour == currentHour && plan.minute == currentMinute else {
+                continue
+            }
+            if let planDate = plan.date {
+                if planDate == currentDate {
+                    return true
+                }
+            } else if !plan.weekdays.isEmpty {
+                if plan.weekdays.contains(currentWeekday) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /// Stable key identifying a schedule's specific minute occurrence for deduplication.
+    static func occurrenceMinuteKey(
+        for scheduleID: UUID,
+        at date: Date,
+        calendar: Calendar = .current
+    ) -> String {
+        let year = calendar.component(.year, from: date)
+        let month = calendar.component(.month, from: date)
+        let day = calendar.component(.day, from: date)
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
+        return "\(scheduleID.uuidString)-\(year)-\(month)-\(day)-\(hour)-\(minute)"
+    }
+
+    /// Computes the exact next upcoming wake fire date for a schedule after a given date.
+    static func nextWakeDate(
+        for schedule: AlarmSchedule,
+        after date: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Date? {
+        guard schedule.isValid, schedule.isEnabled else { return nil }
+        let plans = plans(for: schedule)
+        var candidates: [Date] = []
+
+        for plan in plans {
+            guard plan.role == .finalWake || (!schedule.finalWakeAlarmEnabled && plan.role == .gentleAudio) else {
+                continue
+            }
+
+            if let planDate = plan.date, let baseDate = planDate.date(in: calendar) {
+                var comp = calendar.dateComponents([.year, .month, .day], from: baseDate)
+                comp.calendar = calendar
+                comp.timeZone = calendar.timeZone
+                comp.hour = plan.hour
+                comp.minute = plan.minute
+                comp.second = 0
+                if let target = calendar.date(from: comp), target >= date.addingTimeInterval(-59) {
+                    candidates.append(target)
+                }
+            } else if !plan.weekdays.isEmpty {
+                for dayOffset in 0...7 {
+                    guard let checkDay = calendar.date(byAdding: .day, value: dayOffset, to: date) else { continue }
+                    let weekday = calendar.component(.weekday, from: checkDay)
+                    if plan.weekdays.contains(weekday) {
+                        var comp = calendar.dateComponents([.year, .month, .day], from: checkDay)
+                        comp.calendar = calendar
+                        comp.timeZone = calendar.timeZone
+                        comp.hour = plan.hour
+                        comp.minute = plan.minute
+                        comp.second = 0
+                        if let target = calendar.date(from: comp), target >= date.addingTimeInterval(-59) {
+                            candidates.append(target)
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        return candidates.min()
+    }
 }
 
 nonisolated enum WakeAlarmSchedulingOutcome: Equatable, Sendable {

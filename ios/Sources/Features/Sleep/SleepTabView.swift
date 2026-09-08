@@ -14,9 +14,11 @@ struct SleepTabView: View {
     @State private var mode: SleepTabMode = .sleep
     @State private var draft: ScheduleUIModel = .newSleep
     @State private var isInitialized = false
+    @State private var isSaveConfirmed = false
+    @State private var resetConfirmationTask: Task<Void, Never>?
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             NightBackground()
 
             VStack(spacing: 0) {
@@ -34,7 +36,7 @@ struct SleepTabView: View {
                         fullAlarmContent
                             .padding(.horizontal, 20)
                             .padding(.top, 4)
-                            .padding(.bottom, 120)
+                            .padding(.bottom, 140)
                     }
                     .scrollIndicators(.hidden)
                     .tag(SleepTabMode.sleep)
@@ -45,7 +47,7 @@ struct SleepTabView: View {
                         wakeOnlyContent
                             .padding(.horizontal, 20)
                             .padding(.top, 4)
-                            .padding(.bottom, 120)
+                            .padding(.bottom, 140)
                     }
                     .scrollIndicators(.hidden)
                     .tag(SleepTabMode.wakeOnly)
@@ -59,6 +61,8 @@ struct SleepTabView: View {
                     }
                 )
             }
+
+            saveAlarmFloatingBar
         }
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
@@ -68,12 +72,12 @@ struct SleepTabView: View {
         .onAppear {
             if !isInitialized {
                 draft = model.tonightScheduleUIModel
+                if draft.isWakeOnly {
+                    draft.updateWakeOnlyNextOccurrence()
+                }
                 mode = draft.kind == .wakeOnly ? .wakeOnly : .sleep
                 isInitialized = true
             }
-        }
-        .onDisappear {
-            model.flushTonightScheduleSave()
         }
         .onChange(of: mode) { _, newMode in
             AppHaptics.pageSnap(hapticsEnabled: model.settings?.hapticsEnabled != false)
@@ -89,20 +93,30 @@ struct SleepTabView: View {
                 }
             } else {
                 draft.kind = .wakeOnly
-                if draft.oneTimeDate == nil {
-                    draft.oneTimeDate = Calendar.current.date(byAdding: .day, value: 1, to: .now)
-                }
+                draft.repeatWeekdaysMask = 0
+                draft.updateWakeOnlyNextOccurrence()
             }
-            model.saveTonightScheduleDraft(draft)
         }
-        .onChange(of: draft) { _, newDraft in
-            guard isInitialized else { return }
-            model.saveTonightScheduleDraft(newDraft)
+        .onChange(of: draft.wakeHour) { _, _ in
+            if draft.isWakeOnly {
+                draft.updateWakeOnlyNextOccurrence()
+            }
+        }
+        .onChange(of: draft.wakeMinute) { _, _ in
+            if draft.isWakeOnly {
+                draft.updateWakeOnlyNextOccurrence()
+            }
         }
         .onChange(of: model.tonightScheduleID) { _, _ in
             let latest = model.tonightScheduleUIModel
             if draft.id == latest.id {
                 draft.isEnabled = latest.isEnabled
+            } else {
+                draft = latest
+                if draft.isWakeOnly {
+                    draft.updateWakeOnlyNextOccurrence()
+                }
+                mode = draft.kind == .wakeOnly ? .wakeOnly : .sleep
             }
         }
     }
@@ -124,31 +138,6 @@ struct SleepTabView: View {
             }
 
             Spacer()
-
-            HStack(spacing: 8) {
-                Text(draft.isEnabled ? "ON" : "OFF")
-                    .font(AppFont.interSemiBold(size: 13, relativeTo: .caption))
-                    .foregroundStyle(
-                        draft.isEnabled
-                            ? Color(red: 0.72, green: 0.58, blue: 1)
-                            : Color.white.opacity(0.45)
-                    )
-
-                Toggle("", isOn: Binding(
-                    get: { draft.isEnabled },
-                    set: { newValue in
-                        draft.isEnabled = newValue
-                        AppHaptics.toggleChanged(
-                            isOn: newValue,
-                            hapticsEnabled: model.settings?.hapticsEnabled != false
-                        )
-                        model.saveTonightScheduleDraft(draft, immediate: true)
-                    }
-                ))
-                .labelsHidden()
-                .tint(Color(red: 0.50, green: 0.28, blue: 0.94))
-                .accessibilityIdentifier("sleep.alarmToggle")
-            }
         }
     }
 
@@ -242,7 +231,6 @@ struct SleepTabView: View {
                             ForEach([0, 5, 10, 15, 30, 60], id: \.self) { minutes in
                                 Button {
                                     draft.bedtimeReminderLeadMinutes = minutes == 0 ? nil : minutes
-                                    model.saveTonightScheduleDraft(draft)
                                 } label: {
                                     HStack {
                                         Text(minutes == 0 ? "Off" : "\(minutes) min before")
@@ -321,7 +309,6 @@ struct SleepTabView: View {
                             ForEach(model.scheduleAudioOptions) { option in
                                 Button {
                                     draft.wakeAudio = option
-                                    model.saveTonightScheduleDraft(draft)
                                 } label: {
                                     HStack {
                                         Text(option.title)
@@ -424,7 +411,6 @@ struct SleepTabView: View {
                             ForEach(model.scheduleAudioOptions) { option in
                                 Button {
                                     draft.wakeAudio = option
-                                    model.saveTonightScheduleDraft(draft)
                                 } label: {
                                     HStack {
                                         Text(option.title)
@@ -470,10 +456,11 @@ struct SleepTabView: View {
     private var occurrenceLabel: String {
         if let oneTimeDate = draft.oneTimeDate {
             let calendar = Calendar.current
+            let period = draft.wakeHour < 12 ? "Morning" : (draft.wakeHour < 17 ? "Afternoon" : "Evening")
             if calendar.isDateInTomorrow(oneTimeDate) {
-                return "Tomorrow Morning (One-Time)"
+                return "Tomorrow \(period) (One-Time)"
             } else if calendar.isDateInToday(oneTimeDate) {
-                return "Today Morning (One-Time)"
+                return "Today \(period) (One-Time)"
             } else {
                 return "\(oneTimeDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())) (One-Time)"
             }
@@ -505,11 +492,13 @@ struct SleepTabView: View {
         let nonNegativeMinutes = (totalMinutes + 24 * 60) % (24 * 60)
         draft.wakeHour = nonNegativeMinutes / 60
         draft.wakeMinute = nonNegativeMinutes % 60
+        if draft.isWakeOnly {
+            draft.updateWakeOnlyNextOccurrence()
+        }
         AppHaptics.stepAdjustment(
             direction: deltaMinutes > 0 ? .increase : .decrease,
             hapticsEnabled: model.settings?.hapticsEnabled != false
         )
-        model.saveTonightScheduleDraft(draft)
     }
 
     private func formatTime(hour: Int, minute: Int) -> String {
@@ -521,5 +510,88 @@ struct SleepTabView: View {
     private func reminderLabel(_ minutes: Int?) -> String {
         guard let minutes, minutes > 0 else { return "Off" }
         return "\(minutes) min before"
+    }
+
+    // MARK: - Floating Save Alarm Bar
+
+    private var saveAlarmFloatingBar: some View {
+        VStack(spacing: 0) {
+            Button {
+                saveAlarm()
+            } label: {
+                HStack(spacing: 8) {
+                    if isSaveConfirmed {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 16, weight: .bold))
+                        Text("Saved ✓")
+                            .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                    } else {
+                        Image(systemName: "bell.badge.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Save Alarm")
+                            .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(
+                    isSaveConfirmed
+                        ? Color(red: 0.20, green: 0.70, blue: 0.40)
+                        : Color(red: 0.50, green: 0.28, blue: 0.94)
+                )
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(
+                    color: (isSaveConfirmed
+                        ? Color(red: 0.20, green: 0.70, blue: 0.40)
+                        : Color(red: 0.50, green: 0.28, blue: 0.94)).opacity(0.4),
+                    radius: 12,
+                    y: 4
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("sleep.saveAlarmButton")
+            .accessibilityLabel(isSaveConfirmed ? "Saved ✓" : "Save Alarm")
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 16)
+        }
+        .background {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.03, green: 0.02, blue: 0.09).opacity(0),
+                    Color(red: 0.03, green: 0.02, blue: 0.09).opacity(0.8),
+                    Color(red: 0.03, green: 0.02, blue: 0.09)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .bottom)
+        }
+    }
+
+    private func saveAlarm() {
+        draft.isEnabled = true
+        if draft.isWakeOnly {
+            draft.updateWakeOnlyNextOccurrence()
+        }
+        AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+        let saved = model.saveTonightScheduleDraft(draft, immediate: true)
+        guard saved else {
+            AppHaptics.warning(hapticsEnabled: model.settings?.hapticsEnabled != false)
+            return
+        }
+        AppHaptics.success(hapticsEnabled: model.settings?.hapticsEnabled != false)
+        model.feedbackMessage = "Tonight's alarm saved"
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isSaveConfirmed = true
+        }
+        resetConfirmationTask?.cancel()
+        resetConfirmationTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isSaveConfirmed = false
+            }
+        }
     }
 }

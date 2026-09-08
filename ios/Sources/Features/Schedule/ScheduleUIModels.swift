@@ -146,20 +146,47 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         isEnabled: false
     )
 
-    static let newWakeOnly = ScheduleUIModel(
-        name: "One-time alarm",
-        kind: .wakeOnly,
-        bedtimeHour: 0,
-        bedtimeMinute: 0,
-        wakeHour: 6,
-        wakeMinute: 0,
-        repeatWeekdaysMask: 0,
-        bedtimeReminderLeadMinutes: nil,
-        preWakeReminderLeadMinutes: nil,
-        wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
-        isEnabled: false,
-        oneTimeDate: Calendar.current.date(byAdding: .day, value: 1, to: .now)
-    )
+    static func nextWakeOnlyDate(
+        wakeHour: Int,
+        wakeMinute: Int,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Date {
+        let currentHour = calendar.component(.hour, from: now)
+        let currentMinute = calendar.component(.minute, from: now)
+        let isLaterToday: Bool
+        if wakeHour > currentHour {
+            isLaterToday = true
+        } else if wakeHour == currentHour {
+            isLaterToday = wakeMinute > currentMinute
+        } else {
+            isLaterToday = false
+        }
+        let targetDate = isLaterToday ? now : (calendar.date(byAdding: .day, value: 1, to: now) ?? now)
+        return calendar.startOfDay(for: targetDate)
+    }
+
+    mutating func updateWakeOnlyNextOccurrence(now: Date = Date(), calendar: Calendar = .current) {
+        guard kind == .wakeOnly else { return }
+        oneTimeDate = Self.nextWakeOnlyDate(wakeHour: wakeHour, wakeMinute: wakeMinute, now: now, calendar: calendar)
+    }
+
+    static var newWakeOnly: ScheduleUIModel {
+        ScheduleUIModel(
+            name: "One-time alarm",
+            kind: .wakeOnly,
+            bedtimeHour: 0,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 0,
+            repeatWeekdaysMask: 0,
+            bedtimeReminderLeadMinutes: nil,
+            preWakeReminderLeadMinutes: nil,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: false,
+            oneTimeDate: nextWakeOnlyDate(wakeHour: 6, wakeMinute: 0)
+        )
+    }
 
     var isWakeOnly: Bool {
         kind == .wakeOnly
@@ -229,7 +256,8 @@ nonisolated extension ScheduleUIModel {
         profileID: UUID,
         existing: AlarmSchedule?,
         sortOrder: Int,
-        now: Date = Date()
+        now: Date = Date(),
+        calendar: Calendar = .current
     ) -> AlarmSchedule {
         let kind: AlarmScheduleKind = switch self.kind {
         case .sleep: .sleep
@@ -282,7 +310,7 @@ nonisolated extension ScheduleUIModel {
             wakeHour: wakeHour,
             wakeMinute: wakeMinute,
             weekdaysMask: kind == .wakeOnlyOneTime ? 0 : repeatWeekdaysMask,
-            oneTimeDate: kind == .wakeOnlyOneTime ? oneTimeDate.map { AlarmLocalDate(date: $0) } : nil,
+            oneTimeDate: kind == .wakeOnlyOneTime ? oneTimeDate.map { AlarmLocalDate(date: $0, calendar: calendar) } : nil,
             bedtimeReminderLeadMinutes: kind == .sleep ? bedtimeReminderLeadMinutes : nil,
             wakeReminderLeadMinutes: gentleWakeLeadMinutes,
             finalWakeAlarmEnabled: true,

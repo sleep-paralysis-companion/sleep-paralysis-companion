@@ -63,6 +63,7 @@ struct AlarmRingingView: View {
     private var actionButtons: some View {
         VStack(spacing: 16) {
             Button {
+                AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 model.snoozeAlarm(minutes: 9)
             } label: {
                 VStack(spacing: 4) {
@@ -86,6 +87,8 @@ struct AlarmRingingView: View {
             .accessibilityIdentifier("alarm.snooze")
 
             Button {
+                AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                AppHaptics.success(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 model.stopAlarm()
             } label: {
                 VStack(spacing: 4) {

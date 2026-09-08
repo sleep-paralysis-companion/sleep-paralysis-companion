@@ -212,4 +212,268 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         AppHaptics.toggleChanged(isOn: false, hapticsEnabled: false)
         AppHaptics.selectionChanged(hapticsEnabled: true)
     }
+
+    func testDynamicWakeOnlyNextOccurrenceLaterToday() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 9
+        components.day = 8
+        components.hour = 14
+        components.minute = 30
+        components.second = 0
+        let now = calendar.date(from: components)!
+
+        // Wake time 16:30 is 2 hours ahead -> later today -> today
+        let targetToday = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 16, wakeMinute: 30, now: now, calendar: calendar)
+        XCTAssertEqual(calendar.component(.day, from: targetToday), 8)
+        XCTAssertEqual(calendar.component(.month, from: targetToday), 9)
+        XCTAssertEqual(calendar.component(.year, from: targetToday), 2026)
+
+        // Wake time 14:31 is 1 minute ahead -> later today -> today
+        let targetMinuteAhead = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 14, wakeMinute: 31, now: now, calendar: calendar)
+        XCTAssertEqual(calendar.component(.day, from: targetMinuteAhead), 8)
+    }
+
+    func testDynamicWakeOnlyNextOccurrenceEarlierToday() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 9
+        components.day = 8
+        components.hour = 14
+        components.minute = 30
+        components.second = 0
+        let now = calendar.date(from: components)!
+
+        // Wake time 12:30 is 2 hours behind -> already passed -> tomorrow (Sept 9)
+        let targetTomorrow = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 12, wakeMinute: 30, now: now, calendar: calendar)
+        XCTAssertEqual(calendar.component(.day, from: targetTomorrow), 9)
+        XCTAssertEqual(calendar.component(.month, from: targetTomorrow), 9)
+        XCTAssertEqual(calendar.component(.year, from: targetTomorrow), 2026)
+
+        // Wake time 14:30 exact minute -> already passed / now -> tomorrow (Sept 9)
+        let targetExact = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 14, wakeMinute: 30, now: now, calendar: calendar)
+        XCTAssertEqual(calendar.component(.day, from: targetExact), 9)
+
+        // Wake time 14:29 1 minute behind -> tomorrow (Sept 9)
+        let targetMinuteBehind = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 14, wakeMinute: 29, now: now, calendar: calendar)
+        XCTAssertEqual(calendar.component(.day, from: targetMinuteBehind), 9)
+    }
+
+    func testUpdateWakeOnlyNextOccurrenceOnScheduleUIModel() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 9
+        components.day = 8
+        components.hour = 10
+        components.minute = 0
+        let now = calendar.date(from: components)!
+
+        var draft = ScheduleUIModel(
+            name: "Wake Test",
+            kind: .wakeOnly,
+            bedtimeHour: 0,
+            bedtimeMinute: 0,
+            wakeHour: 12,
+            wakeMinute: 0,
+            repeatWeekdaysMask: 0,
+            bedtimeReminderLeadMinutes: nil,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        draft.updateWakeOnlyNextOccurrence(now: now, calendar: calendar)
+        XCTAssertNotNil(draft.oneTimeDate)
+        XCTAssertEqual(calendar.component(.day, from: draft.oneTimeDate!), 8)
+
+        // Change wakeHour to 8 (earlier than 10)
+        draft.wakeHour = 8
+        draft.updateWakeOnlyNextOccurrence(now: now, calendar: calendar)
+        XCTAssertEqual(calendar.component(.day, from: draft.oneTimeDate!), 9)
+    }
+
+    @MainActor
+    func testOpenAlarmScheduleSummaryNavigatesDirectlyToEditorForTonightSchedule() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        // Case 1: No schedules exist
+        model.openAlarmScheduleSummary()
+        XCTAssertEqual(model.path.last, .alarmScheduleEditor)
+        XCTAssertNil(model.selectedAlarmScheduleID)
+
+        // Case 2: Schedule exists
+        let schedule = ScheduleUIModel(
+            name: "Active Alarm",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 7,
+            wakeMinute: 0,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        XCTAssertTrue(model.saveScheduleUI(schedule, autoStartUnwind: false))
+        model.setPath([])
+
+        model.openAlarmScheduleSummary()
+        XCTAssertEqual(model.path.last, .alarmScheduleEditor)
+        XCTAssertEqual(model.selectedAlarmScheduleID, model.tonightScheduleID)
+    }
+
+    func testDynamicWakeOnlyNextOccurrenceMidnightBoundaryAndYearRollover() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        // Case A: 23:59 on Dec 31, 2026 for wake time 00:05 -> targets tomorrow (Jan 1, 2027)
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 12
+        components.day = 31
+        components.hour = 23
+        components.minute = 59
+        components.second = 30
+        let newYearsEve = calendar.date(from: components)!
+
+        let targetNextDay = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 0, wakeMinute: 5, now: newYearsEve, calendar: calendar)
+        XCTAssertEqual(calendar.component(.year, from: targetNextDay), 2027)
+        XCTAssertEqual(calendar.component(.month, from: targetNextDay), 1)
+        XCTAssertEqual(calendar.component(.day, from: targetNextDay), 1)
+
+        // Case B: 00:01 on Jan 1, 2027 for wake time 00:05 -> later today (Jan 1, 2027)
+        components.year = 2027
+        components.month = 1
+        components.day = 1
+        components.hour = 0
+        components.minute = 1
+        let justAfterMidnight = calendar.date(from: components)!
+
+        let targetLaterToday = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 0, wakeMinute: 5, now: justAfterMidnight, calendar: calendar)
+        XCTAssertEqual(calendar.component(.year, from: targetLaterToday), 2027)
+        XCTAssertEqual(calendar.component(.month, from: targetLaterToday), 1)
+        XCTAssertEqual(calendar.component(.day, from: targetLaterToday), 1)
+
+        // Case C: Same minute (23:59 for 23:59) -> already started/passed -> next day
+        let targetExactMinute = ScheduleUIModel.nextWakeOnlyDate(wakeHour: 23, wakeMinute: 59, now: newYearsEve, calendar: calendar)
+        XCTAssertEqual(calendar.component(.year, from: targetExactMinute), 2027)
+        XCTAssertEqual(calendar.component(.day, from: targetExactMinute), 1)
+    }
+
+    @MainActor
+    func testClearIntermediateScheduleRoutesPreventsNavigationBackStackLeak() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        // User navigated: Home -> Alarm History -> Alarm Editor
+        model.setPath([.alarmHistory, .alarmScheduleEditor])
+        XCTAssertEqual(model.path, [.alarmHistory, .alarmScheduleEditor])
+
+        // Calling clearIntermediateScheduleRoutes removes intermediate schedule routes
+        model.clearIntermediateScheduleRoutes()
+        XCTAssertTrue(model.path.isEmpty)
+
+        // When autoStartUnwind navigates to .audioPlayer
+        model.open(.audioPlayer)
+        XCTAssertEqual(model.path, [.audioPlayer])
+
+        // When audioPlayer is popped, user returns directly to Home (path is empty)
+        model.setPath(Array(model.path.dropLast()))
+        XCTAssertTrue(model.path.isEmpty)
+    }
+
+    @MainActor
+    func testSaveTonightScheduleDraftReturnsFalseOnCollision() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let first = ScheduleUIModel(
+            name: "First Alarm",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        XCTAssertTrue(model.saveScheduleUI(first, autoStartUnwind: false))
+
+        // Create conflicting schedule with identical wake and repeat
+        let conflicting = ScheduleUIModel(
+            name: "Conflicting Alarm",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+
+        let saved = model.saveTonightScheduleDraft(conflicting, immediate: true)
+        XCTAssertFalse(saved, "saveTonightScheduleDraft must return false on validation collision")
+        XCTAssertNotNil(model.feedbackMessage)
+        XCTAssertTrue(model.feedbackMessage?.contains("collides") == true)
+    }
+
+    @MainActor
+    func testSleepTabLocalDraftRemainsLocalUntilExplicitlySaved() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let initial = ScheduleUIModel(
+            name: "Original Alarm",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 0,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        XCTAssertTrue(model.saveScheduleUI(initial, autoStartUnwind: false))
+
+        // Simulate local draft mutation in SleepTabView
+        var localDraft = model.tonightScheduleUIModel
+        localDraft.wakeHour = 8
+        localDraft.wakeMinute = 45
+
+        // AppModel tonightScheduleUIModel must remain at 6:00 (no auto-save occurred)
+        XCTAssertEqual(model.tonightScheduleUIModel.wakeHour, 6)
+        XCTAssertEqual(model.tonightScheduleUIModel.wakeMinute, 0)
+
+        // Explicitly saving commits the change
+        let saved = model.saveTonightScheduleDraft(localDraft, immediate: true)
+        XCTAssertTrue(saved)
+        XCTAssertEqual(model.tonightScheduleUIModel.wakeHour, 8)
+        XCTAssertEqual(model.tonightScheduleUIModel.wakeMinute, 45)
+    }
 }

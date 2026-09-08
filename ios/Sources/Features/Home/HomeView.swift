@@ -32,6 +32,7 @@ struct HomeView: View {
                         playbackState: model.playbackState,
                         showsSleepSessionAction: showsSleepSessionAction,
                         onPlayPause: {
+                            AppHaptics.playbackToggle(hapticsEnabled: model.settings?.hapticsEnabled != false)
                             if case .playing = model.playbackState {
                                 model.togglePlayback()
                             } else if case .paused = model.playbackState {
@@ -41,7 +42,12 @@ struct HomeView: View {
                             }
                         },
                         onOpenPlayer: {
-                            model.startSleepSession()
+                            AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                            if model.sleepSessionStartedAt != nil {
+                                model.presentActiveSleepSession()
+                            } else {
+                                model.startSleepSession()
+                            }
                         }
                     )
                     .padding(.top, 16)
@@ -88,6 +94,7 @@ struct HomeView: View {
 
     private var scheduleSummary: some View {
         Button {
+            AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
             model.openAlarmScheduleSummary()
         } label: {
             HomeScheduleSummary(
@@ -97,12 +104,13 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Sleep schedule summary")
-        .accessibilityHint(model.alarmSchedules.isEmpty ? "Opens alarm schedule editor" : "Opens alarm history")
+        .accessibilityHint("Opens alarm schedule editor")
         .accessibilityIdentifier("home.scheduleSummary")
     }
 
     private var editScheduleLink: some View {
         Button {
+            AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
             model.open(.alarmHistory)
         } label: {
             HStack(spacing: 16) {
@@ -177,7 +185,10 @@ struct HomeView: View {
         identifier: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        Button(action: {
+            AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+            action()
+        }) {
             VStack(alignment: .leading, spacing: 0) {
                 HomeIconBadge(systemImage: icon)
                     .padding(.bottom, 20)
@@ -316,6 +327,7 @@ private struct HomeHeroCard: View {
                     .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .contentShape(Circle())
                 .accessibilityLabel(isPlaying ? "Pause recovery audio" : "Play recovery audio")
                 .accessibilityHint("Plays or pauses your selected recovery audio.")
                 .accessibilityIdentifier("home.manualEpisode")

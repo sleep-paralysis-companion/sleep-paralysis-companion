@@ -33,15 +33,15 @@ struct MorningCheckInFlowView: View {
     }
 
     private var questionCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 18) {
             Text(step.questionTitle)
-                .font(AppFont.latoSemiBold(size: 22, relativeTo: .title2))
+                .font(AppFont.latoSemiBold(size: 17, relativeTo: .headline))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
 
             switch step {
             case .episode:
-                HStack(spacing: 16) {
+                HStack(spacing: 14) {
                     episodeAnswer(title: "YES", emoji: "😟", occurrence: .yes)
                     episodeAnswer(title: "NO", emoji: "🙂", occurrence: .no)
                 }
@@ -84,38 +84,39 @@ struct MorningCheckInFlowView: View {
                 .font(AppTypographyRole.control)
                 .foregroundStyle(Color(red: 0.66, green: 0.62, blue: 0.86))
                 .frame(maxWidth: .infinity)
-                .padding(.top, -4)
+                .padding(.top, -2)
                 .disabled(isSaving)
                 .accessibilityIdentifier("morningCheckIn.skip")
         }
-        .padding(22)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(red: 0.07, green: 0.09, blue: 0.24).opacity(0.94))
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color(red: 0.20, green: 0.21, blue: 0.45), lineWidth: 1)
         }
     }
 
     private func episodeAnswer(title: String, emoji: String, occurrence: EpisodeOccurrence) -> some View {
         Button {
+            AppHaptics.selectionChanged(hapticsEnabled: model.settings?.hapticsEnabled != false)
             form.occurrence = occurrence
             withAnimation(.easeInOut(duration: 0.24)) {
                 step = occurrence == .yes ? .feeling : .sleepHelp
             }
         } label: {
-            VStack(spacing: 14) {
+            VStack(spacing: 10) {
                 Text(emoji)
-                    .font(.system(size: 36))
+                    .font(.system(size: 32))
                 Text(title)
-                    .font(AppFont.inter(size: 16, relativeTo: .callout, weight: .semibold))
+                    .font(AppFont.inter(size: 14, relativeTo: .subheadline, weight: .semibold))
             }
-            .frame(maxWidth: .infinity, minHeight: 130)
+            .frame(maxWidth: .infinity, minHeight: 110)
             .background(Color(red: 0.08, green: 0.10, blue: 0.25))
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(Color(red: 0.16, green: 0.17, blue: 0.38), lineWidth: 1.5)
             }
         }
@@ -124,24 +125,28 @@ struct MorningCheckInFlowView: View {
     }
 
     private func answerList(_ answers: [AnswerOption]) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             ForEach(Array(answers.enumerated()), id: \.offset) { _, answer in
-                Button(action: answer.action) {
-                    HStack(spacing: 14) {
+                Button(action: {
+                    AppHaptics.selectionChanged(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                    answer.action()
+                }) {
+                    HStack(spacing: 12) {
                         Text(answer.emoji)
-                            .font(.system(size: 22))
-                            .frame(width: 44, height: 44)
+                            .font(.system(size: 20))
+                            .frame(width: 38, height: 38)
                             .background(Color(red: 0.11, green: 0.12, blue: 0.31))
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         Text(answer.title)
-                            .font(AppFont.inter(size: 17, relativeTo: .body, weight: .medium))
+                            .font(AppFont.inter(size: 15, relativeTo: .subheadline))
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 0)
                     }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
                     .background(Color(red: 0.08, green: 0.10, blue: 0.25))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .disabled(isSaving)
@@ -153,26 +158,27 @@ struct MorningCheckInFlowView: View {
         let affirmation = MorningAffirmation.message(for: occurrence, on: .now)
 
         return VStack(spacing: 24) {
-            MoonMark(size: 180)
+            MoonMark(size: 160)
                 .padding(.top, 6)
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 Text(affirmation.title)
-                    .font(AppFont.latoSemiBold(size: 24, relativeTo: .title2))
+                    .font(AppFont.latoSemiBold(size: 18, relativeTo: .headline))
                     .multilineTextAlignment(.center)
                 Text(affirmation.detail)
-                    .font(AppFont.inter(size: 16, relativeTo: .body))
+                    .font(AppFont.inter(size: 14, relativeTo: .subheadline))
                     .foregroundStyle(Color(red: 0.65, green: 0.62, blue: 0.84))
                     .multilineTextAlignment(.center)
                 Text(affirmation.supportingDetail)
-                    .font(AppFont.inter(size: 16, relativeTo: .body))
+                    .font(AppFont.inter(size: 13, relativeTo: .caption))
                     .foregroundStyle(Color(red: 0.65, green: 0.62, blue: 0.84))
                     .multilineTextAlignment(.center)
             }
             Button("Return To Home") {
+                AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 model.completeMorningCheckIn()
             }
-            .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .font(AppFont.inter(size: 15, relativeTo: .headline, weight: .semibold))
+            .frame(maxWidth: .infinity, minHeight: 50)
             .background(
                 LinearGradient(
                     colors: [Color(red: 0.39, green: 0.27, blue: 0.75), Color(red: 0.25, green: 0.52, blue: 0.85)],
@@ -180,11 +186,11 @@ struct MorningCheckInFlowView: View {
                     endPoint: .trailing
                 )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .padding(.top, 14)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 38)
+        .padding(.top, 32)
     }
 
     private func chooseFeeling(_ value: PresentState) {
@@ -218,6 +224,7 @@ struct MorningCheckInFlowView: View {
     }
 
     private func skipCurrentQuestion() {
+        AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
         switch step {
         case .episode:
             model.completeMorningCheckIn()
@@ -243,6 +250,7 @@ struct MorningCheckInFlowView: View {
             }
             isSaving = false
             if saved || isSkipping {
+                AppHaptics.success(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 withAnimation(.easeInOut(duration: 0.24)) {
                     step = .affirmation(occurrence)
                 }
@@ -338,15 +346,15 @@ struct MorningCheckInHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(headerDate)
                         .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .semibold))
                         .tracking(1.2)
                         .foregroundStyle(Color(red: 0.57, green: 0.54, blue: 0.78))
                     Text("Good morning,\nthere 🌤️")
-                        .font(AppFont.latoSemiBold(size: 26, relativeTo: .title))
+                        .font(AppFont.latoSemiBold(size: 20, relativeTo: .title3))
                     Text("Let's check in with your night.")
-                        .font(AppFont.inter(size: 15, relativeTo: .subheadline))
+                        .font(AppFont.inter(size: 13, relativeTo: .caption))
                         .foregroundStyle(Color(red: 0.64, green: 0.61, blue: 0.82))
                 }
                 Spacer(minLength: 12)
@@ -354,10 +362,10 @@ struct MorningCheckInHeader: View {
                     Circle()
                         .fill(Color(red: 0.42, green: 0.26, blue: 0.75))
                     Text("🌙")
-                        .font(.system(size: 34))
+                        .font(.system(size: 30))
                 }
-                .frame(width: 80, height: 80)
-                .padding(.top, 12)
+                .frame(width: 72, height: 72)
+                .padding(.top, 6)
             }
 
             if let progressTitle = step.progressTitle(for: occurrence) {

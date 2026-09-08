@@ -9,6 +9,7 @@ import SwiftUI
 struct AlarmHistoryView: View {
     let schedules: [ScheduleUIModel]
     let maximumScheduleCount: Int
+    let hapticsEnabled: Bool
     let onBack: () -> Void
     let onAdd: () -> Void
     let onEdit: (ScheduleUIModel) -> Void
@@ -22,6 +23,7 @@ struct AlarmHistoryView: View {
     init(
         schedules: [ScheduleUIModel],
         maximumScheduleCount: Int = ScheduleUIModel.maximumCount,
+        hapticsEnabled: Bool = true,
         onBack: @escaping () -> Void = {},
         onAdd: @escaping () -> Void = {},
         onEdit: @escaping (ScheduleUIModel) -> Void = { _ in },
@@ -30,6 +32,7 @@ struct AlarmHistoryView: View {
     ) {
         self.schedules = schedules
         self.maximumScheduleCount = maximumScheduleCount
+        self.hapticsEnabled = hapticsEnabled
         self.onBack = onBack
         self.onAdd = onAdd
         self.onEdit = onEdit
@@ -91,7 +94,10 @@ struct AlarmHistoryView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Button(action: onBack) {
+                Button(action: {
+                    AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
+                    onBack()
+                }) {
                     Image(systemName: "arrow.left")
                         .font(.system(size: 21, weight: .medium))
                         .frame(width: 48, height: 48)
@@ -108,7 +114,10 @@ struct AlarmHistoryView: View {
 
                 Spacer()
 
-                Button(action: onAdd) {
+                Button(action: {
+                    AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
+                    onAdd()
+                }) {
                     Image(systemName: "plus")
                         .font(.system(size: 28, weight: .regular))
                         .frame(width: 56, height: 56)
@@ -233,7 +242,10 @@ struct AlarmHistoryView: View {
                     .font(AppTypographyRole.body)
                     .foregroundStyle(Color.white.opacity(0.64))
 
-                Button(action: onAdd) {
+                Button(action: {
+                    AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
+                    onAdd()
+                }) {
                     Label("Add a schedule", systemImage: "plus")
                 }
                 .buttonStyle(AppPrimaryButtonStyle())
@@ -294,6 +306,7 @@ struct AlarmHistoryView: View {
     }
 
     private func delete(_ schedule: ScheduleUIModel) {
+        AppHaptics.warning(hapticsEnabled: hapticsEnabled)
         localSchedules.removeAll { $0.id == schedule.id }
         onDelete(schedule)
     }
@@ -301,6 +314,7 @@ struct AlarmHistoryView: View {
     private func setEnabled(_ schedule: ScheduleUIModel, enabled: Bool) {
         guard let index = localSchedules.firstIndex(where: { $0.id == schedule.id }) else { return }
         localSchedules[index].isEnabled = enabled
+        AppHaptics.toggleChanged(isOn: enabled, hapticsEnabled: hapticsEnabled)
         onToggle(localSchedules[index], enabled)
     }
 

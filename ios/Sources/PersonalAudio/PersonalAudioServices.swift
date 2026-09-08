@@ -433,6 +433,25 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
         playbackStateDidChange?(playbackState)
     }
 
+    func playAlarm(url: URL, identifier: String = "alarm-ringing") throws {
+        if case let .playing(active) = playbackState, active == identifier {
+            return
+        }
+        stopPlayback()
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.playback, mode: .default, options: [.duckOthers])
+        try session.setActive(true)
+        let player = try AVAudioPlayer(contentsOf: url)
+        player.numberOfLoops = -1
+        player.volume = 1.0
+        player.delegate = self
+        player.prepareToPlay()
+        guard player.play() else { throw Phase1ActionError.audioUnavailable }
+        self.player = player
+        playbackState = .playing(identifier)
+        playbackStateDidChange?(playbackState)
+    }
+
     func togglePause() {
         guard let player else { return }
         if player.isPlaying {
@@ -486,6 +505,12 @@ final class RecoveryAudioController: NSObject, AVAudioPlayerDelegate, AVAudioRec
         _ = player
         _ = flag
         Task { @MainActor [weak self] in self?.stopPlayback() }
+    }
+
+    nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: (any Error)?) {
+        _ = player
+        _ = error
+        Task { @MainActor [weak self] in self?.showVisualFallback() }
     }
 
     nonisolated func audioRecorderDidFinishRecording(

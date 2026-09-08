@@ -14,7 +14,7 @@ final class AppModel {
     var path: [AppRoute] = []
     var selectedTab = AppTab.sleep
     var isMorningCheckInPresented = false
-    private(set) var presentedSheet: AppSheet?
+    var presentedSheet: AppSheet?
     var feedbackMessage: String?
     private(set) var authenticationState = AuthenticationPresentationState.ready
     private(set) var accountAccessState = AccountAccessState.signedOut
@@ -34,7 +34,7 @@ final class AppModel {
     private(set) var partnerContact: PartnerContact?
     private(set) var playbackState = GroundingPlaybackState.idle
     private(set) var sleepSessionStartedAt: Date?
-    private(set) var isSleepSessionPresented = false
+    var isSleepSessionPresented = false
     private(set) var isRecording = false
     private(set) var catalogAudioService: any CatalogAudioLibraryServicing
     @ObservationIgnored let catalogAudioPlayer = CatalogAudioPlayer()
@@ -47,6 +47,8 @@ final class AppModel {
     var isAlarmRinging: Bool = false
     private(set) var ringingAlarmSchedule: ScheduleUIModel?
     @ObservationIgnored var alarmSnoozeTask: Task<Void, Never>?
+    @ObservationIgnored var foregroundAlarmMonitorTask: Task<Void, Never>?
+    @ObservationIgnored var firedAlarmMinuteKeys: Set<String> = []
     @ObservationIgnored private var tonightScheduleSaveTask: Task<Void, Never>?
     @ObservationIgnored private var fallbackTonightScheduleID = UUID()
     private(set) var tonightScheduleID: UUID?
@@ -299,6 +301,12 @@ final class AppModel {
             self?.performSleepSessionAudioAction(action, presentSession: false) ?? false
         }
         SystemAudioAssets.ensureDefaultSoundsInstalled()
+        startForegroundAlarmMonitoring()
+    }
+
+    deinit {
+        foregroundAlarmMonitorTask?.cancel()
+        alarmSnoozeTask?.cancel()
     }
 
     func activate(restoredState: String = "") {
@@ -608,7 +616,8 @@ final class AppModel {
 
     func openAlarmScheduleSummary() {
         if !alarmSchedules.isEmpty {
-            open(.alarmHistory)
+            selectedAlarmScheduleID = tonightScheduleID ?? tonightSchedule?.id ?? alarmSchedules.first?.id
+            open(.alarmScheduleEditor)
         } else {
             beginNewSchedule()
             open(.alarmScheduleEditor)
@@ -675,10 +684,14 @@ final class AppModel {
                     alarmSchedules[index] = persisted
                 }
                 try await refreshScheduleDeviceArtifacts(requestPermission: false)
-                if storedSchedule.wakeAudioIsUnavailableOnThisDevice, storedSchedule.isEnabled {
-                    feedbackMessage =
-                        "Audio unavailable on this device. " +
-                        "Choose another sound before this alarm can be scheduled."
+                if storedSchedule.isEnabled {
+                    if wakeAlarmOutcome == .denied {
+                        feedbackMessage = "Alarm authorization is not granted. Enable permissions in Settings so alarms can ring."
+                    } else if wakeAlarmOutcome == .fallbackScheduled || storedSchedule.wakeAudioIsUnavailableOnThisDevice {
+                        feedbackMessage = "The selected audio is unavailable on this device. Your alarm was scheduled with the default wake sound."
+                    } else if wakeAlarmOutcome == .failed {
+                        feedbackMessage = "The system could not schedule this alarm. Please verify permissions and settings."
+                    }
                 }
             } catch {
                 alarmSchedules = previous
@@ -698,8 +711,9 @@ final class AppModel {
         _ = saveScheduleUI(draft)
     }
 
-    func saveTonightScheduleDraft(_ draft: ScheduleUIModel, immediate: Bool = false) {
-        guard let profileID, let userID else { return }
+    @discardableResult
+    func saveTonightScheduleDraft(_ draft: ScheduleUIModel, immediate: Bool = false) -> Bool {
+        guard let profileID, let userID else { return false }
         let existing = alarmSchedules.first(where: { $0.id == draft.id })
         let schedule = draft.domainValue(
             profileID: profileID,
@@ -710,7 +724,7 @@ final class AppModel {
         proposed.append(schedule)
         if let message = scheduleValidationFeedback(proposed: proposed) {
             feedbackMessage = message
-            return
+            return false
         }
 
         tonightScheduleID = schedule.id
@@ -726,6 +740,7 @@ final class AppModel {
             defer { self.tonightScheduleSaveTask = nil }
             await self.persistTonightSchedule(schedule, profileID: profileID, userID: userID)
         }
+        return true
     }
 
     private func persistTonightSchedule(
@@ -757,10 +772,14 @@ final class AppModel {
                 alarmSchedules[index] = persisted
             }
             try await refreshScheduleDeviceArtifacts(requestPermission: false)
-            if storedSchedule.wakeAudioIsUnavailableOnThisDevice, storedSchedule.isEnabled {
-                feedbackMessage =
-                    "Audio unavailable on this device. " +
-                    "Choose another sound before this alarm can be scheduled."
+            if storedSchedule.isEnabled {
+                if wakeAlarmOutcome == .denied {
+                    feedbackMessage = "Alarm authorization is not granted. Enable permissions in Settings so alarms can ring."
+                } else if wakeAlarmOutcome == .fallbackScheduled || storedSchedule.wakeAudioIsUnavailableOnThisDevice {
+                    feedbackMessage = "The selected audio is unavailable on this device. Your alarm was scheduled with the default wake sound."
+                } else if wakeAlarmOutcome == .failed {
+                    feedbackMessage = "The system could not schedule this alarm. Please verify permissions and settings."
+                }
             }
         } catch {
             feedbackMessage = "The schedule could not be saved. Nothing was replaced."
@@ -835,6 +854,8 @@ final class AppModel {
             wakeAlarmOutcome = .failed
         } else if outcomes.contains(.denied) {
             wakeAlarmOutcome = .denied
+        } else if outcomes.contains(.fallbackScheduled) {
+            wakeAlarmOutcome = .fallbackScheduled
         } else if outcomes.contains(.scheduled) {
             wakeAlarmOutcome = .scheduled
         } else {
@@ -940,6 +961,14 @@ final class AppModel {
     }
 
     func handleScenePhase(_ phase: ScenePhase) {
+        if phase == .active {
+            startForegroundAlarmMonitoring()
+            checkForegroundAlarmTriggers()
+        } else if phase == .background {
+            if sleepSessionStartedAt == nil {
+                stopForegroundAlarmMonitoring()
+            }
+        }
         guard RecordingLifecycleBoundary.requiresCancellation(
             isRecording: isRecording,
             sceneIsActive: phase == .active
@@ -1377,6 +1406,7 @@ final class AppModel {
         isSleepSessionPresented = true
         UserDefaults.standard.set(startedAt, forKey: Self.sleepSessionStartedAtKey)
         UIApplication.shared.isIdleTimerDisabled = true
+        startForegroundAlarmMonitoring()
 
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -1396,8 +1426,6 @@ final class AppModel {
 
     func presentActiveSleepSession() {
         guard launchDestination == .home, sleepSessionStartedAt != nil else { return }
-        selectedTab = .sleep
-        path = []
         isSleepSessionPresented = true
         UIApplication.shared.isIdleTimerDisabled = true
     }
@@ -1407,6 +1435,7 @@ final class AppModel {
         isSleepSessionPresented = false
         UserDefaults.standard.removeObject(forKey: Self.sleepSessionStartedAtKey)
         UIApplication.shared.isIdleTimerDisabled = false
+        stopForegroundAlarmMonitoring()
         stopPlayback()
 
         Task { @MainActor [weak self] in
@@ -1430,13 +1459,7 @@ final class AppModel {
         }
         switch action {
         case .startOrResume:
-            if case .paused = playbackState {
-                togglePlayback()
-            } else if case .playing = playbackState {
-                break
-            } else {
-                beginSleepSessionGrounding()
-            }
+            beginSleepSessionGrounding()
         case .pause:
             if case .playing = playbackState {
                 togglePlayback()
@@ -1444,6 +1467,8 @@ final class AppModel {
         case .resume:
             if case .paused = playbackState {
                 togglePlayback()
+            } else {
+                beginSleepSessionGrounding()
             }
         }
         return true
@@ -1457,15 +1482,141 @@ final class AppModel {
         }
     }
 
-    func triggerAlarmRinging(schedule: ScheduleUIModel? = nil) {
-        ringingAlarmSchedule = schedule ?? scheduleUIModels.first(where: { $0.isEnabled })
+    var nextUpcomingWakeSchedule: (schedule: AlarmSchedule, date: Date)? {
+        var closest: (schedule: AlarmSchedule, date: Date)?
+        for schedule in alarmSchedules where schedule.isEnabled {
+            if let date = WakeAlarmPlanner.nextWakeDate(for: schedule, after: Date()) {
+                if let currentClosest = closest {
+                    if date < currentClosest.date {
+                        closest = (schedule, date)
+                    }
+                } else {
+                    closest = (schedule, date)
+                }
+            }
+        }
+        return closest
+    }
+
+    func triggerAlarmRinging(
+        schedule: ScheduleUIModel? = nil,
+        at date: Date = Date(),
+        calendar: Calendar = .current,
+        isSnooze: Bool = false
+    ) {
+        guard !isAlarmRinging else { return }
+        let targetSchedule = schedule
+            ?? alarmSchedules.first(where: { $0.isEnabled && WakeAlarmPlanner.isWakeAlarmDue(for: $0, at: date, calendar: calendar) }).map { ScheduleUIModel($0) }
+            ?? scheduleUIModels.first(where: { $0.isEnabled })
+
+        if let targetSchedule, !isSnooze {
+            let key = WakeAlarmPlanner.occurrenceMinuteKey(for: targetSchedule.id, at: date, calendar: calendar)
+            guard !firedAlarmMinuteKeys.contains(key) else { return }
+            firedAlarmMinuteKeys.insert(key)
+            if firedAlarmMinuteKeys.count > 200 {
+                let todayPrefix = "\(calendar.component(.year, from: date))-\(calendar.component(.month, from: date))-\(calendar.component(.day, from: date))"
+                firedAlarmMinuteKeys = firedAlarmMinuteKeys.filter { $0.contains(todayPrefix) }
+            }
+        }
+
+        isSleepSessionPresented = false
+        presentedSheet = nil
+        cleanupStructuredExport()
+        cleanupAudioExport()
+
+        ringingAlarmSchedule = targetSchedule
         isAlarmRinging = true
 
-        let soundName = SystemAudioAssets.defaultAlarmFileName
-        if let url = SystemAudioAssets.bundledURL(for: soundName) {
-            try? audioController.play(url: url, identifier: "alarm-ringing")
-            playbackState = audioController.playbackState
+        let domainSchedule = targetSchedule.flatMap { ts in alarmSchedules.first(where: { $0.id == ts.id }) }
+        let audioURL = resolveAlarmPlaybackURL(target: targetSchedule, domain: domainSchedule)
+
+        if let audioURL {
+            do {
+                try audioController.playAlarm(url: audioURL, identifier: "alarm-ringing")
+                playbackState = audioController.playbackState
+            } catch {
+                if let defaultURL = SystemAudioAssets.alarmAudioURL(for: SystemAudioAssets.defaultAlarmFileName)
+                    ?? SystemAudioAssets.bundledURL(for: SystemAudioAssets.defaultAlarmFileName),
+                   defaultURL != audioURL {
+                    do {
+                        try audioController.playAlarm(url: defaultURL, identifier: "alarm-ringing")
+                        playbackState = audioController.playbackState
+                        return
+                    } catch {
+                        // Fallback also failed
+                    }
+                }
+                audioController.showVisualFallback()
+                playbackState = .visualFallback
+            }
+        } else {
+            audioController.showVisualFallback()
+            playbackState = .visualFallback
         }
+    }
+
+    func resolveAlarmPlaybackURL(
+        target: ScheduleUIModel?,
+        domain: AlarmSchedule?
+    ) -> URL? {
+        if let domainAudio = domain?.wakeAudio {
+            switch domainAudio.reference {
+            case let .bundled(resourceName):
+                let fileName = domainAudio.localFileName ?? resourceName
+                if let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
+                    return url
+                }
+            case .catalog:
+                if let fileName = domainAudio.localFileName,
+                   let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
+                    return url
+                }
+            case let .personal(clipID):
+                if let clip = personalClips.first(where: { $0.id == clipID }),
+                   let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
+                   FileManager.default.fileExists(atPath: url.path) {
+                    return url
+                }
+            }
+        }
+
+        if let uiAudio = target?.wakeAudio {
+            switch uiAudio {
+            case let .bundled(id, _):
+                let fileName = (id == SystemAudioAssets.defaultAlarmAssetID || id == SystemAudioAssets.defaultAlarmFileName)
+                    ? SystemAudioAssets.defaultAlarmFileName
+                    : (id.hasSuffix(".caf") ? id : "\(id).caf")
+                if let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
+                    return url
+                }
+            case let .catalog(id, _, isAvailable):
+                if isAvailable {
+                    let fileName = AlarmSoundSelectionStore.selectedAlarmAssetID() == id
+                        ? AlarmSoundSelectionStore.selectedAlarmSoundFileName()
+                        : nil
+                    if let fileName, let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
+                        return url
+                    }
+                    if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == id }),
+                       let soundName = asset.systemSoundFileName,
+                       let url = SystemAudioAssets.alarmAudioURL(for: soundName) {
+                        return url
+                    }
+                }
+            case let .personal(clipID, _, isAvailable):
+                if isAvailable, let clip = personalClips.first(where: { $0.id == clipID }) {
+                    if let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
+                       FileManager.default.fileExists(atPath: url.path) {
+                        return url
+                    }
+                }
+            case .unavailable:
+                break
+            }
+        }
+
+        return SystemAudioAssets.alarmAudioURL(for: SystemAudioAssets.defaultAlarmFileName)
+            ?? SystemAudioAssets.bundledURL(for: SystemAudioAssets.defaultAlarmFileName)
     }
 
     func snoozeAlarm(minutes: Int? = nil) {
@@ -1477,8 +1628,8 @@ final class AppModel {
         alarmSnoozeTask?.cancel()
         alarmSnoozeTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(duration * 60))
-            guard !Task.isCancelled else { return }
-            self?.triggerAlarmRinging(schedule: self?.ringingAlarmSchedule)
+            guard !Task.isCancelled, let self else { return }
+            self.triggerAlarmRinging(schedule: self.ringingAlarmSchedule, isSnooze: true)
         }
     }
 
@@ -1488,6 +1639,10 @@ final class AppModel {
         audioController.stopPlayback()
         playbackState = .idle
         isAlarmRinging = false
+        ringingAlarmSchedule = nil
+        if isSleepSessionPresented || sleepSessionStartedAt != nil {
+            endSleepSession()
+        }
 
         // Stopping alarm immediately presents the morning questionnaire
         selectedTab = .sleep
@@ -1495,16 +1650,64 @@ final class AppModel {
         open(.morningCheckIn)
     }
 
+    func startForegroundAlarmMonitoring() {
+        guard foregroundAlarmMonitorTask == nil else { return }
+        foregroundAlarmMonitorTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                self.checkForegroundAlarmTriggers()
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+
+    func stopForegroundAlarmMonitoring() {
+        foregroundAlarmMonitorTask?.cancel()
+        foregroundAlarmMonitorTask = nil
+    }
+
+    func checkForegroundAlarmTriggers(at date: Date = Date(), calendar: Calendar = .current) {
+        guard !isAlarmRinging else { return }
+        for schedule in alarmSchedules where schedule.isEnabled {
+            if WakeAlarmPlanner.isWakeAlarmDue(for: schedule, at: date, calendar: calendar) {
+                let key = WakeAlarmPlanner.occurrenceMinuteKey(for: schedule.id, at: date, calendar: calendar)
+                guard !firedAlarmMinuteKeys.contains(key) else { continue }
+                triggerAlarmRinging(schedule: ScheduleUIModel(schedule), at: date, calendar: calendar)
+                break
+            }
+        }
+    }
+
     func startUnwindSession() {
         guard launchDestination == .home else { return }
         let defaultSleep = settings?.defaultSleepSupport ?? .quickSleep
         let trackID = defaultSleep == .longSleepAid ? "slow-unwind" : "quick-unwind"
 
-        if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == trackID }) {
-            playCatalogAsset(asset)
-        }
         isSleepSessionPresented = false
-        open(.audioPlayer)
+        let startedAt = sleepSessionStartedAt ?? Date()
+        sleepSessionStartedAt = startedAt
+        UserDefaults.standard.set(startedAt, forKey: Self.sleepSessionStartedAtKey)
+        startForegroundAlarmMonitoring()
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            try? sleepSessionLiveActivities.start(startedAt: startedAt)
+        }
+
+        let isUnwindActive: Bool = {
+            if case let .playing(id) = playbackState, id == "quick-unwind" || id == "slow-unwind" { return true }
+            if case let .paused(id) = playbackState, id == "quick-unwind" || id == "slow-unwind" { return true }
+            return false
+        }()
+
+        if !isUnwindActive {
+            if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == trackID }) {
+                playCatalogAsset(asset)
+            }
+        }
+        if !path.contains(.audioPlayer) {
+            open(.audioPlayer)
+        }
     }
 
     func playCalmingSecondSleepAudio() {
@@ -1525,7 +1728,7 @@ final class AppModel {
         updateSleepSessionLiveActivityForPlayback()
     }
 
-    private func playSelectedRecoveryAudio() {
+    func playSelectedRecoveryAudio() {
         let postSupport = settings?.defaultPostEpisodeSupport ?? .calmingAudio
         switch postSupport {
         case .partnerVoice:
@@ -1866,12 +2069,21 @@ final class AppModel {
         path = value
     }
 
+    func clearIntermediateScheduleRoutes() {
+        let scheduleRoutes: Set<AppRoute> = [.alarmScheduleEditor, .alarmHistory, .sleepSchedule]
+        setPath(path.filter { !scheduleRoutes.contains($0) })
+    }
+
     func selectTab(_ value: AppTab) {
         selectedTab = value
         path = []
         if value != .sleep {
             isMorningCheckInPresented = false
         }
+    }
+
+    func presentSheet(_ sheet: AppSheet) {
+        presentedSheet = sheet
     }
 
     func dismissSheet() {
@@ -1970,7 +2182,7 @@ final class AppModel {
         isMorningCheckInPresented = false
     }
 
-    private static let sleepSessionStartedAtKey = "spc.sleepSession.startedAt.v1"
+    static let sleepSessionStartedAtKey = "spc.sleepSession.startedAt.v1"
 
     private func clearSessionState() {
         if sleepSessionStartedAt != nil {

@@ -16,47 +16,30 @@ struct AudioPlayerView: View {
             VStack(spacing: 0) {
                 topNavigationBar
                     .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
+                    .padding(.top, 14)
+                    .padding(.bottom, 16)
 
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        trackListSection
-                            .padding(.horizontal, 20)
-                            .padding(.top, 6)
-                    }
-                    .padding(.bottom, 24)
-                }
-                .frame(maxHeight: .infinity)
+                trackSelectionSection
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+
+                artworkSection
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+
+                Spacer(minLength: 0)
 
                 VStack(spacing: 0) {
-                    trackMetadata
-                        .padding(.horizontal, 24)
-                        .padding(.top, 12)
-
                     scrubberSection
                         .padding(.horizontal, 24)
-                        .padding(.top, 14)
+                        .padding(.bottom, 20)
 
                     mainPlaybackControls
-                        .padding(.top, 16)
+                        .padding(.bottom, 20)
 
                     bottomUtilities
                         .padding(.horizontal, 24)
-                        .padding(.top, 20)
                         .padding(.bottom, 24)
-                }
-                .background {
-                    LinearGradient(
-                        colors: [
-                            HomeScreenPalette.backgroundBottom.opacity(0.0),
-                            HomeScreenPalette.backgroundBottom.opacity(0.92),
-                            HomeScreenPalette.backgroundBottom,
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .ignoresSafeArea(edges: .bottom)
                 }
             }
         }
@@ -81,24 +64,42 @@ struct AudioPlayerView: View {
     private var playerBackground: some View {
         ZStack {
             LinearGradient(
-                colors: [HomeScreenPalette.backgroundTop, HomeScreenPalette.backgroundBottom],
+                colors: [
+                    Color(red: 0.05, green: 0.04, blue: 0.18),
+                    Color(red: 0.02, green: 0.02, blue: 0.09),
+                ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
 
             Circle()
-                .fill(HomeScreenPalette.accent.opacity(0.14))
-                .frame(width: 320, height: 320)
-                .blur(radius: 80)
-                .offset(y: -120)
+                .fill(Color(red: 0.45, green: 0.35, blue: 0.85).opacity(0.12))
+                .frame(width: 340, height: 340)
+                .blur(radius: 90)
+                .offset(y: -140)
 
             Circle()
-                .fill(HomeScreenPalette.iconTint.opacity(0.10))
-                .frame(width: 260, height: 260)
-                .blur(radius: 70)
-                .offset(x: 100, y: 140)
+                .fill(Color(red: 0.25, green: 0.45, blue: 0.95).opacity(0.10))
+                .frame(width: 280, height: 280)
+                .blur(radius: 80)
+                .offset(x: 120, y: 160)
+
+            ForEach(0 ..< 20, id: \.self) { index in
+                Circle()
+                    .fill(Color.white.opacity(index.isMultiple(of: 3) ? 0.65 : 0.35))
+                    .frame(width: index.isMultiple(of: 5) ? 2.5 : 1.5)
+                    .position(
+                        x: pseudoCoord(index * 47 + 13, max: 400),
+                        y: pseudoCoord(index * 71 + 29, max: 800)
+                    )
+                    .accessibilityHidden(true)
+            }
         }
+    }
+
+    private func pseudoCoord(_ seed: Int, max: CGFloat) -> CGFloat {
+        CGFloat((seed * 37 + 19) % Int(max))
     }
 
     // MARK: - Navigation Bar
@@ -106,6 +107,7 @@ struct AudioPlayerView: View {
     private var topNavigationBar: some View {
         HStack {
             Button {
+                AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 if !model.path.isEmpty {
                     model.setPath(Array(model.path.dropLast()))
                 } else {
@@ -113,13 +115,13 @@ struct AudioPlayerView: View {
                 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
-                    .background(HomeScreenPalette.cardSecondary.opacity(0.85))
+                    .background(Color(red: 0.12, green: 0.10, blue: 0.28).opacity(0.6))
                     .clipShape(Circle())
                     .overlay {
-                        Circle().stroke(HomeScreenPalette.cardBorder.opacity(0.8), lineWidth: 1)
+                        Circle().stroke(Color.white.opacity(0.15), lineWidth: 1)
                     }
             }
             .buttonStyle(.plain)
@@ -128,200 +130,141 @@ struct AudioPlayerView: View {
 
             Spacer()
 
-            VStack(spacing: 2) {
-                Text("Sleep Player")
-                    .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
-                    .foregroundStyle(.white)
-                Text("Bedtime Routine")
-                    .font(AppFont.inter(size: 12, relativeTo: .caption2, weight: .medium))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-            }
+            Text("Sleep Player")
+                .font(AppFont.inter(size: 20, relativeTo: .headline, weight: .bold))
+                .foregroundStyle(.white)
+                .accessibilityAddTraits(.isHeader)
 
             Spacer()
 
-            Button {
-                model.open(.curatedAudioLibrary)
+            Menu {
+                Button {
+                    model.open(.curatedAudioLibrary)
+                } label: {
+                    Label("Browse Audio Library", systemImage: "music.note.list")
+                }
+                .accessibilityIdentifier("audioPlayer.menu.curatedLibrary")
+
+                Button {
+                    model.open(.audioLibrary)
+                } label: {
+                    Label("Personal Recordings", systemImage: "mic")
+                }
+                .accessibilityIdentifier("audioPlayer.menu.personalAudio")
             } label: {
-                Image(systemName: "waveform.badge.plus")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(HomeScreenPalette.iconTint)
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
-                    .background(HomeScreenPalette.cardSecondary.opacity(0.85))
-                    .clipShape(Circle())
+                    .background(Color(red: 0.12, green: 0.10, blue: 0.28).opacity(0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay {
-                        Circle().stroke(HomeScreenPalette.blueBorder.opacity(0.8), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
                     }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Open Audio Library")
+            .accessibilityLabel("More options")
             .accessibilityIdentifier("audioPlayer.openLibrary")
         }
     }
 
-    // MARK: - Track List Section
+    // MARK: - Track Selection Section
 
-    private var trackListSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Bedtime Unwind Tracks")
-                    .font(AppFont.inter(size: 14, relativeTo: .subheadline, weight: .semibold))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-                Spacer()
-                Text("\(model.sleepPlayerTracks.count) tracks")
-                    .font(AppFont.inter(size: 12, relativeTo: .caption))
-                    .foregroundStyle(HomeScreenPalette.textSecondary.opacity(0.7))
-            }
-            .padding(.horizontal, 4)
+    private var trackSelectionSection: some View {
+        HStack(spacing: 8) {
+            trackPill(
+                id: "quick-unwind",
+                title: "Quick Unwind",
+                icon: "bolt.fill",
+                iconColor: Color(red: 1.0, green: 0.78, blue: 0.22)
+            )
 
-            ForEach(model.sleepPlayerTracks) { asset in
-                trackRow(for: asset)
-            }
+            trackPill(
+                id: "slow-unwind",
+                title: "Slow Unwind",
+                icon: "moon.fill",
+                iconColor: Color(red: 0.95, green: 0.85, blue: 0.45)
+            )
+
+            trackPill(
+                id: "second-sleep",
+                title: "Second Sleep",
+                icon: "sparkles",
+                iconColor: Color(red: 0.72, green: 0.58, blue: 1.0)
+            )
         }
         .accessibilityIdentifier("audioPlayer.trackList")
     }
 
-    private func trackRow(for asset: CatalogAudioAsset) -> some View {
-        let active = isCurrentTrack(asset)
-        let playing = isTrackPlaying(asset)
-        let duration = model.sleepTrackDurationText(for: asset)
-        let isDownloaded = model.isSleepTrackDownloaded(asset)
+    private func trackPill(id: String, title: String, icon: String, iconColor: Color) -> some View {
+        let active = isCurrentTrack(id: id)
+        let playing = isTrackPlaying(id: id)
 
         return Button {
             if active {
+                AppHaptics.playbackToggle(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 model.togglePlayback()
             } else {
-                model.playCatalogAsset(asset)
+                AppHaptics.selectionChanged(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == id }) {
+                    model.playCatalogAsset(asset)
+                }
             }
         } label: {
-            HStack(spacing: 14) {
-                // Play / Pause status indicator
-                ZStack {
-                    Circle()
-                        .fill(
-                            active
-                                ? HomeScreenPalette.accent.opacity(0.35)
-                                : HomeScreenPalette.cardSecondary
-                        )
-                        .frame(width: 44, height: 44)
-                        .overlay {
-                            Circle().stroke(
-                                active ? HomeScreenPalette.accent : HomeScreenPalette.cardBorder,
-                                lineWidth: 1
-                            )
-                        }
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(iconColor)
 
-                    Image(systemName: playing ? "pause.fill" : "play.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(active ? .white : HomeScreenPalette.iconTint)
-                        .offset(x: playing ? 0 : 1)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(asset.title)
-                        .font(AppFont.inter(size: 16, relativeTo: .headline, weight: .semibold))
-                        .foregroundStyle(.white)
-
-                    HStack(spacing: 6) {
-                        Text(duration)
-                            .font(AppFont.inter(size: 13, relativeTo: .subheadline, weight: .medium))
-                            .foregroundStyle(HomeScreenPalette.textSecondary)
-
-                        Text("•")
-                            .font(.system(size: 10))
-                            .foregroundStyle(HomeScreenPalette.textSecondary.opacity(0.6))
-
-                        Text(asset.shortDescription)
-                            .font(AppFont.inter(size: 13, relativeTo: .footnote))
-                            .foregroundStyle(HomeScreenPalette.textSecondary.opacity(0.85))
-                            .lineLimit(1)
-                    }
-                }
-
-                Spacer()
-
-                // Dedicated Download / Offline status button
-                downloadOrOfflineButton(for: asset, isDownloaded: isDownloaded)
+                Text(title)
+                    .font(AppFont.inter(size: 13, relativeTo: .subheadline, weight: .semibold))
+                    .foregroundStyle(active ? .white : HomeScreenPalette.textSecondary)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 48)
             .background {
-                LinearGradient(
-                    colors: [
-                        HomeScreenPalette.card,
-                        HomeScreenPalette.cardSecondary.opacity(0.9),
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                if active {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(red: 0.16, green: 0.24, blue: 0.42).opacity(0.85))
+                } else {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(red: 0.10, green: 0.08, blue: 0.24).opacity(0.65))
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(
-                        active ? HomeScreenPalette.accent : HomeScreenPalette.cardBorder.opacity(0.6),
+                        active ? Color(red: 0.35, green: 0.58, blue: 0.95) : Color(red: 0.22, green: 0.16, blue: 0.42).opacity(0.7),
                         lineWidth: active ? 1.5 : 1
                     )
             }
             .shadow(
-                color: active ? HomeScreenPalette.accent.opacity(0.25) : Color.clear,
+                color: active ? Color(red: 0.35, green: 0.58, blue: 0.95).opacity(0.28) : .clear,
                 radius: 10,
-                x: 0,
-                y: 4
+                y: 3
             )
         }
         .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(asset.title), \(duration)")
-        .accessibilityHint(playing ? "Pauses audio" : "Plays this track")
-        .accessibilityIdentifier("audioPlayer.track.\(asset.id)")
+        .accessibilityIdentifier("audioPlayer.track.\(id)")
+        .accessibilityLabel(title)
+        .accessibilityHint(playing ? "Pauses audio" : "Plays \(title)")
     }
 
-    @ViewBuilder
-    private func downloadOrOfflineButton(for asset: CatalogAudioAsset, isDownloaded: Bool) -> some View {
-        if isDownloaded {
-            HStack(spacing: 4) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(HomeScreenPalette.iconTint)
+    // MARK: - Artwork Section
+
+    private var artworkSection: some View {
+        Image("SleepPlayerArtwork", bundle: .main)
+            .resizable()
+            .aspectRatio(805.0 / 638.0, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
             }
-            .frame(width: 36, height: 36)
-            .accessibilityLabel("Available offline")
-            .accessibilityIdentifier("audioPlayer.downloadState.\(asset.id)")
-        } else {
-            Button {
-                Task {
-                    await model.downloadSleepTrack(asset)
-                }
-            } label: {
-                Image(systemName: "arrow.down.circle")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Download track")
-            .accessibilityIdentifier("audioPlayer.downloadAction.\(asset.id)")
-        }
-    }
-
-    // MARK: - Track Metadata
-
-    private var trackMetadata: some View {
-        VStack(spacing: 4) {
-            Text(model.activeTrackTitle)
-                .font(AppFont.latoBold(size: 20, relativeTo: .title3))
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-
-            Text(model.activeTrackSubtitle)
-                .font(AppFont.inter(size: 14, relativeTo: .subheadline))
-                .foregroundStyle(HomeScreenPalette.textSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity)
+            .shadow(color: Color.black.opacity(0.45), radius: 18, y: 8)
+            .frame(maxWidth: .infinity)
+            .accessibilityLabel("Moonlit ocean nightscape artwork")
     }
 
     // MARK: - Scrubber
@@ -336,13 +279,16 @@ struct AudioPlayerView: View {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         Capsule()
-                            .fill(HomeScreenPalette.cardSecondary)
+                            .fill(Color(red: 0.16, green: 0.15, blue: 0.30))
                             .frame(height: 5)
 
                         Capsule()
                             .fill(
                                 LinearGradient(
-                                    colors: [HomeScreenPalette.iconTint, HomeScreenPalette.accent],
+                                    colors: [
+                                        Color(red: 0.45, green: 0.55, blue: 0.95),
+                                        Color(red: 0.65, green: 0.50, blue: 0.95),
+                                    ],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -374,46 +320,61 @@ struct AudioPlayerView: View {
 
                     Spacer()
 
-                    Text("-\(formatTime(max(0, duration - current)))")
+                    Text(formatTime(duration))
                         .font(AppFont.inter(size: 13, relativeTo: .caption, weight: .medium))
                         .foregroundStyle(HomeScreenPalette.textSecondary)
                 }
             }
         }
+        .accessibilityIdentifier("audioPlayer.scrubber")
     }
 
     // MARK: - Playback Controls
 
     private var mainPlaybackControls: some View {
-        HStack(spacing: 36) {
+        HStack(spacing: 34) {
             Button {
+                AppHaptics.stepAdjustment(
+                    direction: .decrease,
+                    hapticsEnabled: model.settings?.hapticsEnabled != false
+                )
                 model.skipPlayback(by: -15)
             } label: {
-                Image(systemName: "gobackward.15")
-                    .font(.system(size: 26, weight: .regular))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-                    .frame(width: 48, height: 48)
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 0.13, green: 0.13, blue: 0.30).opacity(0.75))
+                        .frame(width: 58, height: 58)
+                        .overlay {
+                            Circle().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        }
+
+                    Image(systemName: "backward.end.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Rewind 15 seconds")
+            .accessibilityIdentifier("audioPlayer.rewind")
 
             Button {
-                model.toggleHeroPlayback()
+                AppHaptics.playbackToggle(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                model.togglePlayback()
             } label: {
                 ZStack {
                     Circle()
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    HomeScreenPalette.accent,
-                                    HomeScreenPalette.iconTint,
+                                    Color(red: 0.58, green: 0.52, blue: 0.85),
+                                    Color(red: 0.38, green: 0.50, blue: 0.80),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 74, height: 74)
-                        .shadow(color: HomeScreenPalette.accent.opacity(0.55), radius: 14)
+                        .frame(width: 78, height: 78)
+                        .shadow(color: Color(red: 0.48, green: 0.45, blue: 0.85).opacity(0.55), radius: 18, y: 4)
 
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 30, weight: .bold))
@@ -426,15 +387,28 @@ struct AudioPlayerView: View {
             .accessibilityIdentifier("audioPlayer.playPause")
 
             Button {
+                AppHaptics.stepAdjustment(
+                    direction: .increase,
+                    hapticsEnabled: model.settings?.hapticsEnabled != false
+                )
                 model.skipPlayback(by: 15)
             } label: {
-                Image(systemName: "goforward.15")
-                    .font(.system(size: 26, weight: .regular))
-                    .foregroundStyle(HomeScreenPalette.textSecondary)
-                    .frame(width: 48, height: 48)
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 0.13, green: 0.13, blue: 0.30).opacity(0.75))
+                        .frame(width: 58, height: 58)
+                        .overlay {
+                            Circle().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        }
+
+                    Image(systemName: "forward.end.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Fast forward 15 seconds")
+            .accessibilityIdentifier("audioPlayer.fastForward")
         }
     }
 
@@ -443,6 +417,7 @@ struct AudioPlayerView: View {
     private var bottomUtilities: some View {
         HStack(spacing: 16) {
             Button {
+                AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 showSleepTimerPicker = true
             } label: {
                 HStack(spacing: 8) {
@@ -463,7 +438,7 @@ struct AudioPlayerView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(HomeScreenPalette.cardSecondary)
+                .background(HomeScreenPalette.cardSecondary.opacity(0.85))
                 .clipShape(Capsule())
                 .overlay {
                     Capsule().stroke(HomeScreenPalette.cardBorder, lineWidth: 1)
@@ -474,6 +449,7 @@ struct AudioPlayerView: View {
             .accessibilityIdentifier("audioPlayer.sleepTimer")
 
             Button {
+                AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
                 showGroundingTips = true
             } label: {
                 HStack(spacing: 8) {
@@ -485,7 +461,7 @@ struct AudioPlayerView: View {
                 .foregroundStyle(HomeScreenPalette.textSecondary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(HomeScreenPalette.cardSecondary)
+                .background(HomeScreenPalette.cardSecondary.opacity(0.85))
                 .clipShape(Capsule())
                 .overlay {
                     Capsule().stroke(HomeScreenPalette.cardBorder, lineWidth: 1)
@@ -524,6 +500,7 @@ struct AudioPlayerView: View {
                     }
 
                     Button {
+                        AppHaptics.selectionChanged(hapticsEnabled: model.settings?.hapticsEnabled != false)
                         model.setSleepTimerToEndOfTrack()
                         showSleepTimerPicker = false
                     } label: {
@@ -549,6 +526,7 @@ struct AudioPlayerView: View {
 
                 if model.sleepTimerRemaining != nil {
                     Button("Turn Off Timer") {
+                        AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
                         model.cancelSleepTimer()
                         showSleepTimerPicker = false
                     }
@@ -563,6 +541,7 @@ struct AudioPlayerView: View {
 
     private func timerButton(minutes: Int, label: String) -> some View {
         Button {
+            AppHaptics.selectionChanged(hapticsEnabled: model.settings?.hapticsEnabled != false)
             model.setSleepTimer(minutes: minutes)
             showSleepTimerPicker = false
         } label: {
@@ -601,6 +580,7 @@ struct AudioPlayerView: View {
                 }
 
                 Button {
+                    AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
                     showGroundingTips = false
                     model.open(.grounding)
                 } label: {
@@ -662,21 +642,21 @@ struct AudioPlayerView: View {
         return false
     }
 
-    private func isCurrentTrack(_ asset: CatalogAudioAsset) -> Bool {
+    private func isCurrentTrack(id: String) -> Bool {
         if let selected = model.selectedCatalogAsset {
-            return selected.id == asset.id
+            return selected.id == id
         }
-        if case let .playing(id) = model.playbackState {
-            return id == asset.id
+        if case let .playing(currentID) = model.playbackState {
+            return currentID == id
         }
-        if case let .paused(id) = model.playbackState {
-            return id == asset.id
+        if case let .paused(currentID) = model.playbackState {
+            return currentID == id
         }
-        return false
+        return id == "quick-unwind"
     }
 
-    private func isTrackPlaying(_ asset: CatalogAudioAsset) -> Bool {
-        if isCurrentTrack(asset) {
+    private func isTrackPlaying(id: String) -> Bool {
+        if isCurrentTrack(id: id) {
             switch model.playbackState {
             case .playing:
                 return true

@@ -270,10 +270,8 @@ final class ApplicationLaunchUITests: XCTestCase {
             app.staticTexts["Sleep Setup"].waitForExistence(timeout: 8)
                 || app.descendants(matching: .any)["sleep.tab"].waitForExistence(timeout: 8)
         )
-        let alarmToggle = app.switches["sleep.alarmToggle"].exists
-            ? app.switches["sleep.alarmToggle"]
-            : app.buttons["sleep.alarmToggle"]
-        XCTAssertTrue(alarmToggle.waitForExistence(timeout: 8))
+        let saveAlarmButton = app.buttons["sleep.saveAlarmButton"]
+        XCTAssertTrue(saveAlarmButton.waitForExistence(timeout: 8))
         XCTAssertTrue(
             app.scrollViews["sleep.fullAlarmPage"].exists
                 || app.otherElements["sleep.fullAlarmPage"].exists

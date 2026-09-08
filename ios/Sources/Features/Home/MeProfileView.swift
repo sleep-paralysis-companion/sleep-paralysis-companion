@@ -157,18 +157,31 @@ struct MeProfileView: View {
         detail: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) { HStack(spacing: 16) { Text(icon).font(.title2).frame(width: 48, height: 48).background(
-            Color.purple.opacity(0.25),
-            in: RoundedRectangle(cornerRadius: 13)
-        ); Text(title)
-            .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium)); Spacer(); if let detail
-        {
-            Text(detail).foregroundStyle(.white.opacity(0.6))
-        }; Image(systemName: "chevron.right").font(.headline).foregroundStyle(.white.opacity(0.6))
-        }.padding(
-            .vertical,
-            12
-        ) }.buttonStyle(.plain)
+        Button(action: {
+            AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+            action()
+        }) {
+            HStack(spacing: 16) {
+                Text(icon)
+                    .font(.title2)
+                    .frame(width: 48, height: 48)
+                    .background(
+                        Color.purple.opacity(0.25),
+                        in: RoundedRectangle(cornerRadius: 13)
+                    )
+                Text(title)
+                    .font(AppFont.inter(size: 20, relativeTo: .title3, weight: .medium))
+                Spacer()
+                if let detail {
+                    Text(detail).foregroundStyle(.white.opacity(0.6))
+                }
+                Image(systemName: "chevron.right")
+                    .font(.headline)
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -198,6 +211,8 @@ struct DefaultSupportSettingsView: View {
     @State private var post: DefaultEpisodeSupport = .calmingAudio
     @State private var partnerName = ""
     @State private var partnerPhoneNumber = ""
+    @State private var hapticsEnabled = true
+
     var body: some View {
         NightScreen {
             VStack(alignment: .leading, spacing: 14) {
@@ -222,6 +237,19 @@ struct DefaultSupportSettingsView: View {
                     .textContentType(.telephoneNumber)
                     .keyboardType(.phonePad)
                     .accessibilityIdentifier("settings.partnerPhoneNumber")
+                Text("Tactile feedback")
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.top, 8)
+                Toggle("Haptic feedback", isOn: Binding(
+                    get: { hapticsEnabled },
+                    set: { newValue in
+                        hapticsEnabled = newValue
+                        AppHaptics.toggleChanged(isOn: newValue, hapticsEnabled: newValue)
+                        model.setHapticsEnabled(newValue)
+                    }
+                ))
+                .tint(Color(red: 0.50, green: 0.28, blue: 0.94))
+                .accessibilityIdentifier("settings.hapticsToggle")
                 Text("Sleep Alarm Preference")
                     .foregroundStyle(.white.opacity(0.7))
                     .padding(
@@ -260,19 +288,29 @@ struct DefaultSupportSettingsView: View {
                         "Play a recorded voice message from your partner.",
                         .partnerVoice,
                         $post
-                    ); Button("Save Preferences") { model.savePartnerCallSettings(
-                        sleep: sleep,
-                        postEpisode: post,
-                        partnerName: partnerName,
-                        partnerPhoneNumber: partnerPhoneNumber
-                    ) }.buttonStyle(.borderedProminent).frame(maxWidth: .infinity).padding(.top, 12)
+                    ); Button("Save Preferences") {
+                        AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                        let saved = model.savePartnerCallSettings(
+                            sleep: sleep,
+                            postEpisode: post,
+                            partnerName: partnerName,
+                            partnerPhoneNumber: partnerPhoneNumber,
+                            hapticsEnabled: hapticsEnabled
+                        )
+                        if saved {
+                            AppHaptics.success(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                        } else {
+                            AppHaptics.warning(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                        }
+                    }.buttonStyle(.borderedProminent).frame(maxWidth: .infinity).padding(.top, 12)
             }
         }
         .onAppear {
-            sleep = model.settings?.defaultSleepSupport ?? .quickSleep; post = model.settings?
-                .defaultPostEpisodeSupport ?? .calmingAudio
+            sleep = model.settings?.defaultSleepSupport ?? .quickSleep
+            post = model.settings?.defaultPostEpisodeSupport ?? .calmingAudio
             partnerName = model.partnerContact?.name ?? ""
             partnerPhoneNumber = model.partnerContact?.phoneNumber ?? ""
+            hapticsEnabled = model.settings?.hapticsEnabled ?? true
         }
     }
 
@@ -283,7 +321,10 @@ struct DefaultSupportSettingsView: View {
         _ value: DefaultEpisodeSupport,
         _ selection: Binding<DefaultEpisodeSupport>
     ) -> some View {
-        Button { selection.wrappedValue = value } label: { HStack { Text(icon).font(.title2).frame(
+        Button {
+            AppHaptics.selectionChanged(hapticsEnabled: model.settings?.hapticsEnabled != false)
+            selection.wrappedValue = value
+        } label: { HStack { Text(icon).font(.title2).frame(
             width: 46,
             height: 46
         )

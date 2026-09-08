@@ -22,7 +22,7 @@ final class Batch3FeedbackTests: XCTestCase {
     }
 
     @MainActor
-    func testAlarmCardCTARoutesToAlarmHistoryWhenSchedulesExist() {
+    func testAlarmCardCTARoutesToAlarmScheduleEditorWhenSchedulesExist() {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
         let profileID = UUID()
@@ -51,13 +51,10 @@ final class Batch3FeedbackTests: XCTestCase {
         model.openAlarmScheduleSummary()
 
         XCTAssertTrue(
-            model.path.contains(.alarmHistory),
-            "When alarm schedules exist, CTA must open alarmHistory"
-        )
-        XCTAssertFalse(
             model.path.contains(.alarmScheduleEditor),
-            "When alarm schedules exist, CTA must not open alarmScheduleEditor"
+            "When alarm schedules exist, CTA must open alarmScheduleEditor directly"
         )
+        XCTAssertEqual(model.selectedAlarmScheduleID, model.tonightScheduleID)
     }
 
     func testNotificationSoundSelectionPersistenceAndFallback() {

@@ -39,6 +39,8 @@ struct EditQuestionnaireView: View {
             }
             Section {
                 Button("Save and update recommended setup") {
+                    AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                    AppHaptics.success(hapticsEnabled: model.settings?.hapticsEnabled != false)
                     model.updateQuestionnaire(
                         frequency: frequency,
                         feeling: feeling,

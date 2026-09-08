@@ -60,13 +60,33 @@ extension AppModel {
         }
     }
 
+    func setHapticsEnabled(_ enabled: Bool) {
+        if var current = settings {
+            current.hapticsEnabled = enabled
+            current.updatedAt = Date()
+            current.revision += 1
+            settings = current
+        }
+        guard let userID, let currentSettings = settings else { return }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await store.saveSettings(currentSettings, userID: userID)
+            } catch {
+                // Ignore silent failure
+            }
+        }
+    }
+
+    @discardableResult
     func savePartnerCallSettings(
         sleep: DefaultEpisodeSupport,
         postEpisode: DefaultEpisodeSupport,
         partnerName: String,
-        partnerPhoneNumber: String
-    ) {
-        guard let userID, let profileID, var settings else { return }
+        partnerPhoneNumber: String,
+        hapticsEnabled: Bool? = nil
+    ) -> Bool {
+        guard let userID, let profileID, var settings else { return false }
         let trimmedPhoneNumber = partnerPhoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedName = partnerName.trimmingCharacters(in: .whitespacesAndNewlines)
         let contact: PartnerContact?
@@ -74,22 +94,26 @@ extension AppModel {
         if trimmedPhoneNumber.isEmpty {
             guard trimmedName.isEmpty else {
                 feedbackMessage = "Add a phone number before saving the partner name."
-                return
+                return false
             }
             contact = nil
         } else {
             guard let validatedContact = PartnerContact(name: trimmedName, phoneNumber: trimmedPhoneNumber) else {
                 feedbackMessage = "Enter a valid phone number with 7 to 15 digits."
-                return
+                return false
             }
             contact = validatedContact
         }
 
         settings.defaultSleepSupport = sleep
         settings.defaultPostEpisodeSupport = postEpisode
+        if let hapticsEnabled {
+            settings.hapticsEnabled = hapticsEnabled
+        }
         settings.updatedAt = Date()
         settings.revision += 1
         let updatedSettings = settings
+        self.settings = updatedSettings
 
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -101,12 +125,12 @@ extension AppModel {
                 }
                 try await store.saveSettings(updatedSettings, userID: userID)
                 self.updatePartnerContact(contact)
-                self.settings = updatedSettings
                 feedbackMessage = "Preferences saved."
             } catch {
                 feedbackMessage = "Your partner call settings were not saved."
             }
         }
+        return true
     }
 
     func manageNotifications() {

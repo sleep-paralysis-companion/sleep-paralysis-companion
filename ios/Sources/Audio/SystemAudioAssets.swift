@@ -141,10 +141,50 @@ nonisolated enum SystemAudioAssets {
     static func bundledURL(for fileName: String) -> URL? {
         guard isSafeFileName(fileName) else { return nil }
         let fileURL = URL(fileURLWithPath: fileName)
-        return Bundle.main.url(
-            forResource: fileURL.deletingPathExtension().lastPathComponent,
+        let ext = fileURL.pathExtension.isEmpty ? "caf" : fileURL.pathExtension
+        let name = fileURL.deletingPathExtension().lastPathComponent
+        if let url = Bundle.main.url(
+            forResource: name,
+            withExtension: ext
+        ) {
+            return url
+        }
+        if let url = Bundle.main.url(
+            forResource: name,
             withExtension: fileURL.pathExtension
-        )
+        ) {
+            return url
+        }
+        for bundle in Bundle.allBundles {
+            if let url = bundle.url(forResource: name, withExtension: ext) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    static func alarmAudioURL(for requestedFileName: String?) -> URL? {
+        if let resolution = resolveAlarmSound(requestedFileName: requestedFileName),
+           let url = localURL(for: resolution.fileName) {
+            return url
+        }
+        return localURL(for: defaultAlarmFileName) ?? bundledURL(for: defaultAlarmFileName)
+    }
+
+    static func resolveAlarmAudioURL(
+        requestedFileName: String?
+    ) -> (url: URL, usedFallback: Bool)? {
+        if let resolution = resolveAlarmSound(requestedFileName: requestedFileName),
+           let url = localURL(for: resolution.fileName) {
+            return (url: url, usedFallback: resolution.usedFallback)
+        }
+        if let fallback = localURL(for: defaultAlarmFileName) {
+            return (url: fallback, usedFallback: true)
+        }
+        if let bundledFallback = bundledURL(for: defaultAlarmFileName) {
+            return (url: bundledFallback, usedFallback: true)
+        }
+        return nil
     }
 
     static func validateAlarmSoundForCatalog(url: URL) throws {
@@ -188,7 +228,7 @@ nonisolated enum SystemAudioAssets {
         }
     }
 
-    private static func localURL(for fileName: String) -> URL? {
+    static func localURL(for fileName: String) -> URL? {
         guard isSafeFileName(fileName) else { return nil }
         let libraryURL = try? soundsDirectoryURL()
         let librarySound = libraryURL?.appendingPathComponent(fileName, isDirectory: false)

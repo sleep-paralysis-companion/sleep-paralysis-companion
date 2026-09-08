@@ -91,12 +91,13 @@ private final class WakeAlarmServiceGate {
 
         do {
             let authorization = AlarmManager.shared.authorizationState
-            let authorized = if authorization == .authorized {
-                true
+            let authorized: Bool
+            if authorization == .authorized {
+                authorized = true
             } else if authorization == .notDetermined {
-                try await AlarmManager.shared.requestAuthorization() == .authorized
+                authorized = (try? await AlarmManager.shared.requestAuthorization()) == .authorized
             } else {
-                false
+                authorized = false
             }
             guard authorized else {
                 return (
@@ -130,8 +131,17 @@ private final class WakeAlarmServiceGate {
                 id: effectivePreference.id,
                 configuration: configuration(for: plan, soundName: sound.fileName)
             )
-            let verified = try AlarmManager.shared.alarms.contains {
+            var verified = (try? AlarmManager.shared.alarms.contains {
                 $0.id.uuidString == alarm.id.uuidString
+            }) ?? false
+            if !verified {
+                for delay in [50_000_000, 100_000_000, 150_000_000] {
+                    try? await Task.sleep(nanoseconds: UInt64(delay))
+                    if (try? AlarmManager.shared.alarms.contains { $0.id.uuidString == alarm.id.uuidString }) == true {
+                        verified = true
+                        break
+                    }
+                }
             }
             guard verified else {
                 try? AlarmManager.shared.cancel(id: alarm.id)
@@ -208,7 +218,7 @@ private final class WakeAlarmServiceGate {
             }
         }
 
-        guard let soundName = alarmSoundName(for: schedule.wakeAudio) else {
+        guard let sound = resolveAlarmSound(for: schedule.wakeAudio) else {
             do {
                 try cancelOwnedAlarms(for: schedule, state: state)
             } catch {
@@ -234,15 +244,17 @@ private final class WakeAlarmServiceGate {
                 .audioAssetUnavailable
             )
         }
+        let soundName = sound.fileName
 
         do {
             let authorization = AlarmManager.shared.authorizationState
-            let authorized = if authorization == .authorized {
-                true
+            let authorized: Bool
+            if authorization == .authorized {
+                authorized = true
             } else if authorization == .notDetermined {
-                try await AlarmManager.shared.requestAuthorization() == .authorized
+                authorized = (try? await AlarmManager.shared.requestAuthorization()) == .authorized
             } else {
-                false
+                authorized = false
             }
             guard authorized else {
                 return (
@@ -276,8 +288,17 @@ private final class WakeAlarmServiceGate {
                             scheduleID: schedule.id
                         )
                     )
-                    let verified = try AlarmManager.shared.alarms.contains {
+                    var verified = (try? AlarmManager.shared.alarms.contains {
                         $0.id.uuidString == alarm.id.uuidString
+                    }) ?? false
+                    if !verified {
+                        for delay in [50_000_000, 100_000_000, 150_000_000] {
+                            try? await Task.sleep(nanoseconds: UInt64(delay))
+                            if (try? AlarmManager.shared.alarms.contains { $0.id.uuidString == alarm.id.uuidString }) == true {
+                                verified = true
+                                break
+                            }
+                        }
                     }
                     guard verified else {
                         try? AlarmManager.shared.cancel(id: alarm.id)
@@ -314,7 +335,7 @@ private final class WakeAlarmServiceGate {
                     systemState: .scheduled,
                     result: .success
                 ),
-                .scheduled
+                sound.usedFallback ? .fallbackScheduled : .scheduled
             )
         } catch {
             return (
@@ -424,32 +445,25 @@ private final class WakeAlarmServiceGate {
         ))
     }
 
-    private func alarmSoundName(for selection: AlarmAudioSelection?) -> String? {
-        guard let selection,
-              selection.isAvailableOnThisDevice
-        else {
+    private func resolveAlarmSound(for selection: AlarmAudioSelection?) -> SystemAudioAssetResolution? {
+        let requestedFileName: String? = if let selection, selection.isAvailableOnThisDevice {
+            switch selection.reference {
+            case let .bundled(resourceName):
+                selection.localFileName ?? resourceName
+            case .catalog, .personal:
+                selection.localFileName
+            }
+        } else {
+            nil
+        }
+
+        guard let resolved = SystemAudioAssets.resolveAlarmSound(requestedFileName: requestedFileName) else {
             return nil
         }
 
-        let requestedFileName: String? = switch selection.reference {
-        case let .bundled(resourceName):
-            selection.localFileName ?? resourceName
-        case .catalog, .personal:
-            // Catalog and personal audio must already resolve to a verified
-            // local file. Calling resolveAlarmSound with nil would otherwise
-            // permit a bundled fallback, which would silently change intent.
-            selection.localFileName
-        }
+        let isFallback = resolved.usedFallback || (selection != nil && resolved.fileName == SystemAudioAssets.defaultAlarmFileName && requestedFileName != SystemAudioAssets.defaultAlarmFileName)
 
-        guard let requestedFileName,
-              let resolved = SystemAudioAssets.resolveAlarmSound(
-                  requestedFileName: requestedFileName
-              ),
-              !resolved.usedFallback
-        else {
-            return nil
-        }
-        return resolved.fileName
+        return SystemAudioAssetResolution(fileName: resolved.fileName, usedFallback: isFallback)
     }
 
     private func updated(

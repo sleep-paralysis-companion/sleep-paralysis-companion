@@ -6,6 +6,7 @@ import SwiftUI
 struct AlarmScheduleEditorView: View {
     let originalSchedule: ScheduleUIModel?
     let audioOptions: [ScheduleUIAudioSelection]
+    let hapticsEnabled: Bool
     let onCancel: () -> Void
     let onSave: (ScheduleUIModel) -> Void
     let onDelete: ((ScheduleUIModel) -> Void)?
@@ -21,18 +22,23 @@ struct AlarmScheduleEditorView: View {
     init(
         schedule: ScheduleUIModel? = nil,
         audioOptions: [ScheduleUIAudioSelection] = [],
+        hapticsEnabled: Bool = true,
         onCancel: @escaping () -> Void = {},
         onSave: @escaping (ScheduleUIModel) -> Void = { _ in },
         onDelete: ((ScheduleUIModel) -> Void)? = nil
     ) {
         originalSchedule = schedule
         self.audioOptions = audioOptions
+        self.hapticsEnabled = hapticsEnabled
         self.onCancel = onCancel
         self.onSave = onSave
         self.onDelete = onDelete
         var initialDraft = schedule ?? .newSleep
         if initialDraft.gentleWakeLeadMinutes == nil {
             initialDraft.gentleWakeLeadMinutes = 15
+        }
+        if initialDraft.isWakeOnly {
+            initialDraft.updateWakeOnlyNextOccurrence()
         }
         _draft = State(initialValue: initialDraft)
         _selectedNotificationAssetID = State(
@@ -75,9 +81,20 @@ struct AlarmScheduleEditorView: View {
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
         .accessibilityIdentifier("schedule.editor")
+        .onChange(of: draft.wakeHour) { _, _ in
+            if draft.isWakeOnly {
+                draft.updateWakeOnlyNextOccurrence()
+            }
+        }
+        .onChange(of: draft.wakeMinute) { _, _ in
+            if draft.isWakeOnly {
+                draft.updateWakeOnlyNextOccurrence()
+            }
+        }
         .alert("Delete schedule?", isPresented: $isDeleteConfirmationPresented) {
             Button("Delete", role: .destructive) {
                 guard let onDelete else { return }
+                AppHaptics.warning(hapticsEnabled: hapticsEnabled)
                 onDelete(draft)
                 dismiss()
             }
@@ -185,25 +202,6 @@ struct AlarmScheduleEditorView: View {
             ScheduleEditorCard {
                 VStack(alignment: .leading, spacing: 14) {
                     scheduleSectionHeader(
-                        title: "Date",
-                        symbol: "calendar",
-                        color: Color(red: 0.72, green: 0.57, blue: 1)
-                    )
-                    DatePicker(
-                        "Date",
-                        selection: oneTimeDateBinding,
-                        in: Calendar.current.startOfDay(for: .now)...,
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.graphical)
-                    .tint(Color(red: 0.72, green: 0.57, blue: 1))
-                    .accessibilityIdentifier("schedule.editor.oneTimeDate")
-                }
-            }
-
-            ScheduleEditorCard {
-                VStack(alignment: .leading, spacing: 14) {
-                    scheduleSectionHeader(
                         title: "Wake up time",
                         symbol: "clock.fill",
                         color: Color(red: 1, green: 0.67, blue: 0.24)
@@ -212,10 +210,11 @@ struct AlarmScheduleEditorView: View {
                 }
             }
 
-            Text("This alarm rings once on the selected date, then turns itself off.")
+            Text("This alarm will ring once at the next upcoming \(formattedWakeTime), then turn itself off.")
                 .font(AppTypographyRole.footnote)
                 .foregroundStyle(Color.white.opacity(0.55))
                 .padding(.horizontal, 4)
+                .accessibilityIdentifier("schedule.editor.wakeOnlyExplanation")
         }
     }
 
@@ -505,9 +504,7 @@ struct AlarmScheduleEditorView: View {
             set: { kind in
                 draft.kind = kind
                 if kind == .wakeOnly {
-                    if draft.oneTimeDate == nil {
-                        draft.oneTimeDate = Calendar.current.date(byAdding: .day, value: 1, to: .now)
-                    }
+                    draft.updateWakeOnlyNextOccurrence()
                     draft.repeatWeekdaysMask = 0
                 } else {
                     draft.oneTimeDate = nil
@@ -525,11 +522,10 @@ struct AlarmScheduleEditorView: View {
         )
     }
 
-    private var oneTimeDateBinding: Binding<Date> {
-        Binding(
-            get: { draft.oneTimeDate ?? Calendar.current.startOfDay(for: .now) },
-            set: { draft.oneTimeDate = Calendar.current.startOfDay(for: $0) }
-        )
+    private var formattedWakeTime: String {
+        let displayedHour = ((draft.wakeHour + 11) % 12) + 1
+        let isPM = draft.wakeHour >= 12
+        return String(format: "%d:%02d %@", displayedHour, draft.wakeMinute, isPM ? "PM" : "AM")
     }
 
     private var audioChoices: [ScheduleUIAudioSelection] {
@@ -569,15 +565,22 @@ struct AlarmScheduleEditorView: View {
     }
 
     private func cancel() {
+        AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
         onCancel()
         dismiss()
     }
 
     private func save() {
+        if draft.isWakeOnly {
+            draft.updateWakeOnlyNextOccurrence()
+        }
         guard draft.isValid else {
+            AppHaptics.warning(hapticsEnabled: hapticsEnabled)
             nameIsFocused = true
             return
         }
+        AppHaptics.primaryCTA(hapticsEnabled: hapticsEnabled)
+        AppHaptics.success(hapticsEnabled: hapticsEnabled)
         onSave(draft)
         dismiss()
     }

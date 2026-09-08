@@ -155,6 +155,7 @@ private struct AppRouteDestinationView: View {
         case .alarmHistory:
             AlarmHistoryView(
                 schedules: model.scheduleUIModels,
+                hapticsEnabled: model.settings?.hapticsEnabled != false,
                 onBack: dismissScheduleRoute,
                 onAdd: {
                     model.beginNewSchedule()
@@ -177,10 +178,16 @@ private struct AppRouteDestinationView: View {
             AlarmScheduleEditorView(
                 schedule: model.selectedScheduleUIModel,
                 audioOptions: model.scheduleAudioOptions,
+                hapticsEnabled: model.settings?.hapticsEnabled != false,
                 onCancel: dismissScheduleRoute,
                 onSave: { schedule in
-                    dismissScheduleRoute()
-                    _ = model.saveScheduleUI(schedule, autoStartUnwind: true)
+                    let currentPath = model.path
+                    model.clearIntermediateScheduleRoutes()
+                    let saved = model.saveScheduleUI(schedule, autoStartUnwind: true)
+                    if !saved {
+                        model.setPath(currentPath)
+                        AppHaptics.warning(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                    }
                 },
                 onDelete: { schedule in
                     model.deleteScheduleUI(schedule)
