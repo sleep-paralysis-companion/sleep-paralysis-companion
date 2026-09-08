@@ -157,10 +157,10 @@ struct MeProfileView: View {
         detail: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: {
+        Button {
             AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
             action()
-        }) {
+        } label: {
             HStack(spacing: 16) {
                 Text(icon)
                     .font(.title2)

@@ -127,10 +127,10 @@ struct MorningCheckInFlowView: View {
     private func answerList(_ answers: [AnswerOption]) -> some View {
         VStack(spacing: 10) {
             ForEach(Array(answers.enumerated()), id: \.offset) { _, answer in
-                Button(action: {
+                Button {
                     AppHaptics.selectionChanged(hapticsEnabled: model.settings?.hapticsEnabled != false)
                     answer.action()
-                }) {
+                } label: {
                     HStack(spacing: 12) {
                         Text(answer.emoji)
                             .font(.system(size: 20))

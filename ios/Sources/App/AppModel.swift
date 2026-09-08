@@ -1526,10 +1526,10 @@ final class AppModel {
             guard !firedAlarmMinuteKeys.contains(key) else { return }
             firedAlarmMinuteKeys.insert(key)
             if firedAlarmMinuteKeys.count > 200 {
-                let y = calendar.component(.year, from: date)
-                let m = calendar.component(.month, from: date)
-                let d = calendar.component(.day, from: date)
-                let todayPrefix = "\(y)-\(m)-\(d)"
+                let year = calendar.component(.year, from: date)
+                let month = calendar.component(.month, from: date)
+                let day = calendar.component(.day, from: date)
+                let todayPrefix = "\(year)-\(month)-\(day)"
                 firedAlarmMinuteKeys = firedAlarmMinuteKeys.filter { $0.contains(todayPrefix) }
             }
         }
@@ -1570,70 +1570,78 @@ final class AppModel {
         }
     }
 
+    private func resolveDomainAlarmAudioURL(_ domainAudio: AlarmWakeAudioSelection) -> URL? {
+        switch domainAudio.reference {
+        case let .bundled(resourceName):
+            let fileName = domainAudio.localFileName ?? resourceName
+            return SystemAudioAssets.alarmAudioURL(for: fileName)
+        case .catalog:
+            if let fileName = domainAudio.localFileName {
+                return SystemAudioAssets.alarmAudioURL(for: fileName)
+            }
+            return nil
+        case let .personal(clipID):
+            guard let clip = personalClips.first(where: { $0.id == clipID }),
+                  let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
+                  FileManager.default.fileExists(atPath: url.path)
+            else {
+                return nil
+            }
+            return url
+        }
+    }
+
+    private func resolveUIAlarmAudioURL(_ uiAudio: ScheduleUIAudioSelection) -> URL? {
+        switch uiAudio {
+        case let .bundled(id, _):
+            let isDefault = id == SystemAudioAssets.defaultAlarmAssetID
+                || id == SystemAudioAssets.defaultAlarmFileName
+            let fileName = isDefault
+                ? SystemAudioAssets.defaultAlarmFileName
+                : (id.hasSuffix(".caf") ? id : "\(id).caf")
+            return SystemAudioAssets.alarmAudioURL(for: fileName)
+        case let .catalog(id, _, isAvailable):
+            guard isAvailable else { return nil }
+            let fileName = AlarmSoundSelectionStore.selectedAlarmAssetID() == id
+                ? AlarmSoundSelectionStore.selectedAlarmSoundFileName()
+                : nil
+            if let fileName, let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
+                return url
+            }
+            if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == id }),
+               let soundName = asset.systemSoundFileName
+            {
+                return SystemAudioAssets.alarmAudioURL(for: soundName)
+            }
+            return nil
+        case let .personal(clipID, _, isAvailable):
+            guard isAvailable,
+                  let clip = personalClips.first(where: { $0.id == clipID }),
+                  let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
+                  FileManager.default.fileExists(atPath: url.path)
+            else {
+                return nil
+            }
+            return url
+        case .unavailable:
+            return nil
+        }
+    }
+
     func resolveAlarmPlaybackURL(
         target: ScheduleUIModel?,
         domain: AlarmSchedule?
     ) -> URL? {
-        if let domainAudio = domain?.wakeAudio {
-            switch domainAudio.reference {
-            case let .bundled(resourceName):
-                let fileName = domainAudio.localFileName ?? resourceName
-                if let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
-                    return url
-                }
-            case .catalog:
-                if let fileName = domainAudio.localFileName,
-                   let url = SystemAudioAssets.alarmAudioURL(for: fileName)
-                {
-                    return url
-                }
-            case let .personal(clipID):
-                if let clip = personalClips.first(where: { $0.id == clipID }),
-                   let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
-                   FileManager.default.fileExists(atPath: url.path)
-                {
-                    return url
-                }
-            }
+        if let domainAudio = domain?.wakeAudio,
+           let url = resolveDomainAlarmAudioURL(domainAudio)
+        {
+            return url
         }
 
-        if let uiAudio = target?.wakeAudio {
-            switch uiAudio {
-            case let .bundled(id, _):
-                let isDefault = id == SystemAudioAssets.defaultAlarmAssetID
-                    || id == SystemAudioAssets.defaultAlarmFileName
-                let fileName = isDefault
-                    ? SystemAudioAssets.defaultAlarmFileName
-                    : (id.hasSuffix(".caf") ? id : "\(id).caf")
-                if let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
-                    return url
-                }
-            case let .catalog(id, _, isAvailable):
-                if isAvailable {
-                    let fileName = AlarmSoundSelectionStore.selectedAlarmAssetID() == id
-                        ? AlarmSoundSelectionStore.selectedAlarmSoundFileName()
-                        : nil
-                    if let fileName, let url = SystemAudioAssets.alarmAudioURL(for: fileName) {
-                        return url
-                    }
-                    if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == id }),
-                       let soundName = asset.systemSoundFileName,
-                       let url = SystemAudioAssets.alarmAudioURL(for: soundName)
-                    {
-                        return url
-                    }
-                }
-            case let .personal(clipID, _, isAvailable):
-                if isAvailable, let clip = personalClips.first(where: { $0.id == clipID }) {
-                    if let url = try? audioFiles.clipURL(profileID: profileID ?? UUID(), clipID: clip.id),
-                       FileManager.default.fileExists(atPath: url.path)
-                    {
-                        return url
-                    }
-                }
-            case .unavailable:
-                break
-            }
+        if let uiAudio = target?.wakeAudio,
+           let url = resolveUIAlarmAudioURL(uiAudio)
+        {
+            return url
         }
 
         return SystemAudioAssets.alarmAudioURL(for: SystemAudioAssets.defaultAlarmFileName)

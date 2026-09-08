@@ -185,10 +185,10 @@ struct HomeView: View {
         identifier: String? = nil,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: {
+        Button {
             AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
             action()
-        }) {
+        } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HomeIconBadge(systemImage: icon)
                     .padding(.bottom, 20)

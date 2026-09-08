@@ -94,10 +94,10 @@ struct AlarmHistoryView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Button(action: {
+                Button {
                     AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
                     onBack()
-                }) {
+                } label: {
                     Image(systemName: "arrow.left")
                         .font(.system(size: 21, weight: .medium))
                         .frame(width: 48, height: 48)
@@ -114,10 +114,10 @@ struct AlarmHistoryView: View {
 
                 Spacer()
 
-                Button(action: {
+                Button {
                     AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
                     onAdd()
-                }) {
+                } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 28, weight: .regular))
                         .frame(width: 56, height: 56)
@@ -242,10 +242,10 @@ struct AlarmHistoryView: View {
                     .font(AppTypographyRole.body)
                     .foregroundStyle(Color.white.opacity(0.64))
 
-                Button(action: {
+                Button {
                     AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
                     onAdd()
-                }) {
+                } label: {
                     Label("Add a schedule", systemImage: "plus")
                 }
                 .buttonStyle(AppPrimaryButtonStyle())
