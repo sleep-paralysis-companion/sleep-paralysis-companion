@@ -91,14 +91,12 @@ private final class WakeAlarmServiceGate {
 
         do {
             let authorization = AlarmManager.shared.authorizationState
-            let authorized: Bool
-            if authorization == .authorized {
-                authorized = true
-            } else if authorization == .notDetermined {
-                authorized = (try? await AlarmManager.shared.requestAuthorization()) == .authorized
+            let requestedAuth = if authorization == .notDetermined {
+                try? await AlarmManager.shared.requestAuthorization()
             } else {
-                authorized = false
+                nil as AlarmManager.AuthorizationState?
             }
+            let authorized = authorization == .authorized || requestedAuth == .authorized
             guard authorized else {
                 return (
                     updated(
@@ -248,14 +246,12 @@ private final class WakeAlarmServiceGate {
 
         do {
             let authorization = AlarmManager.shared.authorizationState
-            let authorized: Bool
-            if authorization == .authorized {
-                authorized = true
-            } else if authorization == .notDetermined {
-                authorized = (try? await AlarmManager.shared.requestAuthorization()) == .authorized
+            let requestedAuth = if authorization == .notDetermined {
+                try? await AlarmManager.shared.requestAuthorization()
             } else {
-                authorized = false
+                nil as AlarmManager.AuthorizationState?
             }
+            let authorized = authorization == .authorized || requestedAuth == .authorized
             guard authorized else {
                 return (
                     updated(
@@ -294,7 +290,10 @@ private final class WakeAlarmServiceGate {
                     if !verified {
                         for delay in [50_000_000, 100_000_000, 150_000_000] {
                             try? await Task.sleep(nanoseconds: UInt64(delay))
-                            if (try? AlarmManager.shared.alarms.contains { $0.id.uuidString == alarm.id.uuidString }) == true {
+                            let found = (try? AlarmManager.shared.alarms.contains {
+                                $0.id.uuidString == alarm.id.uuidString
+                            }) == true
+                            if found {
                                 verified = true
                                 break
                             }
@@ -461,7 +460,11 @@ private final class WakeAlarmServiceGate {
             return nil
         }
 
-        let isFallback = resolved.usedFallback || (selection != nil && resolved.fileName == SystemAudioAssets.defaultAlarmFileName && requestedFileName != SystemAudioAssets.defaultAlarmFileName)
+        let isFallback = resolved.usedFallback || (
+            selection != nil
+                && resolved.fileName == SystemAudioAssets.defaultAlarmFileName
+                && requestedFileName != SystemAudioAssets.defaultAlarmFileName
+        )
 
         return SystemAudioAssetResolution(fileName: resolved.fileName, usedFallback: isFallback)
     }

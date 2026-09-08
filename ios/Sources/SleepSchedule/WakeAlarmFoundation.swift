@@ -236,7 +236,7 @@ nonisolated enum WakeAlarmPlanner {
             guard plan.role == .finalWake || (!schedule.finalWakeAlarmEnabled && plan.role == .gentleAudio) else {
                 continue
             }
-            guard plan.hour == currentHour && plan.minute == currentMinute else {
+            guard plan.hour == currentHour, plan.minute == currentMinute else {
                 continue
             }
             if let planDate = plan.date {
@@ -292,7 +292,7 @@ nonisolated enum WakeAlarmPlanner {
                     candidates.append(target)
                 }
             } else if !plan.weekdays.isEmpty {
-                for dayOffset in 0...7 {
+                for dayOffset in 0 ... 7 {
                     guard let checkDay = calendar.date(byAdding: .day, value: dayOffset, to: date) else { continue }
                     let weekday = calendar.component(.weekday, from: checkDay)
                     if plan.weekdays.contains(weekday) {
