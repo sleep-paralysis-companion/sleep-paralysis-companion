@@ -1715,14 +1715,12 @@ final class AppModel {
             try? sleepSessionLiveActivities.start(startedAt: startedAt)
         }
 
-        let isUnwindActive: Bool = {
-            switch playbackState {
-            case let .playing(id), let .paused(id):
-                return id == "quick-unwind" || id == "slow-unwind"
-            default:
-                return false
-            }
-        }()
+        let isUnwindActive = switch playbackState {
+        case let .playing(id), let .paused(id):
+            id == "quick-unwind" || id == "slow-unwind"
+        default:
+            false
+        }
 
         if !isUnwindActive {
             if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == trackID }) {
