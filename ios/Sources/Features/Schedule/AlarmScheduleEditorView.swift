@@ -11,7 +11,6 @@ struct AlarmScheduleEditorView: View {
     let onSave: (ScheduleUIModel) -> Void
     let onDelete: ((ScheduleUIModel) -> Void)?
 
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @FocusState private var nameIsFocused: Bool
     @State private var draft: ScheduleUIModel
@@ -93,10 +92,7 @@ struct AlarmScheduleEditorView: View {
         }
         .alert("Delete schedule?", isPresented: $isDeleteConfirmationPresented) {
             Button("Delete", role: .destructive) {
-                guard let onDelete else { return }
-                AppHaptics.warning(hapticsEnabled: hapticsEnabled)
-                onDelete(draft)
-                dismiss()
+                delete()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -564,13 +560,18 @@ struct AlarmScheduleEditorView: View {
         }
     }
 
-    private func cancel() {
+    func cancel() {
         AppHaptics.secondaryCTA(hapticsEnabled: hapticsEnabled)
         onCancel()
-        dismiss()
     }
 
-    private func save() {
+    func delete() {
+        guard let onDelete else { return }
+        AppHaptics.warning(hapticsEnabled: hapticsEnabled)
+        onDelete(draft)
+    }
+
+    func save() {
         if draft.isWakeOnly {
             draft.updateWakeOnlyNextOccurrence()
         }
@@ -582,6 +583,5 @@ struct AlarmScheduleEditorView: View {
         AppHaptics.primaryCTA(hapticsEnabled: hapticsEnabled)
         AppHaptics.success(hapticsEnabled: hapticsEnabled)
         onSave(draft)
-        dismiss()
     }
 }

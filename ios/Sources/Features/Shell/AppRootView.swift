@@ -182,7 +182,6 @@ private struct AppRouteDestinationView: View {
                 onCancel: dismissScheduleRoute,
                 onSave: { schedule in
                     let currentPath = model.path
-                    model.clearIntermediateScheduleRoutes()
                     let saved = model.saveScheduleUI(schedule, autoStartUnwind: true)
                     if !saved {
                         model.setPath(currentPath)

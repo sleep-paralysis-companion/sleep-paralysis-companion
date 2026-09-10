@@ -717,6 +717,7 @@ final class AppModel {
             }
         }
         if autoStartUnwind {
+            clearIntermediateScheduleRoutes()
             startUnwindSession()
         }
         return true
@@ -744,7 +745,11 @@ final class AppModel {
     }
 
     @discardableResult
-    func saveTonightScheduleDraft(_ draft: ScheduleUIModel, immediate: Bool = false) -> Bool {
+    func saveTonightScheduleDraft(
+        _ draft: ScheduleUIModel,
+        immediate: Bool = false,
+        autoStartUnwind: Bool = false
+    ) -> Bool {
         guard let profileID, let userID else { return false }
         let existing = alarmSchedules.first(where: { $0.id == draft.id })
         let schedule = draft.domainValue(
@@ -771,6 +776,10 @@ final class AppModel {
             guard let self, !Task.isCancelled else { return }
             defer { self.tonightScheduleSaveTask = nil }
             await self.persistTonightSchedule(schedule, profileID: profileID, userID: userID)
+        }
+        if autoStartUnwind {
+            clearIntermediateScheduleRoutes()
+            startUnwindSession()
         }
         return true
     }

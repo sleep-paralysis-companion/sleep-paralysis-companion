@@ -334,4 +334,214 @@ final class SleepPlayerTests: XCTestCase {
 
         model.endSleepSession()
     }
+
+    @MainActor
+    func testSavingViaAlarmScheduleEditorNavigatesToAudioPlayerWithoutRouteDrops() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        // Simulate navigation stack: Home -> Alarm History -> Alarm Editor
+        model.setPath([.alarmHistory, .alarmScheduleEditor])
+        XCTAssertEqual(model.path, [.alarmHistory, .alarmScheduleEditor])
+
+        let schedule = ScheduleUIModel(
+            name: "Editor Bedtime Alarm",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 7,
+            wakeMinute: 0,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+
+        // Production onSave wiring from AppRootView
+        let editor = AlarmScheduleEditorView(
+            schedule: schedule,
+            audioOptions: model.scheduleAudioOptions,
+            hapticsEnabled: false,
+            onSave: { savedSchedule in
+                let currentPath = model.path
+                let saved = model.saveScheduleUI(savedSchedule, autoStartUnwind: true)
+                if !saved {
+                    model.setPath(currentPath)
+                }
+            }
+        )
+
+        editor.save()
+
+        // Editor save must cleanly reach .audioPlayer without route drops or desync
+        XCTAssertEqual(model.path.last, .audioPlayer)
+        XCTAssertEqual(model.path, [.audioPlayer])
+        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
+
+        // Popping audioPlayer returns directly to Home/Sleep tab
+        model.setPath(Array(model.path.dropLast()))
+        XCTAssertTrue(model.path.isEmpty)
+    }
+
+    @MainActor
+    func testSavingViaAlarmScheduleEditorCollisionRollsBackPathWithoutDismissing() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let initial = ScheduleUIModel(
+            name: "Existing Alarm",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        XCTAssertTrue(model.saveScheduleUI(initial, autoStartUnwind: false))
+
+        // Navigate to editor
+        model.setPath([.alarmHistory, .alarmScheduleEditor])
+
+        let conflicting = ScheduleUIModel(
+            name: "Conflicting Alarm",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+
+        // Production onSave wiring from AppRootView
+        let editor = AlarmScheduleEditorView(
+            schedule: conflicting,
+            audioOptions: model.scheduleAudioOptions,
+            hapticsEnabled: false,
+            onSave: { savedSchedule in
+                let currentPath = model.path
+                let saved = model.saveScheduleUI(savedSchedule, autoStartUnwind: true)
+                if !saved {
+                    model.setPath(currentPath)
+                }
+            }
+        )
+
+        editor.save()
+
+        // Validation failure must restore path to editor and not navigate to audioPlayer
+        XCTAssertEqual(model.path, [.alarmHistory, .alarmScheduleEditor])
+        XCTAssertNotEqual(model.path.last, .audioPlayer)
+        XCTAssertTrue(model.feedbackMessage?.contains("collides") == true)
+    }
+
+    @MainActor
+    func testCancellingAlarmScheduleEditorPopsEditorRouteOnly() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        // Case 1: Entered from Alarm History -> cancel returns to Alarm History
+        model.setPath([.alarmHistory, .alarmScheduleEditor])
+
+        let editorFromHistory = AlarmScheduleEditorView(
+            schedule: .newSleep,
+            audioOptions: model.scheduleAudioOptions,
+            hapticsEnabled: false,
+            onCancel: {
+                if !model.path.isEmpty {
+                    model.setPath(Array(model.path.dropLast()))
+                }
+            }
+        )
+
+        editorFromHistory.cancel()
+        XCTAssertEqual(model.path, [.alarmHistory])
+
+        // Case 2: Entered from Home directly -> cancel returns to Home (empty path)
+        model.setPath([.alarmScheduleEditor])
+
+        let editorFromHome = AlarmScheduleEditorView(
+            schedule: .newSleep,
+            audioOptions: model.scheduleAudioOptions,
+            hapticsEnabled: false,
+            onCancel: {
+                if !model.path.isEmpty {
+                    model.setPath(Array(model.path.dropLast()))
+                }
+            }
+        )
+
+        editorFromHome.cancel()
+        XCTAssertTrue(model.path.isEmpty)
+    }
+
+    @MainActor
+    func testDeletingAlarmScheduleEditorRemovesScheduleAndPopsRoute() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let initial = ScheduleUIModel(
+            name: "Alarm to Delete",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        XCTAssertTrue(model.saveScheduleUI(initial, autoStartUnwind: false))
+        XCTAssertTrue(model.alarmSchedules.contains(where: { $0.id == initial.id }))
+
+        // Navigate to editor
+        model.setPath([.alarmHistory, .alarmScheduleEditor])
+
+        let editor = AlarmScheduleEditorView(
+            schedule: initial,
+            audioOptions: model.scheduleAudioOptions,
+            hapticsEnabled: false,
+            onCancel: {
+                if !model.path.isEmpty {
+                    model.setPath(Array(model.path.dropLast()))
+                }
+            },
+            onSave: { _ in },
+            onDelete: { schedule in
+                model.deleteScheduleUI(schedule)
+                if !model.path.isEmpty {
+                    model.setPath(Array(model.path.dropLast()))
+                }
+            }
+        )
+
+        editor.delete()
+
+        // Path pops back to Alarm History
+        XCTAssertEqual(model.path, [.alarmHistory])
+        // Schedule is removed from AppModel
+        XCTAssertFalse(model.alarmSchedules.contains(where: { $0.id == initial.id }))
+    }
 }
