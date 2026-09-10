@@ -672,7 +672,7 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         let options = [5, 10, 15, 30]
         for option in options {
             let tonight = model.tonightScheduleUIModel
-            let view = SleepTabView(model: model, initialDraft: tonight)
+            var view = SleepTabView(model: model, initialDraft: tonight)
             view.setWakeUpWindowForTesting(option)
             XCTAssertEqual(view.currentDraft.gentleWakeLeadMinutes, option)
 
@@ -704,7 +704,7 @@ final class SleepTabTonightScheduleTests: XCTestCase {
 
         let options = [5, 10, 15, 30]
         for option in options {
-            let view = SleepTabView(model: model, initialDraft: wakeOnlyDraft)
+            var view = SleepTabView(model: model, initialDraft: wakeOnlyDraft)
             view.setWakeUpWindowForTesting(option)
             XCTAssertEqual(view.currentDraft.gentleWakeLeadMinutes, option)
 

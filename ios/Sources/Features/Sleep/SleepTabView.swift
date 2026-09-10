@@ -19,17 +19,16 @@ struct SleepTabView: View {
 
     init(model: AppModel, initialDraft: ScheduleUIModel? = nil) {
         self.model = model
-        if var initialDraft {
-            if initialDraft.gentleWakeLeadMinutes == nil {
-                initialDraft.gentleWakeLeadMinutes = 15
-            }
-            if initialDraft.isWakeOnly {
-                initialDraft.updateWakeOnlyNextOccurrence()
-            }
-            _draft = State(initialValue: initialDraft)
-            _mode = State(initialValue: initialDraft.kind == .wakeOnly ? .wakeOnly : .sleep)
-            _isInitialized = State(initialValue: true)
+        var initial = initialDraft ?? model.tonightScheduleUIModel
+        if initial.gentleWakeLeadMinutes == nil {
+            initial.gentleWakeLeadMinutes = 15
         }
+        if initial.isWakeOnly {
+            initial.updateWakeOnlyNextOccurrence()
+        }
+        _draft = State(initialValue: initial)
+        _mode = State(initialValue: initial.kind == .wakeOnly ? .wakeOnly : .sleep)
+        _isInitialized = State(initialValue: true)
     }
 
     var body: some View {
@@ -580,8 +579,10 @@ struct SleepTabView: View {
         draft
     }
 
-    func setWakeUpWindowForTesting(_ minutes: Int) {
-        draft.gentleWakeLeadMinutes = minutes
+    mutating func setWakeUpWindowForTesting(_ minutes: Int) {
+        var updated = draft
+        updated.gentleWakeLeadMinutes = minutes
+        _draft = State(initialValue: updated)
     }
 
     // MARK: - Floating Save Alarm Bar
