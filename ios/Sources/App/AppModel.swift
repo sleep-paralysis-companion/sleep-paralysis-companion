@@ -1446,7 +1446,7 @@ final class AppModel {
     func beginManualGrounding() {
         guard launchDestination == .home else { return }
         open(.grounding)
-        playSelectedRecoveryAudio()
+        playCalmingSecondSleepAudio()
     }
 
     func startSleepSession() {
@@ -1495,7 +1495,7 @@ final class AppModel {
 
     func beginSleepSessionGrounding() {
         guard launchDestination == .home, sleepSessionStartedAt != nil else { return }
-        playSelectedRecoveryAudio()
+        playCalmingSecondSleepAudio()
     }
 
     @discardableResult
@@ -1515,7 +1515,7 @@ final class AppModel {
                 togglePlayback()
             }
         case .resume:
-            if case .paused = playbackState {
+            if isRecoveryPlaybackActive, case .paused = playbackState {
                 togglePlayback()
             } else {
                 beginSleepSessionGrounding()
@@ -1524,7 +1524,19 @@ final class AppModel {
         return true
     }
 
+    var isRecoveryPlaybackActive: Bool {
+        switch playbackState {
+        case let .playing(id), let .paused(id):
+            return id == "second-sleep" || personalClips.contains(where: { $0.id.uuidString == id })
+        default:
+            return false
+        }
+    }
+
     var sleepSessionAudioStatus: SleepSessionAudioStatus {
+        guard isRecoveryPlaybackActive else {
+            return .ready
+        }
         switch playbackState {
         case .playing: .playing
         case .paused: .paused

@@ -186,13 +186,75 @@ final class SleepPlayerTests: XCTestCase {
         }
         model.playCatalogAsset(quickUnwind)
         XCTAssertEqual(model.selectedCatalogAsset?.id, "quick-unwind")
+        XCTAssertEqual(model.sleepSessionAudioStatus, .ready, "Status must remain ready for episode recovery while unwind track plays")
 
         // Lock screen widget "I just had an episode" executes post-episode recovery
         _ = model.performSleepSessionAudioAction(.startOrResume, presentSession: true)
         XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+        XCTAssertEqual(model.sleepSessionAudioStatus, .playing, "Status must be playing once Second Sleep begins")
 
         model.endSleepSession()
         XCTAssertNil(model.sleepSessionStartedAt)
+    }
+
+    @MainActor
+    func testLockScreenWidgetRecoveryCTAStartsSecondSleepDuringUnwind() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.startUnwindSession()
+        XCTAssertNotNil(model.sleepSessionStartedAt)
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "quick-unwind")
+        XCTAssertEqual(model.sleepSessionAudioStatus, .ready)
+
+        // Tapping lock screen recovery CTA
+        let handled = model.requestSleepSessionAudioAction(.startOrResume)
+        XCTAssertTrue(handled)
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+        XCTAssertEqual(model.activeTrackTitle, "Calming Second Sleep")
+        XCTAssertEqual(model.sleepSessionAudioStatus, .playing)
+
+        model.endSleepSession()
+    }
+
+    @MainActor
+    func testLockScreenWidgetRecoveryCTAWithoutActiveSessionStartsSecondSleep() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        XCTAssertNil(model.sleepSessionStartedAt)
+        let handled = model.requestSleepSessionAudioAction(.startOrResume)
+        XCTAssertTrue(handled)
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+        XCTAssertEqual(model.activeTrackTitle, "Calming Second Sleep")
+        XCTAssertTrue(model.path.contains(.grounding))
+    }
+
+    @MainActor
+    func testPerformSleepSessionAudioActionResumeWhileUnwindPausedStartsSecondSleep() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        model.startSleepSession()
+
+        guard let quickUnwind = CatalogAudioManifest.bundled.assets.first(where: { $0.id == "quick-unwind" }) else {
+            XCTFail("Missing quick unwind asset")
+            return
+        }
+        model.playCatalogAsset(quickUnwind)
+        model.togglePlayback()
+        if case let .paused(id) = model.playbackState {
+            XCTAssertEqual(id, "quick-unwind")
+        } else {
+            XCTFail("Expected quick-unwind to be paused")
+        }
+        XCTAssertEqual(model.sleepSessionAudioStatus, .ready)
+
+        // Resuming when an unwind track was paused should trigger Second Sleep recovery rather than unpausing unwind
+        _ = model.performSleepSessionAudioAction(.resume, presentSession: true)
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+        XCTAssertEqual(model.activeTrackTitle, "Calming Second Sleep")
+
+        model.endSleepSession()
     }
 
     @MainActor
