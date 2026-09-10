@@ -611,4 +611,131 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
         XCTAssertEqual(model.feedbackMessage, "Tonight's alarm saved")
     }
+
+    @MainActor
+    func testTonightScheduleWakeUpWindowDefaultValue() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        // Default when empty
+        let tonight = model.tonightScheduleUIModel
+        XCTAssertEqual(tonight.gentleWakeLeadMinutes, 15)
+        XCTAssertEqual(tonight.preWakeReminderLeadMinutes, 15)
+
+        // Default when view is initialized
+        let view = SleepTabView(model: model, initialDraft: tonight)
+        XCTAssertEqual(view.currentDraft.gentleWakeLeadMinutes, 15)
+    }
+
+    @MainActor
+    func testTonightScheduleWakeUpWindowResolvesFromExistingSchedule() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let schedule = ScheduleUIModel(
+            name: "Custom Wake Window",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 7,
+            wakeMinute: 0,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 10,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        XCTAssertTrue(model.saveScheduleUI(schedule, autoStartUnwind: false))
+
+        let tonight = model.tonightScheduleUIModel
+        XCTAssertEqual(tonight.gentleWakeLeadMinutes, 10)
+        XCTAssertEqual(tonight.preWakeReminderLeadMinutes, 10)
+
+        let view = SleepTabView(model: model, initialDraft: tonight)
+        XCTAssertEqual(view.currentDraft.gentleWakeLeadMinutes, 10)
+    }
+
+    @MainActor
+    func testSleepTabViewWakeUpWindowAdjustmentAndSaveAlarm() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let options = [5, 10, 15, 30]
+        for option in options {
+            let tonight = model.tonightScheduleUIModel
+            let view = SleepTabView(model: model, initialDraft: tonight)
+            view.setWakeUpWindowForTesting(option)
+            XCTAssertEqual(view.currentDraft.gentleWakeLeadMinutes, option)
+
+            view.saveAlarm()
+
+            XCTAssertEqual(model.tonightScheduleUIModel.gentleWakeLeadMinutes, option)
+            XCTAssertEqual(model.tonightScheduleUIModel.preWakeReminderLeadMinutes, option)
+            XCTAssertEqual(model.sleepSchedule.wakeReminderLeadMinutes, option)
+
+            let persisted = model.alarmSchedules.first(where: { $0.id == tonight.id })
+            XCTAssertEqual(persisted?.wakeReminderLeadMinutes, option)
+        }
+    }
+
+    @MainActor
+    func testSleepTabViewWakeOnlyWakeUpWindowAdjustmentAndSaveAlarm() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        var wakeOnlyDraft = model.tonightScheduleUIModel
+        wakeOnlyDraft.kind = .wakeOnly
+        wakeOnlyDraft.repeatWeekdaysMask = 0
+        wakeOnlyDraft.wakeHour = 8
+        wakeOnlyDraft.wakeMinute = 0
+        wakeOnlyDraft.updateWakeOnlyNextOccurrence()
+
+        let options = [5, 10, 15, 30]
+        for option in options {
+            let view = SleepTabView(model: model, initialDraft: wakeOnlyDraft)
+            view.setWakeUpWindowForTesting(option)
+            XCTAssertEqual(view.currentDraft.gentleWakeLeadMinutes, option)
+
+            view.saveAlarm()
+
+            XCTAssertEqual(model.tonightScheduleUIModel.kind, .wakeOnly)
+            XCTAssertEqual(model.tonightScheduleUIModel.gentleWakeLeadMinutes, option)
+            XCTAssertEqual(model.sleepSchedule.wakeReminderLeadMinutes, option)
+
+            let persisted = model.alarmSchedules.first(where: { $0.id == wakeOnlyDraft.id })
+            XCTAssertEqual(persisted?.wakeReminderLeadMinutes, option)
+        }
+    }
+
+    @MainActor
+    func testSleepTabViewWakeUpWindowFallbackWhenNil() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        var nilWindowDraft = model.tonightScheduleUIModel
+        nilWindowDraft.gentleWakeLeadMinutes = nil
+
+        // Passing nilWindowDraft should be initialized with 15 fallback
+        let view = SleepTabView(model: model, initialDraft: nilWindowDraft)
+        XCTAssertEqual(view.currentDraft.gentleWakeLeadMinutes, 15)
+
+        view.saveAlarm()
+        XCTAssertEqual(model.tonightScheduleUIModel.gentleWakeLeadMinutes, 15)
+        XCTAssertEqual(model.sleepSchedule.wakeReminderLeadMinutes, 15)
+    }
 }

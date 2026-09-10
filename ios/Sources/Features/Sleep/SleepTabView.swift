@@ -17,6 +17,21 @@ struct SleepTabView: View {
     @State private var isSaveConfirmed = false
     @State private var resetConfirmationTask: Task<Void, Never>?
 
+    init(model: AppModel, initialDraft: ScheduleUIModel? = nil) {
+        self.model = model
+        if var initialDraft {
+            if initialDraft.gentleWakeLeadMinutes == nil {
+                initialDraft.gentleWakeLeadMinutes = 15
+            }
+            if initialDraft.isWakeOnly {
+                initialDraft.updateWakeOnlyNextOccurrence()
+            }
+            _draft = State(initialValue: initialDraft)
+            _mode = State(initialValue: initialDraft.kind == .wakeOnly ? .wakeOnly : .sleep)
+            _isInitialized = State(initialValue: true)
+        }
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             NightBackground()
@@ -72,6 +87,9 @@ struct SleepTabView: View {
         .onAppear {
             if !isInitialized {
                 draft = model.tonightScheduleUIModel
+                if draft.gentleWakeLeadMinutes == nil {
+                    draft.gentleWakeLeadMinutes = 15
+                }
                 if draft.isWakeOnly {
                     draft.updateWakeOnlyNextOccurrence()
                 }
@@ -96,6 +114,9 @@ struct SleepTabView: View {
                 draft.repeatWeekdaysMask = 0
                 draft.updateWakeOnlyNextOccurrence()
             }
+            if draft.gentleWakeLeadMinutes == nil {
+                draft.gentleWakeLeadMinutes = 15
+            }
         }
         .onChange(of: draft.wakeHour) { _, _ in
             if draft.isWakeOnly {
@@ -113,6 +134,9 @@ struct SleepTabView: View {
                 draft.isEnabled = latest.isEnabled
             } else {
                 draft = latest
+                if draft.gentleWakeLeadMinutes == nil {
+                    draft.gentleWakeLeadMinutes = 15
+                }
                 if draft.isWakeOnly {
                     draft.updateWakeOnlyNextOccurrence()
                 }
@@ -283,6 +307,10 @@ struct SleepTabView: View {
                             quickStepButton("+30m", delta: 30)
                         }
                     }
+
+                    Divider().overlay(Color.white.opacity(0.10))
+
+                    wakeUpWindowRow(identifier: "sleep.wakeUpWindow")
                 }
             }
 
@@ -386,6 +414,10 @@ struct SleepTabView: View {
                             quickStepButton("+30m", delta: 30)
                         }
                     }
+
+                    Divider().overlay(Color.white.opacity(0.10))
+
+                    wakeUpWindowRow(identifier: "sleep.wakeUpWindow")
 
                     Divider().overlay(Color.white.opacity(0.10))
 
@@ -512,6 +544,46 @@ struct SleepTabView: View {
         return "\(minutes) min before"
     }
 
+    private func wakeUpWindowRow(identifier: String = "sleep.wakeUpWindow") -> some View {
+        HStack {
+            Text("Wake-up window")
+                .font(AppFont.inter(size: 13, relativeTo: .footnote))
+                .foregroundStyle(Color.white.opacity(0.65))
+            Spacer()
+            Menu {
+                ForEach([5, 10, 15, 30], id: \.self) { minutes in
+                    Button {
+                        draft.gentleWakeLeadMinutes = minutes
+                    } label: {
+                        HStack {
+                            Text("\(minutes) min")
+                            if (draft.gentleWakeLeadMinutes ?? 15) == minutes {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Text(wakeUpWindowLabel(draft.gentleWakeLeadMinutes))
+                    .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .medium))
+                    .foregroundStyle(Color(red: 0.72, green: 0.58, blue: 1))
+            }
+            .accessibilityIdentifier(identifier)
+        }
+    }
+
+    private func wakeUpWindowLabel(_ minutes: Int?) -> String {
+        "\(minutes ?? 15) min"
+    }
+
+    var currentDraft: ScheduleUIModel {
+        draft
+    }
+
+    func setWakeUpWindowForTesting(_ minutes: Int) {
+        draft.gentleWakeLeadMinutes = minutes
+    }
+
     // MARK: - Floating Save Alarm Bar
 
     private var saveAlarmFloatingBar: some View {
@@ -571,6 +643,9 @@ struct SleepTabView: View {
 
     func saveAlarm() {
         draft.isEnabled = true
+        if draft.gentleWakeLeadMinutes == nil {
+            draft.gentleWakeLeadMinutes = 15
+        }
         if draft.isWakeOnly {
             draft.updateWakeOnlyNextOccurrence()
         }
