@@ -1537,7 +1537,7 @@ final class AppModel {
         guard isRecoveryPlaybackActive else {
             return .ready
         }
-        switch playbackState {
+        return switch playbackState {
         case .playing: .playing
         case .paused: .paused
         default: .ready
