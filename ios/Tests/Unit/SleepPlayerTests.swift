@@ -615,4 +615,134 @@ final class SleepPlayerTests: XCTestCase {
         // Schedule is removed from AppModel
         XCTAssertFalse(model.alarmSchedules.contains(where: { $0.id == initial.id }))
     }
+
+    @MainActor
+    func testBeginSleepSessionGroundingRespectsPartnerVoiceDefaultSupport() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        let settings = AppSettings(
+            profileID: profileID,
+            preferredGroundingAssetID: nil,
+            preferredModality: .audio,
+            hapticsEnabled: true,
+            lastSelectedHistoryPeriod: .sevenDays,
+            diagnosticsEnabled: false,
+            defaultSleepSupport: .quickSleep,
+            defaultPostEpisodeSupport: .partnerVoice,
+            updatedAt: Date(),
+            revision: 1
+        )
+        model.setSessionForTesting(profileID: profileID, userID: userID, settings: settings)
+
+        let clip = PersonalAudioClipMetadata(
+            id: UUID(),
+            profileID: profileID,
+            source: .recorded,
+            storageFormat: .m4a,
+            byteCount: 1024,
+            durationMilliseconds: 5000,
+            createdOrImportedAt: Date(),
+            availability: .ready,
+            protectionVersion: 1
+        )
+        model.setPersonalClipsForTesting([clip])
+        model.setRecoveryAudioDefaultForTesting(.personalClip(clip.id))
+
+        model.startSleepSession()
+        XCTAssertEqual(model.sleepSessionAudioStatus, .ready)
+
+        _ = model.performSleepSessionAudioAction(.startOrResume, presentSession: false)
+
+        // With partnerVoice and a personal clip, playSelectedRecoveryAudio plays the clip
+        // instead of selecting the default catalog asset "second-sleep"
+        XCTAssertNil(model.selectedCatalogAsset)
+
+        model.endSleepSession()
+    }
+
+    @MainActor
+    func testBeginSleepSessionGroundingFallsBackToSecondSleepWhenNoPersonalClips() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        let settings = AppSettings(
+            profileID: profileID,
+            preferredGroundingAssetID: nil,
+            preferredModality: .audio,
+            hapticsEnabled: true,
+            lastSelectedHistoryPeriod: .sevenDays,
+            diagnosticsEnabled: false,
+            defaultSleepSupport: .quickSleep,
+            defaultPostEpisodeSupport: .partnerVoice,
+            updatedAt: Date(),
+            revision: 1
+        )
+        model.setSessionForTesting(profileID: profileID, userID: userID, settings: settings)
+
+        model.startSleepSession()
+        _ = model.performSleepSessionAudioAction(.startOrResume, presentSession: false)
+
+        // When partnerVoice has no clips, it falls back to Second Sleep
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+        XCTAssertEqual(model.activeTrackTitle, "Calming Second Sleep")
+
+        model.endSleepSession()
+    }
+
+    @MainActor
+    func testBeginSleepSessionGroundingRespectsCallPartnerDefaultSupportWithoutContact() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        let settings = AppSettings(
+            profileID: profileID,
+            preferredGroundingAssetID: nil,
+            preferredModality: .audio,
+            hapticsEnabled: true,
+            lastSelectedHistoryPeriod: .sevenDays,
+            diagnosticsEnabled: false,
+            defaultSleepSupport: .quickSleep,
+            defaultPostEpisodeSupport: .callPartner,
+            updatedAt: Date(),
+            revision: 1
+        )
+        model.setSessionForTesting(profileID: profileID, userID: userID, settings: settings)
+
+        model.startSleepSession()
+        _ = model.performSleepSessionAudioAction(.startOrResume, presentSession: false)
+
+        // Without partner contact, callPartner routes to defaultSettings
+        XCTAssertTrue(model.path.contains(.defaultSettings))
+
+        model.endSleepSession()
+    }
+
+    @MainActor
+    func testBeginManualGroundingRespectsDefaultPostEpisodeSupport() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        let settings = AppSettings(
+            profileID: profileID,
+            preferredGroundingAssetID: nil,
+            preferredModality: .audio,
+            hapticsEnabled: true,
+            lastSelectedHistoryPeriod: .sevenDays,
+            diagnosticsEnabled: false,
+            defaultSleepSupport: .quickSleep,
+            defaultPostEpisodeSupport: .calmingAudio,
+            updatedAt: Date(),
+            revision: 1
+        )
+        model.setSessionForTesting(profileID: profileID, userID: userID, settings: settings)
+
+        model.beginManualGrounding()
+        XCTAssertTrue(model.path.contains(.grounding))
+        XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
+    }
 }

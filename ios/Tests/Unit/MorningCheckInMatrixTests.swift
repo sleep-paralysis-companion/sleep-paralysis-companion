@@ -234,6 +234,34 @@ final class MorningCheckInMatrixTests: XCTestCase {
         XCTAssertEqual(headerInitial.totalSteps, 4)
     }
 
+    // MARK: - 7. Moon Phase Progression Test
+
+    @MainActor
+    func testMoonPhaseProgressionForYesAndNoBranches() {
+        // YES branch: 4 questions progressing Crescent -> Half -> Gibbous -> Full
+        XCTAssertEqual(MorningCheckInHeader.headerMoonEmoji(for: .episode, occurrence: .yes), "🌙")
+        XCTAssertEqual(MorningCheckInHeader.headerMoonEmoji(for: .feeling, occurrence: .yes), "🌓")
+        XCTAssertEqual(MorningCheckInHeader.headerMoonEmoji(for: .spcOutcome, occurrence: .yes), "🌔")
+        XCTAssertEqual(MorningCheckInHeader.headerMoonEmoji(for: .postEpisodeSupport, occurrence: .yes), "🌕")
+
+        // Crucial requirement: Question 3 (.spcOutcome) is Gibbous, NEVER premature Full Moon
+        XCTAssertNotEqual(MorningCheckInHeader.headerMoonEmoji(for: .spcOutcome, occurrence: .yes), "🌕")
+
+        // 4-step phase shapes
+        XCTAssertEqual(MorningCheckInHeader.moonPhaseName(index: 0, total: 4), "crescent")
+        XCTAssertEqual(MorningCheckInHeader.moonPhaseName(index: 1, total: 4), "half")
+        XCTAssertEqual(MorningCheckInHeader.moonPhaseName(index: 2, total: 4), "gibbous")
+        XCTAssertEqual(MorningCheckInHeader.moonPhaseName(index: 3, total: 4), "full")
+
+        // NO branch: 2 questions progressing Crescent -> Full
+        XCTAssertEqual(MorningCheckInHeader.headerMoonEmoji(for: .episode, occurrence: .no), "🌙")
+        XCTAssertEqual(MorningCheckInHeader.headerMoonEmoji(for: .sleepHelp, occurrence: .no), "🌕")
+
+        // 2-step phase shapes
+        XCTAssertEqual(MorningCheckInHeader.moonPhaseName(index: 0, total: 2), "crescent")
+        XCTAssertEqual(MorningCheckInHeader.moonPhaseName(index: 1, total: 2), "full")
+    }
+
     // MARK: - Test Helpers
 
     @MainActor

@@ -243,13 +243,12 @@ private struct MorningAlarmFlowContainerView: View {
             if model.isAlarmRinging {
                 AlarmRingingView(model: model)
                     .transition(.opacity)
-            } else if model.isMorningCheckInPresented {
+            } else {
                 MorningCheckInFlowView(model: model)
                     .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.35), value: model.isAlarmRinging)
-        .animation(.easeInOut(duration: 0.35), value: model.isMorningCheckInPresented)
         .interactiveDismissDisabled(true)
     }
 }

@@ -80,13 +80,16 @@ struct MorningCheckInFlowView: View {
                 EmptyView()
             }
 
-            Button(skipButtonTitle, action: skipCurrentQuestion)
-                .font(AppTypographyRole.control)
-                .foregroundStyle(Color(red: 0.66, green: 0.62, blue: 0.86))
-                .frame(maxWidth: .infinity)
-                .padding(.top, -2)
-                .disabled(isSaving)
-                .accessibilityIdentifier("morningCheckIn.skip")
+            Button(action: skipCurrentQuestion) {
+                Text(skipButtonTitle)
+                    .font(AppTypographyRole.control)
+                    .foregroundStyle(Color(red: 0.66, green: 0.62, blue: 0.86))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(isSaving)
+            .accessibilityIdentifier("morningCheckIn.skip")
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -339,8 +342,40 @@ struct MorningCheckInHeader: View {
         return 4
     }
 
+    nonisolated static func headerMoonEmoji(
+        for step: MorningCheckInStep,
+        occurrence: EpisodeOccurrence? = nil
+    ) -> String {
+        let total = totalSteps(for: step, occurrence: occurrence)
+        if total == 2 {
+            return step.progressIndex >= 1 ? "🌕" : "🌙"
+        }
+        return switch step.progressIndex {
+        case 0: "🌙"
+        case 1: "🌓"
+        case 2: "🌔"
+        default: "🌕"
+        }
+    }
+
+    nonisolated static func moonPhaseName(index: Int, total: Int) -> String {
+        if total == 2 {
+            return index == 0 ? "crescent" : "full"
+        }
+        return switch index {
+        case 0: "crescent"
+        case 1: "half"
+        case 2: "gibbous"
+        default: "full"
+        }
+    }
+
     nonisolated var totalSteps: Int {
         Self.totalSteps(for: step, occurrence: occurrence)
+    }
+
+    private var headerMoonEmoji: String {
+        Self.headerMoonEmoji(for: step, occurrence: occurrence)
     }
 
     var body: some View {
@@ -361,10 +396,16 @@ struct MorningCheckInHeader: View {
                 ZStack {
                     Circle()
                         .fill(Color(red: 0.42, green: 0.26, blue: 0.75))
-                    Text("🌙")
+                    Text(headerMoonEmoji)
                         .font(.system(size: 30))
+                        .id(headerMoonEmoji)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.7).combined(with: .opacity),
+                            removal: .scale(scale: 1.1).combined(with: .opacity)
+                        ))
                 }
                 .frame(width: 72, height: 72)
+                .animation(.easeInOut(duration: 0.28), value: headerMoonEmoji)
                 .padding(.top, 6)
             }
 
@@ -392,29 +433,89 @@ struct MorningCheckInHeader: View {
         return "\(weekday) • \(monthDay)"
     }
 
-    private func progressMoon(index: Int, currentIndex: Int, total _: Int) -> some View {
-        ZStack {
+    private func progressMoon(index: Int, currentIndex: Int, total: Int) -> some View {
+        let isCompleted = index < currentIndex
+        let isActive = index == currentIndex
+        let fillColor = isActive ? Color(red: 0.71, green: 0.61, blue: 1) : Color(red: 0.42, green: 0.32, blue: 0.74)
+
+        return ZStack {
             Circle()
                 .stroke(Color(red: 0.43, green: 0.35, blue: 0.76), lineWidth: 3)
                 .frame(width: 30, height: 30)
-            if index < currentIndex {
-                Circle()
-                    .fill(Color(red: 0.42, green: 0.32, blue: 0.74))
-                    .frame(width: 29, height: 29)
-                    .overlay(alignment: .trailing) {
-                        Circle()
-                            .fill(Color(red: 0.03, green: 0.02, blue: 0.16))
-                            .frame(width: 20, height: 29)
-                            .offset(x: 7)
-                    }
-            } else if index == currentIndex {
-                Circle()
-                    .fill(Color(red: 0.71, green: 0.61, blue: 1))
-                    .frame(width: 30, height: 30)
-                    .shadow(color: Color(red: 0.62, green: 0.49, blue: 1).opacity(0.9), radius: 12)
+
+            if isCompleted || isActive {
+                moonPhaseShape(index: index, total: total, color: fillColor)
+                    .shadow(
+                        color: isActive ? Color(red: 0.62, green: 0.49, blue: 1).opacity(0.9) : .clear,
+                        radius: isActive ? 12 : 0
+                    )
             }
         }
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func moonPhaseShape(index: Int, total: Int, color: Color) -> some View {
+        if total == 2 {
+            if index == 0 {
+                crescentShape(color: color)
+            } else {
+                fullMoonShape(color: color)
+            }
+        } else {
+            switch index {
+            case 0:
+                crescentShape(color: color)
+            case 1:
+                halfMoonShape(color: color)
+            case 2:
+                gibbousShape(color: color)
+            default:
+                fullMoonShape(color: color)
+            }
+        }
+    }
+
+    private func crescentShape(color: Color) -> some View {
+        Circle()
+            .fill(color)
+            .frame(width: 29, height: 29)
+            .overlay(alignment: .trailing) {
+                Circle()
+                    .fill(Color(red: 0.03, green: 0.02, blue: 0.16))
+                    .frame(width: 26, height: 29)
+                    .offset(x: 5)
+            }
+            .clipShape(Circle())
+    }
+
+    private func halfMoonShape(color: Color) -> some View {
+        Circle()
+            .fill(color)
+            .frame(width: 29, height: 29)
+            .mask(alignment: .leading) {
+                Rectangle()
+                    .frame(width: 14.5, height: 29)
+            }
+    }
+
+    private func gibbousShape(color: Color) -> some View {
+        Circle()
+            .fill(color)
+            .frame(width: 29, height: 29)
+            .overlay(alignment: .trailing) {
+                Circle()
+                    .fill(Color(red: 0.03, green: 0.02, blue: 0.16))
+                    .frame(width: 16, height: 29)
+                    .offset(x: 9)
+            }
+            .clipShape(Circle())
+    }
+
+    private func fullMoonShape(color: Color) -> some View {
+        Circle()
+            .fill(color)
+            .frame(width: 30, height: 30)
     }
 }
 

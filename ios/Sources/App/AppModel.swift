@@ -454,6 +454,18 @@ final class AppModel {
         func setPlaybackStateForTesting(_ state: GroundingPlaybackState) {
             playbackState = state
         }
+
+        func setPersonalClipsForTesting(_ clips: [PersonalAudioClipMetadata]) {
+            personalClips = clips
+        }
+
+        func setPartnerContactForTesting(_ contact: PartnerContact?) {
+            partnerContact = contact
+        }
+
+        func setRecoveryAudioDefaultForTesting(_ fallback: LocalRecoveryAudioDefault?) {
+            recoveryAudioDefault = fallback
+        }
     #endif
 
     private func configureCatalogAudioServiceIfAvailable() async {
@@ -1446,7 +1458,7 @@ final class AppModel {
     func beginManualGrounding() {
         guard launchDestination == .home else { return }
         open(.grounding)
-        playCalmingSecondSleepAudio()
+        playSelectedRecoveryAudio()
     }
 
     func startSleepSession() {
@@ -1495,7 +1507,7 @@ final class AppModel {
 
     func beginSleepSessionGrounding() {
         guard launchDestination == .home, sleepSessionStartedAt != nil else { return }
-        playCalmingSecondSleepAudio()
+        playSelectedRecoveryAudio()
     }
 
     @discardableResult
