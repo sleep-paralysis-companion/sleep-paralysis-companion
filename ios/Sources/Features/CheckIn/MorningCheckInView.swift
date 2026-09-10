@@ -4,7 +4,11 @@ struct MorningCheckInView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        MorningCheckInFlowView(model: model)
+        if !model.isMorningCheckInPresented {
+            MorningCheckInFlowView(model: model)
+        } else {
+            Color.clear
+        }
     }
 }
 

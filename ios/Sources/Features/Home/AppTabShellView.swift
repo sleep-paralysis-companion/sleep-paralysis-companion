@@ -25,10 +25,6 @@ struct AppTabShellView: View {
             case .me:
                 SettingsView(model: model)
             }
-
-            if model.isMorningCheckInPresented {
-                MorningCheckInFlowView(model: model)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom, spacing: 0) {

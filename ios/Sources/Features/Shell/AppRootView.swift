@@ -22,8 +22,21 @@ struct AppRootView: View {
         .font(AppTypographyRole.body)
         .tint(AppColorRole.accent)
         .onOpenURL(perform: model.openDeepLink)
-        .fullScreenCover(isPresented: $model.isAlarmRinging) {
-            AlarmRingingView(model: model)
+        .fullScreenCover(
+            isPresented: Binding(
+                get: { model.isAlarmRinging || model.isMorningCheckInPresented },
+                set: { presented in
+                    if !presented {
+                        if model.isAlarmRinging {
+                            model.snoozeAlarm(minutes: 9)
+                        } else if model.isMorningCheckInPresented {
+                            model.completeMorningCheckIn()
+                        }
+                    }
+                }
+            )
+        ) {
+            MorningAlarmFlowContainerView(model: model)
         }
         .task {
             model.activate(restoredState: restoredNavigation)
@@ -219,5 +232,24 @@ private struct AppRouteDestinationView: View {
     private func dismissScheduleRoute() {
         guard !model.path.isEmpty else { return }
         model.setPath(Array(model.path.dropLast()))
+    }
+}
+
+private struct MorningAlarmFlowContainerView: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        ZStack {
+            if model.isAlarmRinging {
+                AlarmRingingView(model: model)
+                    .transition(.opacity)
+            } else if model.isMorningCheckInPresented {
+                MorningCheckInFlowView(model: model)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.35), value: model.isAlarmRinging)
+        .animation(.easeInOut(duration: 0.35), value: model.isMorningCheckInPresented)
+        .interactiveDismissDisabled(true)
     }
 }

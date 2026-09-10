@@ -122,6 +122,7 @@ final class SleepPlayerTests: XCTestCase {
 
         XCTAssertTrue(tracks.contains(where: { $0.id == "quick-unwind" }))
         XCTAssertTrue(tracks.contains(where: { $0.id == "slow-unwind" }))
+        XCTAssertFalse(tracks.contains(where: { $0.id == "second-sleep" }))
 
         if let quick = tracks.first(where: { $0.id == "quick-unwind" }) {
             XCTAssertTrue(model.isSleepTrackDownloaded(quick))

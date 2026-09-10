@@ -591,4 +591,22 @@ final class AlarmFlowTests: XCTestCase {
         XCTAssertEqual(model.nextUpcomingWakeSchedule?.schedule.wakeHour, 6)
         XCTAssertEqual(model.nextUpcomingWakeSchedule?.schedule.wakeMinute, 30)
     }
+
+    @MainActor
+    func testCompleteMorningCheckInNavigatesToHomeAndDismissesPresentation() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.stopAlarm()
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+
+        model.completeMorningCheckIn()
+        XCTAssertFalse(model.isMorningCheckInPresented)
+        XCTAssertEqual(model.selectedTab, .home)
+        XCTAssertTrue(model.path.isEmpty)
+    }
 }

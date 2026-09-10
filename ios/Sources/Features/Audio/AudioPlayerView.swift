@@ -20,7 +20,6 @@ struct AudioPlayerView: View {
                     .padding(.bottom, 16)
 
                 trackSelectionSection
-                    .padding(.horizontal, 20)
                     .padding(.bottom, 20)
 
                 artworkSection
@@ -171,27 +170,23 @@ struct AudioPlayerView: View {
     // MARK: - Track Selection Section
 
     private var trackSelectionSection: some View {
-        HStack(spacing: 8) {
-            trackPill(
-                id: "quick-unwind",
-                title: "Quick Unwind",
-                icon: "bolt.fill",
-                iconColor: Color(red: 1.0, green: 0.78, blue: 0.22)
-            )
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                trackPill(
+                    id: "quick-unwind",
+                    title: "Quick Unwind",
+                    icon: "bolt.fill",
+                    iconColor: Color(red: 1.0, green: 0.78, blue: 0.22)
+                )
 
-            trackPill(
-                id: "slow-unwind",
-                title: "Slow Unwind",
-                icon: "moon.fill",
-                iconColor: Color(red: 0.95, green: 0.85, blue: 0.45)
-            )
-
-            trackPill(
-                id: "second-sleep",
-                title: "Second Sleep",
-                icon: "sparkles",
-                iconColor: Color(red: 0.72, green: 0.58, blue: 1.0)
-            )
+                trackPill(
+                    id: "slow-unwind",
+                    title: "Slow Unwind",
+                    icon: "moon.fill",
+                    iconColor: Color(red: 0.95, green: 0.85, blue: 0.45)
+                )
+            }
+            .padding(.horizontal, 20)
         }
         .accessibilityIdentifier("audioPlayer.trackList")
     }
@@ -211,7 +206,7 @@ struct AudioPlayerView: View {
                 }
             }
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(iconColor)
@@ -221,7 +216,8 @@ struct AudioPlayerView: View {
                     .foregroundStyle(active ? .white : HomeScreenPalette.textSecondary)
                     .lineLimit(1)
             }
-            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 16)
+            .frame(minWidth: 160, minHeight: 48)
             .background {
                 if active {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)

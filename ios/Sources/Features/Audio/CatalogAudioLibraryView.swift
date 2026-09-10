@@ -72,11 +72,11 @@ final class CatalogAudioLibraryModel {
     }
 
     var displayedAssets: [CatalogAudioAsset] {
-        assets.filter { $0.category != .notification }
+        assets.filter { $0.category != .notification && $0.category != .secondSleep }
     }
 
     var categories: [CatalogAudioCategory] {
-        CatalogAudioCategory.allCases.filter { $0 != .notification }
+        CatalogAudioCategory.allCases.filter { $0 != .notification && $0 != .secondSleep }
     }
 
     func loadIfNeeded() async {
@@ -724,7 +724,7 @@ struct CatalogAudioLibraryView: View {
     private var cardsSection: some View {
         VStack(spacing: 16) {
             let displayTracks = model.displayedAssets.filter {
-                $0.category == .quickUnwind || $0.category == .secondSleep || $0.category == .slowUnwind
+                $0.category == .quickUnwind || $0.category == .slowUnwind
             }
 
             ForEach(displayTracks) { asset in
@@ -790,24 +790,6 @@ struct CatalogAudioLibraryView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("catalogAudio.playAndTrack")
-
-            Button {
-                goToSecondSleep()
-            } label: {
-                Text("Go to Second Sleep")
-                    .font(AppFont.inter(size: 15, relativeTo: .subheadline, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(Color.black.opacity(0.45))
-                    .clipShape(Capsule())
-                    .overlay {
-                        Capsule()
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    }
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("catalogAudio.goToSecondSleep")
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
@@ -834,19 +816,6 @@ struct CatalogAudioLibraryView: View {
             }
         }
         appModel?.startSleepSession()
-    }
-
-    private func goToSecondSleep() {
-        if let secondSleep = model.assets.first(where: {
-            $0.category == .secondSleep || $0.id == "second-sleep"
-        }) {
-            model.selectedBedtimeAssetID = secondSleep.id
-            appModel?.selectCatalogAsset(secondSleep)
-            Task {
-                await model.togglePlayback(secondSleep)
-            }
-        }
-        appModel?.open(.audioPlayer)
     }
 }
 

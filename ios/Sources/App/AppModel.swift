@@ -1402,7 +1402,7 @@ final class AppModel {
 
     var sleepPlayerTracks: [CatalogAudioAsset] {
         CatalogAudioManifest.bundled.assets.filter {
-            $0.category == .quickUnwind || $0.category == .secondSleep || $0.category == .slowUnwind
+            $0.category == .quickUnwind || $0.category == .slowUnwind
         }
     }
 
@@ -1593,6 +1593,7 @@ final class AppModel {
         cleanupAudioExport()
 
         ringingAlarmSchedule = targetSchedule
+        isMorningCheckInPresented = false
         isAlarmRinging = true
 
         let domainSchedule = targetSchedule.flatMap { ts in alarmSchedules.first(where: { $0.id == ts.id }) }
@@ -1695,6 +1696,7 @@ final class AppModel {
         audioController.stopPlayback()
         playbackState = .idle
         isAlarmRinging = false
+        isMorningCheckInPresented = false
 
         let duration = minutes ?? ringingAlarmSchedule?.snoozeMinutes ?? 9
         alarmSnoozeTask?.cancel()
@@ -1710,7 +1712,10 @@ final class AppModel {
         alarmSnoozeTask = nil
         audioController.stopPlayback()
         playbackState = .idle
-        isAlarmRinging = false
+        withAnimation(.easeInOut(duration: 0.35)) {
+            isAlarmRinging = false
+            isMorningCheckInPresented = true
+        }
         ringingAlarmSchedule = nil
         if isSleepSessionPresented || sleepSessionStartedAt != nil {
             endSleepSession()
@@ -1718,7 +1723,6 @@ final class AppModel {
 
         // Stopping alarm immediately presents the morning questionnaire
         selectedTab = .sleep
-        isMorningCheckInPresented = true
         open(.morningCheckIn)
     }
 

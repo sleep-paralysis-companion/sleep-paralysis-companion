@@ -96,16 +96,20 @@ final class Batch3FeedbackTests: XCTestCase {
     }
 
     @MainActor
-    func testCalmingAudioFilteringStrictlyThreeTracks() {
+    func testSleepPlayerTracksContainStrictlyUnwindTracks() {
         let model = makeTestAppModel()
         let tracks = model.sleepPlayerTracks
 
-        XCTAssertEqual(tracks.count, 3, "Calming audios must strictly contain 3 tracks")
+        XCTAssertEqual(tracks.count, 2, "Sleep player tracks must strictly contain the 2 unwind tracks")
 
         let trackIDs = Set(tracks.map(\.id))
-        let expectedIDs = Set(["quick-unwind", "second-sleep", "slow-unwind"])
+        let expectedIDs = Set(["quick-unwind", "slow-unwind"])
         XCTAssertEqual(trackIDs, expectedIDs)
 
+        XCTAssertFalse(
+            tracks.contains(where: { $0.id == "second-sleep" }),
+            "Second Sleep recovery audio must not appear in sleep player tracks"
+        )
         XCTAssertFalse(
             tracks.contains(where: { $0.id == "felt-dawn" }),
             "Felt Dawn morning alarm sound must not be in calming tracks"
@@ -121,9 +125,6 @@ final class Batch3FeedbackTests: XCTestCase {
 
         if let quickUnwind = tracks.first(where: { $0.id == "quick-unwind" }) {
             XCTAssertEqual(model.sleepTrackDurationText(for: quickUnwind), "15 min")
-        }
-        if let secondSleep = tracks.first(where: { $0.id == "second-sleep" }) {
-            XCTAssertEqual(model.sleepTrackDurationText(for: secondSleep), "6 min")
         }
         if let slowUnwind = tracks.first(where: { $0.id == "slow-unwind" }) {
             XCTAssertEqual(model.sleepTrackDurationText(for: slowUnwind), "1 hr 15 min")
