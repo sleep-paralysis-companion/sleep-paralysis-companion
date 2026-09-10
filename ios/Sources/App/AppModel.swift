@@ -1527,9 +1527,9 @@ final class AppModel {
     var isRecoveryPlaybackActive: Bool {
         switch playbackState {
         case let .playing(id), let .paused(id):
-            return id == "second-sleep" || personalClips.contains(where: { $0.id.uuidString == id })
+            id == "second-sleep" || personalClips.contains(where: { $0.id.uuidString == id })
         default:
-            return false
+            false
         }
     }
 

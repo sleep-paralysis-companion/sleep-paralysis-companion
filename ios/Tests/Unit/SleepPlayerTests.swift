@@ -186,12 +186,20 @@ final class SleepPlayerTests: XCTestCase {
         }
         model.playCatalogAsset(quickUnwind)
         XCTAssertEqual(model.selectedCatalogAsset?.id, "quick-unwind")
-        XCTAssertEqual(model.sleepSessionAudioStatus, .ready, "Status must remain ready for episode recovery while unwind track plays")
+        XCTAssertEqual(
+            model.sleepSessionAudioStatus,
+            .ready,
+            "Status must remain ready for episode recovery while unwind track plays"
+        )
 
         // Lock screen widget "I just had an episode" executes post-episode recovery
         _ = model.performSleepSessionAudioAction(.startOrResume, presentSession: true)
         XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
-        XCTAssertEqual(model.sleepSessionAudioStatus, .playing, "Status must be playing once Second Sleep begins")
+        XCTAssertEqual(
+            model.sleepSessionAudioStatus,
+            .playing,
+            "Status must be playing once Second Sleep begins"
+        )
 
         model.endSleepSession()
         XCTAssertNil(model.sleepSessionStartedAt)
