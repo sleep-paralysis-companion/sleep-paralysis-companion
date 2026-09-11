@@ -760,6 +760,7 @@ final class AppModel {
     func saveTonightScheduleDraft(
         _ draft: ScheduleUIModel,
         immediate: Bool = false,
+        autoStartSleepSession: Bool = false,
         autoStartUnwind: Bool = false
     ) -> Bool {
         guard let profileID, let userID else { return false }
@@ -789,7 +790,10 @@ final class AppModel {
             defer { self.tonightScheduleSaveTask = nil }
             await self.persistTonightSchedule(schedule, profileID: profileID, userID: userID)
         }
-        if autoStartUnwind {
+        if autoStartSleepSession {
+            clearIntermediateScheduleRoutes()
+            startSleepSession(startAudio: true)
+        } else if autoStartUnwind {
             clearIntermediateScheduleRoutes()
             startUnwindSession()
         }
@@ -1461,7 +1465,7 @@ final class AppModel {
         playSelectedRecoveryAudio()
     }
 
-    func startSleepSession() {
+    func startSleepSession(startAudio: Bool = false) {
         guard launchDestination == .home else { return }
         let startedAt = sleepSessionStartedAt ?? Date()
         sleepSessionStartedAt = startedAt
@@ -1477,6 +1481,10 @@ final class AppModel {
             } catch {
                 feedbackMessage = "Sleep mode started, but its Lock Screen companion is unavailable."
             }
+        }
+
+        if startAudio {
+            playDefaultSleepAudio()
         }
     }
 
@@ -1766,21 +1774,9 @@ final class AppModel {
         }
     }
 
-    func startUnwindSession() {
-        guard launchDestination == .home else { return }
+    func playDefaultSleepAudio() {
         let defaultSleep = settings?.defaultSleepSupport ?? .quickSleep
         let trackID = defaultSleep == .longSleepAid ? "slow-unwind" : "quick-unwind"
-
-        isSleepSessionPresented = false
-        let startedAt = sleepSessionStartedAt ?? Date()
-        sleepSessionStartedAt = startedAt
-        UserDefaults.standard.set(startedAt, forKey: Self.sleepSessionStartedAtKey)
-        startForegroundAlarmMonitoring()
-
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            try? sleepSessionLiveActivities.start(startedAt: startedAt)
-        }
 
         let isUnwindActive = switch playbackState {
         case let .playing(id), let .paused(id):
@@ -1794,6 +1790,23 @@ final class AppModel {
                 playCatalogAsset(asset)
             }
         }
+    }
+
+    func startUnwindSession() {
+        guard launchDestination == .home else { return }
+
+        isSleepSessionPresented = false
+        let startedAt = sleepSessionStartedAt ?? Date()
+        sleepSessionStartedAt = startedAt
+        UserDefaults.standard.set(startedAt, forKey: Self.sleepSessionStartedAtKey)
+        startForegroundAlarmMonitoring()
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            try? sleepSessionLiveActivities.start(startedAt: startedAt)
+        }
+
+        playDefaultSleepAudio()
         if !path.contains(.audioPlayer) {
             open(.audioPlayer)
         }

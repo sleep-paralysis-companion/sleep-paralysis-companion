@@ -651,7 +651,7 @@ struct SleepTabView: View {
             draft.updateWakeOnlyNextOccurrence()
         }
         AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
-        let saved = model.saveTonightScheduleDraft(draft, immediate: true, autoStartUnwind: true)
+        let saved = model.saveTonightScheduleDraft(draft, immediate: true, autoStartSleepSession: true)
         guard saved else {
             AppHaptics.warning(hapticsEnabled: model.settings?.hapticsEnabled != false)
             return

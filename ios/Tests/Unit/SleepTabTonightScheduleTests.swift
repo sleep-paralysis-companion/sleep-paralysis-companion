@@ -1,3 +1,4 @@
+// swiftlint:disable file_length type_body_length
 import Foundation
 @testable import SleepParalysisCompanion
 import XCTest
@@ -596,7 +597,83 @@ final class SleepTabTonightScheduleTests: XCTestCase {
     }
 
     @MainActor
-    func testSleepTabViewSaveAlarmTriggersAutoStartUnwindAndAudioPlayer() {
+    func testSaveTonightScheduleDraftWithAutoStartSleepSessionPresentsSleepSessionAndStartsAudio() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let draft = ScheduleUIModel(
+            name: "Tonight Bedtime",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 30,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+
+        let saved = model.saveTonightScheduleDraft(draft, immediate: true, autoStartSleepSession: true)
+        XCTAssertTrue(saved)
+        XCTAssertTrue(model.isSleepSessionPresented)
+        XCTAssertNotNil(model.sleepSessionStartedAt)
+        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
+        XCTAssertTrue(model.path.isEmpty)
+    }
+
+    @MainActor
+    func testSaveTonightScheduleDraftCollisionPreventsAutoStartSleepSession() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
+
+        let initial = ScheduleUIModel(
+            name: "Existing Alarm",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+        XCTAssertTrue(model.saveScheduleUI(initial, autoStartUnwind: false))
+
+        let conflicting = ScheduleUIModel(
+            name: "Conflicting Alarm",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            repeatWeekdaysMask: 0b0111_1111,
+            bedtimeReminderLeadMinutes: 15,
+            preWakeReminderLeadMinutes: 15,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true
+        )
+
+        let saved = model.saveTonightScheduleDraft(conflicting, immediate: true, autoStartSleepSession: true)
+        XCTAssertFalse(saved)
+        XCTAssertFalse(model.isSleepSessionPresented)
+        XCTAssertNil(model.sleepSessionStartedAt)
+        XCTAssertTrue(model.path.isEmpty)
+        XCTAssertTrue(model.feedbackMessage?.contains("collides") == true)
+        XCTAssertNotEqual(model.path.last, .audioPlayer)
+    }
+
+    @MainActor
+    func testSleepTabViewSaveAlarmPresentsSleepSessionAndStartsAudio() {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
         let profileID = UUID()
@@ -606,9 +683,10 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         let view = SleepTabView(model: model)
         view.saveAlarm()
 
-        XCTAssertEqual(model.path.last, .audioPlayer)
-        XCTAssertEqual(model.path, [.audioPlayer])
-        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
+        XCTAssertTrue(model.isSleepSessionPresented, "Saving tonight's alarm must present full-screen Sleep Session")
+        XCTAssertNotNil(model.sleepSessionStartedAt, "Saving tonight's alarm must start sleep session timestamp")
+        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind", "Saving tonight's alarm must start sleep audio playback")
+        XCTAssertTrue(model.path.isEmpty, "Saving tonight's alarm must not navigate to audioPlayer on navigation stack")
         XCTAssertEqual(model.feedbackMessage, "Tonight's alarm saved")
     }
 
