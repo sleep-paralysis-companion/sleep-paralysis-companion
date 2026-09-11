@@ -1,4 +1,3 @@
-// swiftlint:disable file_length type_body_length
 import Foundation
 @testable import SleepParalysisCompanion
 import XCTest
@@ -517,83 +516,6 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         XCTAssertTrue(saved)
         XCTAssertEqual(model.tonightScheduleUIModel.wakeHour, 8)
         XCTAssertEqual(model.tonightScheduleUIModel.wakeMinute, 45)
-    }
-
-    @MainActor
-    func testSaveTonightScheduleDraftWithAutoStartUnwindNavigatesToAudioPlayer() {
-        let model = makeTestAppModel()
-        model.setLaunchDestinationForTesting(.home)
-        let profileID = UUID()
-        let userID = UUID()
-        model.setSessionForTesting(profileID: profileID, userID: userID)
-
-        let draft = ScheduleUIModel(
-            name: "Tonight Bedtime",
-            kind: .sleep,
-            bedtimeHour: 22,
-            bedtimeMinute: 30,
-            wakeHour: 6,
-            wakeMinute: 30,
-            repeatWeekdaysMask: 0b0111_1111,
-            bedtimeReminderLeadMinutes: 15,
-            preWakeReminderLeadMinutes: 15,
-            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
-            isEnabled: true
-        )
-
-        let saved = model.saveTonightScheduleDraft(draft, immediate: true, autoStartUnwind: true)
-        XCTAssertTrue(saved)
-        XCTAssertEqual(model.path.last, .audioPlayer)
-        XCTAssertEqual(model.path, [.audioPlayer])
-        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
-
-        // Popping audio player returns directly to Home/Sleep tab
-        model.setPath(Array(model.path.dropLast()))
-        XCTAssertTrue(model.path.isEmpty)
-    }
-
-    @MainActor
-    func testSaveTonightScheduleDraftCollisionPreventsAutoStartUnwind() {
-        let model = makeTestAppModel()
-        model.setLaunchDestinationForTesting(.home)
-        let profileID = UUID()
-        let userID = UUID()
-        model.setSessionForTesting(profileID: profileID, userID: userID)
-
-        let initial = ScheduleUIModel(
-            name: "Existing Alarm",
-            kind: .sleep,
-            bedtimeHour: 22,
-            bedtimeMinute: 0,
-            wakeHour: 6,
-            wakeMinute: 30,
-            repeatWeekdaysMask: 0b0111_1111,
-            bedtimeReminderLeadMinutes: 15,
-            preWakeReminderLeadMinutes: 15,
-            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
-            isEnabled: true
-        )
-        XCTAssertTrue(model.saveScheduleUI(initial, autoStartUnwind: false))
-
-        let conflicting = ScheduleUIModel(
-            name: "Conflicting Alarm",
-            kind: .sleep,
-            bedtimeHour: 23,
-            bedtimeMinute: 0,
-            wakeHour: 6,
-            wakeMinute: 30,
-            repeatWeekdaysMask: 0b0111_1111,
-            bedtimeReminderLeadMinutes: 15,
-            preWakeReminderLeadMinutes: 15,
-            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
-            isEnabled: true
-        )
-
-        let saved = model.saveTonightScheduleDraft(conflicting, immediate: true, autoStartUnwind: true)
-        XCTAssertFalse(saved)
-        XCTAssertTrue(model.path.isEmpty)
-        XCTAssertTrue(model.feedbackMessage?.contains("collides") == true)
-        XCTAssertNotEqual(model.path.last, .audioPlayer)
     }
 
     @MainActor

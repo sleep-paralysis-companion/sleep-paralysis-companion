@@ -1,4 +1,3 @@
-// swiftlint:disable file_length type_body_length
 import Foundation
 @testable import SleepParalysisCompanion
 import XCTest
@@ -748,44 +747,27 @@ final class SleepPlayerTests: XCTestCase {
     }
 
     @MainActor
-    func testStartSleepSessionWithAutoStartAudio() {
+    func testStartSleepSessionWithAutoStartAudioRespectsSleepSupportSetting() {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
+        let profileID = UUID()
+        let userID = UUID()
+        model.setSessionForTesting(profileID: profileID, userID: userID)
 
+        // Default quickSleep plays Quick Unwind
         model.startSleepSession(startAudio: true)
         XCTAssertTrue(model.isSleepSessionPresented)
         XCTAssertNotNil(model.sleepSessionStartedAt)
         XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
         XCTAssertFalse(model.path.contains(.audioPlayer))
-
         model.endSleepSession()
-    }
 
-    @MainActor
-    func testStartSleepSessionWithLongSleepAidPlaysSlowUnwind() {
-        let model = makeTestAppModel()
-        model.setLaunchDestinationForTesting(.home)
-        let profileID = UUID()
-        let userID = UUID()
-        let settings = AppSettings(
-            profileID: profileID,
-            preferredGroundingAssetID: nil,
-            preferredModality: .audio,
-            hapticsEnabled: true,
-            lastSelectedHistoryPeriod: .sevenDays,
-            diagnosticsEnabled: false,
-            defaultSleepSupport: .longSleepAid,
-            defaultPostEpisodeSupport: .calmingAudio,
-            updatedAt: Date(),
-            revision: 1
-        )
-        model.setSessionForTesting(profileID: profileID, userID: userID, settings: settings)
-
+        // LongSleepAid setting plays Slow Unwind
+        model.settings?.defaultSleepSupport = .longSleepAid
         model.startSleepSession(startAudio: true)
         XCTAssertTrue(model.isSleepSessionPresented)
         XCTAssertEqual(model.activeTrackTitle, "Slow Unwind")
         XCTAssertFalse(model.path.contains(.audioPlayer))
-
         model.endSleepSession()
     }
 
@@ -797,27 +779,14 @@ final class SleepPlayerTests: XCTestCase {
         let userID = UUID()
         model.setSessionForTesting(profileID: profileID, userID: userID)
 
-        let draft = ScheduleUIModel(
-            name: "Tonight Bedtime",
-            kind: .sleep,
-            bedtimeHour: 23,
-            bedtimeMinute: 0,
-            wakeHour: 7,
-            wakeMinute: 0,
-            repeatWeekdaysMask: 0b0111_1111,
-            bedtimeReminderLeadMinutes: 15,
-            preWakeReminderLeadMinutes: 15,
-            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
-            isEnabled: true
-        )
-
+        var draft = ScheduleUIModel.newSleep
+        draft.name = "Tonight Bedtime"
         let saved = model.saveTonightScheduleDraft(draft, immediate: true, autoStartSleepSession: true)
         XCTAssertTrue(saved)
         XCTAssertTrue(model.isSleepSessionPresented)
         XCTAssertNotNil(model.sleepSessionStartedAt)
         XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
         XCTAssertFalse(model.path.contains(.audioPlayer))
-
         model.endSleepSession()
     }
 }
