@@ -1489,8 +1489,8 @@ final class AppModel {
     }
 
     func minimizeSleepSession() {
-        guard sleepSessionStartedAt != nil else { return }
         isSleepSessionPresented = false
+        selectedTab = .sleep
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
@@ -1503,6 +1503,7 @@ final class AppModel {
     func endSleepSession() {
         sleepSessionStartedAt = nil
         isSleepSessionPresented = false
+        selectedTab = .sleep
         UserDefaults.standard.removeObject(forKey: Self.sleepSessionStartedAtKey)
         UIApplication.shared.isIdleTimerDisabled = false
         stopForegroundAlarmMonitoring()
@@ -1778,6 +1779,16 @@ final class AppModel {
         let defaultSleep = settings?.defaultSleepSupport ?? .quickSleep
         let trackID = defaultSleep == .longSleepAid ? "slow-unwind" : "quick-unwind"
 
+        if case let .paused(id) = playbackState, id == "quick-unwind" || id == "slow-unwind" {
+            catalogAudioPlayer.resume()
+            playbackState = .playing(id)
+            if selectedCatalogAsset?.id != id {
+                selectedCatalogAsset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == id })
+            }
+            updateSleepSessionLiveActivityForPlayback()
+            return
+        }
+
         let isUnwindActive = switch playbackState {
         case let .playing(id), let .paused(id):
             id == "quick-unwind" || id == "slow-unwind"
@@ -1849,12 +1860,14 @@ final class AppModel {
             playCalmingSecondSleepAudio()
 
         case .callPartner:
+            isSleepSessionPresented = false
             if let contact = partnerContact,
                let phoneURL = contact.phoneURL
             {
                 UIApplication.shared.open(phoneURL)
             } else {
                 open(.defaultSettings)
+                feedbackMessage = "Add a partner phone number in Settings to use Call Partner."
             }
         }
     }
