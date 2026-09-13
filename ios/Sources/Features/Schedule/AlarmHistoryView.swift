@@ -280,7 +280,8 @@ struct AlarmHistoryView: View {
 
     private var tonightSchedule: ScheduleUIModel? {
         if let selectedTonightID,
-           let match = localSchedules.first(where: { $0.id == selectedTonightID }) {
+           let match = localSchedules.first(where: { $0.id == selectedTonightID })
+        {
             return match
         }
         let today = Calendar.current.startOfDay(for: .now)
@@ -302,7 +303,8 @@ struct AlarmHistoryView: View {
         AppHaptics.selectionChanged(hapticsEnabled: hapticsEnabled)
         selectedTonightID = schedule.id
         if let index = localSchedules.firstIndex(where: { $0.id == schedule.id }),
-           !localSchedules[index].isEnabled {
+           !localSchedules[index].isEnabled
+        {
             localSchedules[index].isEnabled = true
         }
         onSelectTonight?(schedule)
@@ -347,7 +349,7 @@ private struct ScheduleHeroCard: View {
     let schedule: ScheduleUIModel
     let onToggle: (Bool) -> Void
     let onEdit: () -> Void
-    var onDelete: (() -> Void)? = nil
+    let onDelete: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -495,7 +497,7 @@ private struct ScheduleHeroCard: View {
 private struct ScheduleCompactCard: View {
     let schedule: ScheduleUIModel
     let accent: Color
-    var isTonight: Bool = false
+    let isTonight: Bool
     let onToggle: (Bool) -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
