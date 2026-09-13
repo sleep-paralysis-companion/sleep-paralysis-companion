@@ -9,36 +9,44 @@ import SwiftUI
 struct AlarmHistoryView: View {
     let schedules: [ScheduleUIModel]
     let maximumScheduleCount: Int
+    let tonightScheduleID: UUID?
     let hapticsEnabled: Bool
     let onBack: () -> Void
     let onAdd: () -> Void
     let onEdit: (ScheduleUIModel) -> Void
     let onToggle: (ScheduleUIModel, Bool) -> Void
     let onDelete: (ScheduleUIModel) -> Void
+    let onSelectTonight: ((ScheduleUIModel) -> Void)?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var localSchedules: [ScheduleUIModel]
+    @State private var selectedTonightID: UUID?
     @State private var pendingDeletion: ScheduleUIModel?
 
     init(
         schedules: [ScheduleUIModel],
         maximumScheduleCount: Int = ScheduleUIModel.maximumCount,
+        tonightScheduleID: UUID? = nil,
         hapticsEnabled: Bool = true,
         onBack: @escaping () -> Void = {},
         onAdd: @escaping () -> Void = {},
         onEdit: @escaping (ScheduleUIModel) -> Void = { _ in },
         onToggle: @escaping (ScheduleUIModel, Bool) -> Void = { _, _ in },
-        onDelete: @escaping (ScheduleUIModel) -> Void = { _ in }
+        onDelete: @escaping (ScheduleUIModel) -> Void = { _ in },
+        onSelectTonight: ((ScheduleUIModel) -> Void)? = nil
     ) {
         self.schedules = schedules
         self.maximumScheduleCount = maximumScheduleCount
+        self.tonightScheduleID = tonightScheduleID
         self.hapticsEnabled = hapticsEnabled
         self.onBack = onBack
         self.onAdd = onAdd
         self.onEdit = onEdit
         self.onToggle = onToggle
         self.onDelete = onDelete
+        self.onSelectTonight = onSelectTonight
         _localSchedules = State(initialValue: schedules)
+        _selectedTonightID = State(initialValue: tonightScheduleID)
     }
 
     var body: some View {
@@ -78,6 +86,9 @@ struct AlarmHistoryView: View {
         .accessibilityIdentifier("schedule.alarmHistory")
         .onChange(of: schedules) { _, newValue in
             localSchedules = newValue
+        }
+        .onChange(of: tonightScheduleID) { _, newValue in
+            selectedTonightID = newValue
         }
         .alert(item: $pendingDeletion) { schedule in
             Alert(
@@ -169,11 +180,9 @@ struct AlarmHistoryView: View {
                 ScheduleHeroCard(
                     schedule: tonightSchedule,
                     onToggle: { setEnabled(tonightSchedule, enabled: $0) },
-                    onEdit: { onEdit(tonightSchedule) }
+                    onEdit: { onEdit(tonightSchedule) },
+                    onDelete: { pendingDeletion = tonightSchedule }
                 )
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    deleteButton(for: tonightSchedule)
-                }
             } else {
                 NightCard {
                     VStack(alignment: .leading, spacing: 8) {
@@ -215,12 +224,12 @@ struct AlarmHistoryView: View {
                     ScheduleCompactCard(
                         schedule: schedule,
                         accent: accent(for: index),
+                        isTonight: schedule.id == tonightSchedule?.id,
                         onToggle: { setEnabled(schedule, enabled: $0) },
-                        onEdit: { onEdit(schedule) }
+                        onEdit: { onEdit(schedule) },
+                        onDelete: { pendingDeletion = schedule },
+                        onSelectTonight: { selectTonight(schedule) }
                     )
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        deleteButton(for: schedule)
-                    }
                 }
             }
         }
@@ -270,6 +279,10 @@ struct AlarmHistoryView: View {
     }
 
     private var tonightSchedule: ScheduleUIModel? {
+        if let selectedTonightID,
+           let match = localSchedules.first(where: { $0.id == selectedTonightID }) {
+            return match
+        }
         let today = Calendar.current.startOfDay(for: .now)
         let weekday = Calendar.current.component(.weekday, from: .now)
 
@@ -285,6 +298,16 @@ struct AlarmHistoryView: View {
         }
     }
 
+    private func selectTonight(_ schedule: ScheduleUIModel) {
+        AppHaptics.selectionChanged(hapticsEnabled: hapticsEnabled)
+        selectedTonightID = schedule.id
+        if let index = localSchedules.firstIndex(where: { $0.id == schedule.id }),
+           !localSchedules[index].isEnabled {
+            localSchedules[index].isEnabled = true
+        }
+        onSelectTonight?(schedule)
+    }
+
     private func sectionHeading(_ title: String) -> some View {
         HStack(spacing: 14) {
             Text(title)
@@ -297,17 +320,12 @@ struct AlarmHistoryView: View {
         }
     }
 
-    private func deleteButton(for schedule: ScheduleUIModel) -> some View {
-        Button(role: .destructive) {
-            pendingDeletion = schedule
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-    }
-
     private func delete(_ schedule: ScheduleUIModel) {
         AppHaptics.warning(hapticsEnabled: hapticsEnabled)
         localSchedules.removeAll { $0.id == schedule.id }
+        if selectedTonightID == schedule.id {
+            selectedTonightID = nil
+        }
         onDelete(schedule)
     }
 
@@ -329,6 +347,7 @@ private struct ScheduleHeroCard: View {
     let schedule: ScheduleUIModel
     let onToggle: (Bool) -> Void
     let onEdit: () -> Void
+    var onDelete: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -371,6 +390,22 @@ private struct ScheduleHeroCard: View {
                 .buttonStyle(.plain)
 
                 ScheduleToggle(isOn: schedule.isEnabled, action: onToggle)
+
+                if let onDelete {
+                    Button(role: .destructive, action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.red.opacity(0.85))
+                            .frame(width: 32, height: 32)
+                            .background(Color.red.opacity(0.12))
+                            .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Delete \(schedule.name)")
+                    .accessibilityIdentifier("schedule.history.hero.delete.\(schedule.id.uuidString)")
+                }
             }
 
             Button(action: onEdit) {
@@ -460,53 +495,114 @@ private struct ScheduleHeroCard: View {
 private struct ScheduleCompactCard: View {
     let schedule: ScheduleUIModel
     let accent: Color
+    var isTonight: Bool = false
     let onToggle: (Bool) -> Void
     let onEdit: () -> Void
+    let onDelete: () -> Void
+    let onSelectTonight: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 16) {
-            Button(action: onEdit) {
-                HStack(spacing: 16) {
-                    ScheduleIconBadge(
-                        systemImage: schedule.isWakeOnly ? "clock" : "sunrise.fill",
-                        tint: accent,
-                        background: accent.opacity(0.16)
-                    )
+        VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                Button(action: onEdit) {
+                    HStack(spacing: 16) {
+                        ScheduleIconBadge(
+                            systemImage: schedule.isWakeOnly ? "clock" : "sunrise.fill",
+                            tint: accent,
+                            background: accent.opacity(0.16)
+                        )
 
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(schedule.name)
-                            .font(AppFont.latoSemiBold(size: 18, relativeTo: .headline))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.78)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(schedule.name)
+                                .font(AppFont.latoSemiBold(size: 18, relativeTo: .headline))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.78)
 
-                        Text(compactTimeSummary(schedule))
-                            .font(AppFont.inter(size: 15, relativeTo: .subheadline))
-                            .foregroundStyle(Color.white.opacity(0.62))
-                            .lineLimit(1)
+                            Text(compactTimeSummary(schedule))
+                                .font(AppFont.inter(size: 15, relativeTo: .subheadline))
+                                .foregroundStyle(Color.white.opacity(0.62))
+                                .lineLimit(1)
 
-                        Text(compactDaySummary(schedule))
-                            .font(AppFont.inter(size: 14, relativeTo: .footnote))
-                            .foregroundStyle(Color.white.opacity(0.48))
-                            .lineLimit(1)
+                            Text(compactDaySummary(schedule))
+                                .font(AppFont.inter(size: 14, relativeTo: .footnote))
+                                .foregroundStyle(Color.white.opacity(0.48))
+                                .lineLimit(1)
+                        }
+
+                        Spacer(minLength: 4)
                     }
-
-                    Spacer(minLength: 4)
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.plain)
 
-            ScheduleToggle(isOn: schedule.isEnabled, action: onToggle)
-                .accessibilityIdentifier("schedule.history.toggle.\(schedule.id.uuidString)")
+                ScheduleToggle(isOn: schedule.isEnabled, action: onToggle)
+                    .accessibilityIdentifier("schedule.history.toggle.\(schedule.id.uuidString)")
 
-            Button(action: onEdit) {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.36))
-                    .frame(width: 28, height: 44)
+                Button(action: onEdit) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.36))
+                        .frame(width: 28, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Edit \(schedule.name)")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Edit \(schedule.name)")
+
+            HStack(spacing: 12) {
+                if isTonight {
+                    HStack(spacing: 5) {
+                        Image(systemName: "moon.stars.fill")
+                            .font(.system(size: 12))
+                        Text("Tonight")
+                            .font(AppFont.inter(size: 13, relativeTo: .caption, weight: .semibold))
+                    }
+                    .foregroundStyle(Color(red: 0.74, green: 0.64, blue: 1))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color(red: 0.22, green: 0.10, blue: 0.48).opacity(0.6))
+                    .clipShape(Capsule())
+                    .accessibilityIdentifier("schedule.history.badge.tonight.\(schedule.id.uuidString)")
+                } else if let onSelectTonight {
+                    Button(action: onSelectTonight) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "moon.fill")
+                                .font(.system(size: 12))
+                            Text("Set for Tonight")
+                                .font(AppFont.inter(size: 13, relativeTo: .caption, weight: .medium))
+                        }
+                        .foregroundStyle(Color(red: 0.82, green: 0.76, blue: 1.0))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Capsule())
+                        .overlay {
+                            Capsule()
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        }
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Set \(schedule.name) for tonight")
+                    .accessibilityIdentifier("schedule.history.setTonight.\(schedule.id.uuidString)")
+                }
+
+                Spacer()
+
+                Button(role: .destructive, action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.red.opacity(0.85))
+                        .frame(width: 32, height: 32)
+                        .background(Color.red.opacity(0.12))
+                        .clipShape(Circle())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Delete \(schedule.name)")
+                .accessibilityIdentifier("schedule.history.delete.\(schedule.id.uuidString)")
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 18)

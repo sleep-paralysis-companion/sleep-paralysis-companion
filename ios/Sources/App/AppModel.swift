@@ -71,6 +71,12 @@ final class AppModel {
     var tonightSchedule: AlarmSchedule? {
         guard !alarmSchedules.isEmpty else { return nil }
 
+        if let tonightScheduleID,
+           let existingTonight = alarmSchedules.first(where: { $0.id == tonightScheduleID })
+        {
+            return existingTonight
+        }
+
         let now = Date()
         let calendar = Calendar.current
         let todayLocalDate = AlarmLocalDate(date: now, calendar: calendar)
@@ -108,12 +114,6 @@ final class AppModel {
         if let primary = matchingEnabled.first {
             tonightScheduleID = primary.id
             return primary
-        }
-
-        if let tonightScheduleID,
-           let existingTonight = alarmSchedules.first(where: { $0.id == tonightScheduleID })
-        {
-            return existingTonight
         }
 
         if let enabledSleep = alarmSchedules.first(where: { $0.isEnabled && $0.kind == .sleep }) {
@@ -844,6 +844,20 @@ final class AppModel {
         var draft = tonightScheduleUIModel
         draft.isEnabled = enabled
         saveTonightScheduleDraft(draft, immediate: true)
+    }
+
+    func setTonightSchedule(_ schedule: ScheduleUIModel) {
+        guard let profileID, let userID else { return }
+        // If the selected schedule is disabled, enable it so it's active tonight
+        if !schedule.isEnabled {
+            var updated = schedule
+            updated.isEnabled = true
+            guard saveScheduleUI(updated) else { return }
+        } else {
+            updateLegacyScheduleSummary()
+        }
+        tonightScheduleID = schedule.id
+        feedbackMessage = "\"\(schedule.name)\" set for tonight"
     }
 
     func flushTonightScheduleSave() {
@@ -1744,7 +1758,6 @@ final class AppModel {
 
         // Stopping alarm immediately presents the morning questionnaire
         selectedTab = .sleep
-        open(.morningCheckIn)
     }
 
     func startForegroundAlarmMonitoring() {

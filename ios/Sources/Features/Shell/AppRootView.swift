@@ -168,6 +168,7 @@ private struct AppRouteDestinationView: View {
         case .alarmHistory:
             AlarmHistoryView(
                 schedules: model.scheduleUIModels,
+                tonightScheduleID: model.tonightScheduleID,
                 hapticsEnabled: model.settings?.hapticsEnabled != false,
                 onBack: dismissScheduleRoute,
                 onAdd: {
@@ -183,6 +184,9 @@ private struct AppRouteDestinationView: View {
                 },
                 onDelete: { schedule in
                     model.deleteScheduleUI(schedule)
+                },
+                onSelectTonight: { schedule in
+                    model.setTonightSchedule(schedule)
                 }
             )
             .toolbar(.hidden, for: .navigationBar)

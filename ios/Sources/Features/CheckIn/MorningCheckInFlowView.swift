@@ -13,6 +13,26 @@ struct MorningCheckInFlowView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 26) {
+                    HStack {
+                        Spacer()
+                        Button {
+                            AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                            model.completeMorningCheckIn()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.white.opacity(0.7))
+                                .padding(10)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Circle())
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close check-in and return to home")
+                        .accessibilityIdentifier("morningCheckIn.close")
+                    }
+
                     MorningCheckInHeader(step: step, occurrence: form.occurrence)
 
                     if case let .affirmation(occurrence) = step {

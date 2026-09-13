@@ -16,7 +16,7 @@ final class AlarmFlowTests: XCTestCase {
         XCTAssertFalse(model.isAlarmRinging)
         XCTAssertTrue(model.isMorningCheckInPresented)
         XCTAssertEqual(model.selectedTab, .sleep)
-        XCTAssertTrue(model.path.contains(.morningCheckIn))
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
         XCTAssertNil(model.alarmSnoozeTask)
     }
 
@@ -225,7 +225,7 @@ final class AlarmFlowTests: XCTestCase {
         XCTAssertFalse(model.isAlarmRinging)
         XCTAssertTrue(model.isMorningCheckInPresented)
         XCTAssertEqual(model.selectedTab, .sleep)
-        XCTAssertTrue(model.path.contains(.morningCheckIn))
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
     }
 
     @MainActor
@@ -359,7 +359,7 @@ final class AlarmFlowTests: XCTestCase {
         XCTAssertTrue(secondSnoozeTask.isCancelled)
         XCTAssertEqual(model.selectedTab, .sleep)
         XCTAssertTrue(model.isMorningCheckInPresented)
-        XCTAssertTrue(model.path.contains(.morningCheckIn))
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
     }
 
     @MainActor
@@ -378,7 +378,7 @@ final class AlarmFlowTests: XCTestCase {
         XCTAssertFalse(model.isSleepSessionPresented)
         XCTAssertEqual(model.selectedTab, .sleep)
         XCTAssertTrue(model.isMorningCheckInPresented)
-        XCTAssertTrue(model.path.contains(.morningCheckIn))
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
     }
 
     @MainActor
@@ -427,7 +427,7 @@ final class AlarmFlowTests: XCTestCase {
         )
         XCTAssertEqual(model.selectedTab, .sleep)
         XCTAssertTrue(model.isMorningCheckInPresented)
-        XCTAssertTrue(model.path.contains(.morningCheckIn))
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
     }
 
     @MainActor
@@ -504,7 +504,7 @@ final class AlarmFlowTests: XCTestCase {
         XCTAssertFalse(model.isSleepSessionPresented)
         XCTAssertEqual(model.selectedTab, .sleep)
         XCTAssertTrue(model.isMorningCheckInPresented)
-        XCTAssertTrue(model.path.contains(.morningCheckIn))
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
     }
 
     @MainActor
@@ -603,6 +603,35 @@ final class AlarmFlowTests: XCTestCase {
         model.stopAlarm()
         XCTAssertFalse(model.isAlarmRinging)
         XCTAssertTrue(model.isMorningCheckInPresented)
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
+        XCTAssertTrue(model.path.isEmpty)
+
+        model.completeMorningCheckIn()
+        XCTAssertFalse(model.isMorningCheckInPresented)
+        XCTAssertEqual(model.selectedTab, .home)
+        XCTAssertTrue(model.path.isEmpty)
+    }
+
+    @MainActor
+    func testMorningCheckInCloseActionDismissesToHome() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        // Case 1: Post-alarm presentation
+        model.triggerAlarmRinging()
+        model.stopAlarm()
+        XCTAssertTrue(model.isMorningCheckInPresented)
+        XCTAssertTrue(model.path.isEmpty)
+
+        model.completeMorningCheckIn()
+        XCTAssertFalse(model.isMorningCheckInPresented)
+        XCTAssertEqual(model.selectedTab, .home)
+        XCTAssertTrue(model.path.isEmpty)
+
+        // Case 2: Direct open from Home
+        model.open(.morningCheckIn)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+        XCTAssertTrue(model.path.contains(.morningCheckIn))
 
         model.completeMorningCheckIn()
         XCTAssertFalse(model.isMorningCheckInPresented)
