@@ -520,7 +520,7 @@ private final class WakeAlarmServiceGate {
             title: plan.role == .finalWake ? "Wake up" : "Gentle wake-up",
             stopButton: stopButton,
             secondaryButton: snoozeButton,
-            secondaryButtonBehavior: .snooze
+            secondaryButtonBehavior: .countdown
         )
         let attributes = AlarmAttributes<WakeAlarmMetadata>(
             presentation: AlarmPresentation(alert: alert),

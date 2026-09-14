@@ -847,7 +847,7 @@ final class AppModel {
     }
 
     func setTonightSchedule(_ schedule: ScheduleUIModel) {
-        guard let profileID, let userID else { return }
+        guard profileID != nil, userID != nil else { return }
         // If the selected schedule is disabled, enable it so it's active tonight
         if !schedule.isEnabled {
             var updated = schedule
