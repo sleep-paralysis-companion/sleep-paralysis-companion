@@ -347,4 +347,84 @@ final class WakeAlarmFoundationTests: XCTestCase {
         XCTAssertEqual(plans.count, 1)
         XCTAssertNil(plans.first?.snoozeMinutes)
     }
+
+    func testWakeAlarmPlanEqualityRespectsSnoozeMinutes() {
+        let plan5 = WakeAlarmPlan(
+            hour: 7,
+            minute: 0,
+            weekdays: [2, 3, 4, 5, 6],
+            maximumPlaybackSeconds: 900,
+            snoozeMinutes: 5
+        )
+        let plan10 = WakeAlarmPlan(
+            hour: 7,
+            minute: 0,
+            weekdays: [2, 3, 4, 5, 6],
+            maximumPlaybackSeconds: 900,
+            snoozeMinutes: 10
+        )
+        let planNil = WakeAlarmPlan(
+            hour: 7,
+            minute: 0,
+            weekdays: [2, 3, 4, 5, 6],
+            maximumPlaybackSeconds: 900,
+            snoozeMinutes: nil
+        )
+
+        XCTAssertNotEqual(plan5, plan10)
+        XCTAssertNotEqual(plan5, planNil)
+        XCTAssertNotEqual(plan10, planNil)
+        XCTAssertEqual(
+            plan5,
+            WakeAlarmPlan(
+                hour: 7,
+                minute: 0,
+                weekdays: [2, 3, 4, 5, 6],
+                maximumPlaybackSeconds: 900,
+                snoozeMinutes: 5
+            )
+        )
+    }
+
+    func testSleepScheduleGentleAudioOnlyCarriesSnoozeMinutes() {
+        let schedule = AlarmSchedule(
+            id: UUID(),
+            name: "Gentle Audio Only",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 7,
+            wakeMinute: 0,
+            weekdaysMask: 0b0011_1110,
+            wakeReminderLeadMinutes: 15,
+            finalWakeAlarmEnabled: false,
+            snoozeMinutes: 15,
+            isEnabled: true
+        )
+        let plans = WakeAlarmPlanner.plans(for: schedule)
+        XCTAssertEqual(plans.count, 1)
+        XCTAssertEqual(plans.first?.role, .gentleAudio)
+        XCTAssertEqual(plans.first?.snoozeMinutes, 15)
+    }
+
+    func testSleepScheduleFinalWakeOnlyCarriesSnoozeMinutes() {
+        let schedule = AlarmSchedule(
+            id: UUID(),
+            name: "Final Wake Only",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 7,
+            wakeMinute: 0,
+            weekdaysMask: 0b0011_1110,
+            wakeReminderLeadMinutes: nil,
+            finalWakeAlarmEnabled: true,
+            snoozeMinutes: 5,
+            isEnabled: true
+        )
+        let plans = WakeAlarmPlanner.plans(for: schedule)
+        XCTAssertEqual(plans.count, 1)
+        XCTAssertEqual(plans.first?.role, .finalWake)
+        XCTAssertEqual(plans.first?.snoozeMinutes, 5)
+    }
 }
