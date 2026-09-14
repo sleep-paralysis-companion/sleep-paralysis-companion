@@ -101,6 +101,7 @@ final class AlarmHistoryTests: XCTestCase {
             wakeHour: 6,
             wakeMinute: 0,
             repeatWeekdaysMask: 0b0111_1111,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
             isEnabled: true
         )
         let schedule2 = ScheduleUIModel(
@@ -111,6 +112,7 @@ final class AlarmHistoryTests: XCTestCase {
             wakeHour: 7,
             wakeMinute: 0,
             repeatWeekdaysMask: 0b0100_0000,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
             isEnabled: false
         )
 
@@ -147,9 +149,12 @@ final class AlarmHistoryTests: XCTestCase {
         let schedule1 = ScheduleUIModel(
             name: "Morning Wake",
             kind: .wakeOnly,
+            bedtimeHour: 0,
+            bedtimeMinute: 0,
             wakeHour: 7,
             wakeMinute: 0,
             repeatWeekdaysMask: 0b0111_1111,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
             isEnabled: true
         )
         XCTAssertTrue(model.saveScheduleUI(schedule1, autoStartUnwind: false))
@@ -159,9 +164,12 @@ final class AlarmHistoryTests: XCTestCase {
         let collidingSchedule = ScheduleUIModel(
             name: "Duplicate Wake",
             kind: .wakeOnly,
+            bedtimeHour: 0,
+            bedtimeMinute: 0,
             wakeHour: 7,
             wakeMinute: 0,
             repeatWeekdaysMask: 0b0111_1111,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
             isEnabled: false
         )
         XCTAssertTrue(model.saveScheduleUI(collidingSchedule, autoStartUnwind: false))
