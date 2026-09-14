@@ -193,6 +193,7 @@ actor LocalDatabase {
             wakeReminderLeadMinutes: schedule.wakeReminderLeadMinutes,
             finalWakeAlarmEnabled: schedule.finalWakeAlarmEnabled,
             wakeAudio: schedule.wakeAudio,
+            snoozeMinutes: schedule.snoozeMinutes,
             isEnabled: schedule.isEnabled,
             sortOrder: schedule.sortOrder,
             createdAt: existing.map { Date(timeIntervalSince1970: $0.createdAt) } ?? schedule.createdAt,

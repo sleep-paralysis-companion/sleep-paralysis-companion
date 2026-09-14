@@ -131,7 +131,7 @@ nonisolated extension AlarmPreferenceRecord {
         localHour = value.wakeHour
         localMinute = value.wakeMinute
         weekdaysMask = value.weekdaysMask
-        snoozeMinutes = nil
+        snoozeMinutes = value.snoozeMinutes
         enabledIntent = value.isEnabled
         systemState = AlarmSystemState.notScheduled.rawValue
         lastScheduleResult = AlarmScheduleResult.none.rawValue
@@ -205,6 +205,7 @@ nonisolated extension AlarmPreferenceRecord {
             wakeReminderLeadMinutes: prewakeLeadMinutes,
             finalWakeAlarmEnabled: true,
             wakeAudio: audio,
+            snoozeMinutes: snoozeMinutes,
             isEnabled: enabledIntent,
             sortOrder: displayOrder,
             createdAt: Date(timeIntervalSince1970: createdAt),

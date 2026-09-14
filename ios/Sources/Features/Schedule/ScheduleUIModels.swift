@@ -113,7 +113,7 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         preWakeReminderLeadMinutes: Int? = nil,
         wakeAudio: ScheduleUIAudioSelection,
         isEnabled: Bool,
-        snoozeMinutes: Int? = 9,
+        snoozeMinutes: Int? = 10,
         oneTimeDate: Date? = nil
     ) {
         self.id = id
@@ -143,7 +143,8 @@ nonisolated struct ScheduleUIModel: Identifiable, Equatable, Sendable {
         bedtimeReminderLeadMinutes: 15,
         preWakeReminderLeadMinutes: 15,
         wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
-        isEnabled: false
+        isEnabled: false,
+        snoozeMinutes: 10
     )
 
     static func nextWakeOnlyDate(
@@ -247,6 +248,7 @@ nonisolated extension ScheduleUIModel {
             gentleWakeLeadMinutes: schedule.wakeReminderLeadMinutes ?? 15,
             wakeAudio: audio,
             isEnabled: schedule.isEnabled,
+            snoozeMinutes: schedule.snoozeMinutes ?? 10,
             oneTimeDate: schedule.oneTimeDate?.date()
         )
     }
@@ -316,6 +318,7 @@ nonisolated extension ScheduleUIModel {
             wakeReminderLeadMinutes: gentleWakeLeadMinutes,
             finalWakeAlarmEnabled: true,
             wakeAudio: audio,
+            snoozeMinutes: snoozeMinutes,
             isEnabled: isEnabled,
             sortOrder: sortOrder,
             createdAt: existing?.createdAt ?? now,
