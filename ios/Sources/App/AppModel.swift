@@ -235,6 +235,7 @@ final class AppModel {
     @ObservationIgnored private var recordingLimitTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRecordingClipID: UUID?
     @ObservationIgnored private var alarmSchedulingStates: [UUID: AlarmScheduleSchedulingState] = [:]
+    @ObservationIgnored private var sleepSessionSourceTab: AppTab = .sleep
 
     init(
         environment: AppEnvironment,
@@ -1481,6 +1482,7 @@ final class AppModel {
 
     func startSleepSession(startAudio: Bool = false) {
         guard launchDestination == .home else { return }
+        sleepSessionSourceTab = selectedTab
         let startedAt = sleepSessionStartedAt ?? Date()
         sleepSessionStartedAt = startedAt
         isSleepSessionPresented = true
@@ -1504,7 +1506,7 @@ final class AppModel {
 
     func minimizeSleepSession() {
         isSleepSessionPresented = false
-        selectedTab = .sleep
+        selectedTab = sleepSessionSourceTab
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
@@ -1517,7 +1519,7 @@ final class AppModel {
     func endSleepSession() {
         sleepSessionStartedAt = nil
         isSleepSessionPresented = false
-        selectedTab = .sleep
+        selectedTab = sleepSessionSourceTab
         UserDefaults.standard.removeObject(forKey: Self.sleepSessionStartedAtKey)
         UIApplication.shared.isIdleTimerDisabled = false
         stopForegroundAlarmMonitoring()
