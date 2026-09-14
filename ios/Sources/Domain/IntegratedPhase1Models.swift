@@ -167,6 +167,7 @@ nonisolated struct AlarmSchedule: Codable, Equatable, Identifiable, Sendable {
     static let maximumCount = 8
     static let validReminderLeadOptions = [0, 5, 10, 15, 30, 60]
     static let validWakeAudioLeadOptions = [5, 10, 15, 30]
+    static let validSnoozeOptions = [5, 10, 15]
 
     let id: UUID
     var profileID: UUID?
@@ -183,6 +184,7 @@ nonisolated struct AlarmSchedule: Codable, Equatable, Identifiable, Sendable {
     var wakeReminderLeadMinutes: Int?
     var finalWakeAlarmEnabled: Bool
     var wakeAudio: AlarmAudioSelection?
+    var snoozeMinutes: Int?
     var isEnabled: Bool
     var sortOrder: Int
     let createdAt: Date
@@ -204,6 +206,7 @@ nonisolated struct AlarmSchedule: Codable, Equatable, Identifiable, Sendable {
         wakeReminderLeadMinutes: Int? = 15,
         finalWakeAlarmEnabled: Bool = true,
         wakeAudio: AlarmAudioSelection? = .defaultBundled,
+        snoozeMinutes: Int? = 10,
         isEnabled: Bool = true,
         sortOrder: Int = 0,
         createdAt: Date = Date(),
@@ -224,6 +227,7 @@ nonisolated struct AlarmSchedule: Codable, Equatable, Identifiable, Sendable {
         self.wakeReminderLeadMinutes = wakeReminderLeadMinutes
         self.finalWakeAlarmEnabled = finalWakeAlarmEnabled
         self.wakeAudio = wakeAudio
+        self.snoozeMinutes = snoozeMinutes
         self.isEnabled = isEnabled
         self.sortOrder = sortOrder
         self.createdAt = createdAt
@@ -237,7 +241,8 @@ nonisolated struct AlarmSchedule: Codable, Equatable, Identifiable, Sendable {
               validTime(hour: wakeHour, minute: wakeMinute),
               (0 ... 127).contains(weekdaysMask),
               validLead(bedtimeReminderLeadMinutes, options: Self.validReminderLeadOptions),
-              validLead(wakeReminderLeadMinutes, options: Self.validWakeAudioLeadOptions)
+              validLead(wakeReminderLeadMinutes, options: Self.validWakeAudioLeadOptions),
+              validLead(snoozeMinutes, options: Self.validSnoozeOptions)
         else {
             return false
         }

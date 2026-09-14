@@ -8,6 +8,7 @@ nonisolated struct WakeAlarmPlan: Equatable, Sendable {
     let scheduleID: UUID?
     let role: WakeAlarmEventRole
     let date: AlarmLocalDate?
+    let snoozeMinutes: Int?
 
     init(
         hour: Int,
@@ -16,7 +17,8 @@ nonisolated struct WakeAlarmPlan: Equatable, Sendable {
         maximumPlaybackSeconds: Int,
         scheduleID: UUID? = nil,
         role: WakeAlarmEventRole = .gentleAudio,
-        date: AlarmLocalDate? = nil
+        date: AlarmLocalDate? = nil,
+        snoozeMinutes: Int? = nil
     ) {
         self.hour = hour
         self.minute = minute
@@ -25,6 +27,7 @@ nonisolated struct WakeAlarmPlan: Equatable, Sendable {
         self.scheduleID = scheduleID
         self.role = role
         self.date = date
+        self.snoozeMinutes = snoozeMinutes
     }
 
     /// A stable role-specific namespace for device scheduling. AlarmKit UUIDs
@@ -127,7 +130,8 @@ nonisolated enum WakeAlarmPlanner {
                     weekdays: shiftedWeekdays,
                     maximumPlaybackSeconds: leadMinutes * 60,
                     scheduleID: scheduleID,
-                    role: .gentleAudio
+                    role: .gentleAudio,
+                    snoozeMinutes: schedule.snoozeMinutes
                 )
             )
         }
@@ -139,7 +143,8 @@ nonisolated enum WakeAlarmPlanner {
                     weekdays: wakeWeekdays,
                     maximumPlaybackSeconds: 0,
                     scheduleID: scheduleID,
-                    role: .finalWake
+                    role: .finalWake,
+                    snoozeMinutes: schedule.snoozeMinutes
                 )
             )
         }
@@ -170,7 +175,8 @@ nonisolated enum WakeAlarmPlanner {
                     maximumPlaybackSeconds: leadMinutes * 60,
                     scheduleID: schedule.id,
                     role: .gentleAudio,
-                    date: date
+                    date: date,
+                    snoozeMinutes: schedule.snoozeMinutes
                 )
             )
         }
@@ -183,7 +189,8 @@ nonisolated enum WakeAlarmPlanner {
                     maximumPlaybackSeconds: 0,
                     scheduleID: schedule.id,
                     role: .finalWake,
-                    date: date
+                    date: date,
+                    snoozeMinutes: schedule.snoozeMinutes
                 )
             )
         }

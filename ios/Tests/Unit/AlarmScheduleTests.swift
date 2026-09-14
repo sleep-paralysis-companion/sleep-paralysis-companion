@@ -247,6 +247,62 @@ final class AlarmScheduleTests: XCTestCase {
         XCTAssertFalse(firstID.map { SleepReminderPlanner.owns(identifier: $0, scheduleID: second.id) } == true)
     }
 
+    func testDefaultSnoozeMinutesInitializesToTen() {
+        let schedule = AlarmSchedule(name: "Default Snooze")
+        XCTAssertEqual(schedule.snoozeMinutes, 10)
+        XCTAssertTrue(schedule.isValid)
+    }
+
+    func testValidSnoozeOptionsPassValidation() {
+        for option in AlarmSchedule.validSnoozeOptions {
+            var schedule = AlarmSchedule(name: "Valid Snooze")
+            schedule.snoozeMinutes = option
+            XCTAssertTrue(schedule.isValid, "Expected snoozeMinutes: \(option) to be valid")
+        }
+
+        var nilSnoozeSchedule = AlarmSchedule(name: "Nil Snooze")
+        nilSnoozeSchedule.snoozeMinutes = nil
+        XCTAssertTrue(nilSnoozeSchedule.isValid, "Expected nil snoozeMinutes to be valid")
+    }
+
+    func testInvalidSnoozeOptionsFailValidation() {
+        let invalidOptions = [-1, 0, 9, 20, 99]
+        for option in invalidOptions {
+            var schedule = AlarmSchedule(name: "Invalid Snooze")
+            schedule.snoozeMinutes = option
+            XCTAssertFalse(schedule.isValid, "Expected snoozeMinutes: \(option) to be invalid")
+        }
+    }
+
+    func testScheduleUIModelBidirectionalConversionPreservesSnoozeMinutes() {
+        let domainSchedule = AlarmSchedule(
+            id: UUID(),
+            name: "Test Schedule",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 0,
+            wakeHour: 6,
+            wakeMinute: 30,
+            weekdaysMask: 0b0111_1111,
+            snoozeMinutes: 15
+        )
+
+        let uiModel = ScheduleUIModel(domainSchedule)
+        XCTAssertEqual(uiModel.snoozeMinutes, 15)
+
+        let convertedBack = uiModel.domainValue(
+            profileID: UUID(),
+            existing: domainSchedule,
+            sortOrder: 0
+        )
+        XCTAssertEqual(convertedBack.snoozeMinutes, 15)
+
+        var nilSnooze = domainSchedule
+        nilSnooze.snoozeMinutes = nil
+        let uiModelDefault = ScheduleUIModel(nilSnooze)
+        XCTAssertEqual(uiModelDefault.snoozeMinutes, 10)
+    }
+
     private func recurringWake(name: String, hour: Int, minute: Int) -> AlarmSchedule {
         AlarmSchedule(
             name: name,

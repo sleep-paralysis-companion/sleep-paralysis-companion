@@ -502,7 +502,7 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
 
     func testScheduleUIModelDefaultSnoozeMinutes() {
         let schedule = ScheduleUIModel.newSleep
-        XCTAssertEqual(schedule.snoozeMinutes, 9)
+        XCTAssertEqual(schedule.snoozeMinutes, 10)
     }
 
     @MainActor

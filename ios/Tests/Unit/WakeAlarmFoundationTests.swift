@@ -245,4 +245,62 @@ final class WakeAlarmFoundationTests: XCTestCase {
         disabled.isEnabled = false
         XCTAssertNil(WakeAlarmPlanner.nextWakeDate(for: disabled, after: beforeWake, calendar: calendar))
     }
+
+    func testWakeAlarmPlansCarryScheduleSnoozeMinutes() {
+        let recurring = AlarmSchedule(
+            id: UUID(),
+            name: "Recurring Snooze 15",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 30,
+            wakeHour: 6,
+            wakeMinute: 30,
+            weekdaysMask: 0b0111_1111,
+            wakeReminderLeadMinutes: 15,
+            finalWakeAlarmEnabled: true,
+            snoozeMinutes: 15,
+            isEnabled: true
+        )
+
+        let recurringPlans = WakeAlarmPlanner.plans(for: recurring)
+        XCTAssertEqual(recurringPlans.count, 2)
+        XCTAssertTrue(recurringPlans.allSatisfy { $0.snoozeMinutes == 15 })
+
+        let oneTime = AlarmSchedule(
+            id: UUID(),
+            name: "One-Time Snooze 5",
+            kind: .wakeOnlyOneTime,
+            wakeHour: 7,
+            wakeMinute: 0,
+            weekdaysMask: 0,
+            oneTimeDate: AlarmLocalDate(year: 2026, month: 9, day: 20),
+            wakeReminderLeadMinutes: 10,
+            finalWakeAlarmEnabled: true,
+            snoozeMinutes: 5,
+            isEnabled: true
+        )
+
+        let oneTimePlans = WakeAlarmPlanner.plans(for: oneTime)
+        XCTAssertEqual(oneTimePlans.count, 2)
+        XCTAssertTrue(oneTimePlans.allSatisfy { $0.snoozeMinutes == 5 })
+
+        let nilSnooze = AlarmSchedule(
+            id: UUID(),
+            name: "Nil Snooze",
+            kind: .sleep,
+            bedtimeHour: 23,
+            bedtimeMinute: 0,
+            wakeHour: 7,
+            wakeMinute: 0,
+            weekdaysMask: 0b0001_0000,
+            wakeReminderLeadMinutes: 15,
+            finalWakeAlarmEnabled: true,
+            snoozeMinutes: nil,
+            isEnabled: true
+        )
+
+        let nilPlans = WakeAlarmPlanner.plans(for: nilSnooze)
+        XCTAssertEqual(nilPlans.count, 2)
+        XCTAssertTrue(nilPlans.allSatisfy { $0.snoozeMinutes == nil })
+    }
 }

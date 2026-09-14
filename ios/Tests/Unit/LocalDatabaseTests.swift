@@ -251,6 +251,80 @@ final class LocalDatabaseTests: XCTestCase {
         XCTAssertEqual(operation?.idempotencyKey, idempotencyKey)
     }
 
+    func testAlarmScheduleSnoozeMinutesPersistenceAndNullability() async throws {
+        let database = try await seededDatabase()
+        let scheduleID = Phase1BFixture.uuid("a0000000-0000-4000-8000-000000000021")
+        var schedule = AlarmSchedule(
+            id: scheduleID,
+            profileID: Phase1BFixture.profileID,
+            name: "Snooze Test",
+            kind: .sleep,
+            bedtimeHour: 22,
+            bedtimeMinute: 30,
+            wakeHour: 6,
+            wakeMinute: 30,
+            weekdaysMask: 0b0111_1111,
+            snoozeMinutes: 10
+        )
+
+        let saved = try await database.saveAlarmSchedule(schedule, profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(saved.snoozeMinutes, 10)
+
+        let fetched = try await database.alarmSchedule(id: scheduleID, profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(fetched?.snoozeMinutes, 10)
+
+        // Directly assert SQLite column value
+        try await database.pool.read { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: "SELECT snoozeMinutes FROM alarm_preferences WHERE id = ?",
+                arguments: [scheduleID.uuidString]
+            )
+            let value: Int? = row?["snoozeMinutes"]
+            XCTAssertEqual(value, 10)
+        }
+
+        // Verify snoozeMinutes: nil is also valid and persists as SQLite NULL
+        schedule.snoozeMinutes = nil
+        let savedNil = try await database.saveAlarmSchedule(schedule, profileID: Phase1BFixture.profileID)
+        XCTAssertNil(savedNil.snoozeMinutes)
+
+        let fetchedNil = try await database.alarmSchedule(id: scheduleID, profileID: Phase1BFixture.profileID)
+        XCTAssertNil(fetchedNil?.snoozeMinutes)
+
+        try await database.pool.read { db in
+            let row = try Row.fetchOne(
+                db,
+                sql: "SELECT snoozeMinutes FROM alarm_preferences WHERE id = ?",
+                arguments: [scheduleID.uuidString]
+            )
+            let value: Int? = row?["snoozeMinutes"]
+            XCTAssertNil(value)
+        }
+
+        // Verify other valid options (5 and 15) persist correctly
+        schedule.snoozeMinutes = 5
+        let saved5 = try await database.saveAlarmSchedule(schedule, profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(saved5.snoozeMinutes, 5)
+
+        schedule.snoozeMinutes = 15
+        let saved15 = try await database.saveAlarmSchedule(schedule, profileID: Phase1BFixture.profileID)
+        XCTAssertEqual(saved15.snoozeMinutes, 15)
+
+        // Verify SQLite CHECK constraint rejects invalid values (e.g. 9)
+        do {
+            try await database.pool.write { db in
+                try db.execute(
+                    sql: "UPDATE alarm_preferences SET snoozeMinutes = 9 WHERE id = ?",
+                    arguments: [scheduleID.uuidString]
+                )
+            }
+            XCTFail("Expected SQLite CHECK constraint violation for snoozeMinutes = 9")
+        } catch let error as DatabaseError {
+            XCTAssertEqual(error.resultCode, .SQLITE_CONSTRAINT)
+        }
+    }
+
     func testAlarmSchedulePersistenceEnforcesEightScheduleLimit() async throws {
         let database = try await seededDatabase()
         for index in 0 ..< AlarmSchedule.maximumCount {
