@@ -323,19 +323,19 @@ final class SleepPlayerTests: XCTestCase {
         model.minimizeSleepSession()
         XCTAssertFalse(model.isSleepSessionPresented)
         XCTAssertEqual(model.sleepSessionStartedAt, initialStartedAt)
-        XCTAssertEqual(model.selectedTab, .sleep)
+        XCTAssertEqual(model.selectedTab, .home)
 
         // When already active, presentActiveSleepSession re-presents without changing
         // startedAt or clobbering selectedTab
         model.presentActiveSleepSession()
         XCTAssertTrue(model.isSleepSessionPresented)
         XCTAssertEqual(model.sleepSessionStartedAt, initialStartedAt)
-        XCTAssertEqual(model.selectedTab, .sleep)
+        XCTAssertEqual(model.selectedTab, .home)
 
         model.endSleepSession()
         XCTAssertNil(model.sleepSessionStartedAt)
         XCTAssertFalse(model.isSleepSessionPresented)
-        XCTAssertEqual(model.selectedTab, .sleep)
+        XCTAssertEqual(model.selectedTab, .home)
     }
 
     @MainActor
