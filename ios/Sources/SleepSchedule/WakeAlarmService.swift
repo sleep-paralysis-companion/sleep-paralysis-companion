@@ -511,19 +511,62 @@ private final class WakeAlarmServiceGate {
             textColor: .white,
             systemImageName: "stop.fill"
         )
-        let snoozeButton = AlarmButton(
-            text: "Snooze",
-            textColor: .white,
-            systemImageName: "moon.zzz.fill"
-        )
-        let alert = AlarmPresentation.Alert(
-            title: plan.role == .finalWake ? "Wake up" : "Gentle wake-up",
-            stopButton: stopButton,
-            secondaryButton: snoozeButton,
-            secondaryButtonBehavior: .countdown
-        )
+        let alertTitle: LocalizedStringResource = plan.role == .finalWake ? "Wake up" : "Gentle wake-up"
+
+        let presentation: AlarmPresentation
+        let countdownDuration: Alarm.CountdownDuration?
+
+        if let snoozeMinutes = plan.snoozeMinutes, snoozeMinutes > 0 {
+            let snoozeButton = AlarmButton(
+                text: "Snooze",
+                textColor: .white,
+                systemImageName: "moon.zzz.fill"
+            )
+            let alert = AlarmPresentation.Alert(
+                title: alertTitle,
+                stopButton: stopButton,
+                secondaryButton: snoozeButton,
+                secondaryButtonBehavior: .countdown
+            )
+            let countdown = AlarmPresentation.Countdown(
+                title: alertTitle,
+                pauseButton: AlarmButton(
+                    text: "Pause",
+                    textColor: .white,
+                    systemImageName: "pause.fill"
+                )
+            )
+            let paused = AlarmPresentation.Paused(
+                title: "Paused",
+                resumeButton: AlarmButton(
+                    text: "Resume",
+                    textColor: .white,
+                    systemImageName: "play.fill"
+                )
+            )
+            presentation = AlarmPresentation(
+                alert: alert,
+                countdown: countdown,
+                paused: paused
+            )
+            let snoozeDuration = TimeInterval(snoozeMinutes * 60)
+            countdownDuration = Alarm.CountdownDuration(
+                preAlert: nil,
+                postAlert: snoozeDuration
+            )
+        } else {
+            let alert = AlarmPresentation.Alert(
+                title: alertTitle,
+                stopButton: stopButton,
+                secondaryButton: nil,
+                secondaryButtonBehavior: nil
+            )
+            presentation = AlarmPresentation(alert: alert)
+            countdownDuration = nil
+        }
+
         let attributes = AlarmAttributes<WakeAlarmMetadata>(
-            presentation: AlarmPresentation(alert: alert),
+            presentation: presentation,
             metadata: WakeAlarmMetadata(
                 contentVersion: 1,
                 scheduleID: scheduleID ?? plan.scheduleID,
@@ -547,7 +590,8 @@ private final class WakeAlarmServiceGate {
             )
         }
 
-        return .alarm(
+        return AlarmManager.AlarmConfiguration(
+            countdownDuration: countdownDuration,
             schedule: schedule,
             attributes: attributes,
             sound: .named(soundName)

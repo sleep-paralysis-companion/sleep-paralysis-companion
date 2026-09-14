@@ -303,4 +303,48 @@ final class WakeAlarmFoundationTests: XCTestCase {
         XCTAssertEqual(nilPlans.count, 2)
         XCTAssertTrue(nilPlans.allSatisfy { $0.snoozeMinutes == nil })
     }
+
+    func testLegacySleepSchedulePlanHasNilSnoozeMinutes() {
+        let schedule = SleepSchedule.defaultValue
+        let plan = WakeAlarmPlanner.plan(for: schedule)
+        XCTAssertNotNil(plan)
+        XCTAssertNil(plan?.snoozeMinutes)
+    }
+
+    func testWakeOnlyRecurringScheduleCarriesSnoozeMinutes() {
+        let wakeOnly = AlarmSchedule(
+            id: UUID(),
+            name: "Wake Only Recurring Snooze 10",
+            kind: .wakeOnlyRecurring,
+            wakeHour: 8,
+            wakeMinute: 0,
+            weekdaysMask: 0b0011_1110,
+            wakeReminderLeadMinutes: 5,
+            finalWakeAlarmEnabled: true,
+            snoozeMinutes: 10,
+            isEnabled: true
+        )
+        let plans = WakeAlarmPlanner.plans(for: wakeOnly)
+        XCTAssertEqual(plans.count, 2)
+        XCTAssertTrue(plans.allSatisfy { $0.snoozeMinutes == 10 })
+    }
+
+    func testOneTimeScheduleWithNilSnoozeProducesNilSnoozeMinutes() {
+        let oneTime = AlarmSchedule(
+            id: UUID(),
+            name: "One Time Nil Snooze",
+            kind: .wakeOnlyOneTime,
+            wakeHour: 6,
+            wakeMinute: 45,
+            weekdaysMask: 0,
+            oneTimeDate: AlarmLocalDate(year: 2026, month: 9, day: 21),
+            wakeReminderLeadMinutes: nil,
+            finalWakeAlarmEnabled: true,
+            snoozeMinutes: nil,
+            isEnabled: true
+        )
+        let plans = WakeAlarmPlanner.plans(for: oneTime)
+        XCTAssertEqual(plans.count, 1)
+        XCTAssertNil(plans.first?.snoozeMinutes)
+    }
 }
