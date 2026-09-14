@@ -455,7 +455,7 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
         XCTAssertFalse(model.isAlarmRinging)
         XCTAssertEqual(model.selectedTab, .sleep)
         XCTAssertTrue(model.isMorningCheckInPresented)
-        XCTAssertTrue(model.path.contains(.morningCheckIn))
+        XCTAssertFalse(model.path.contains(.morningCheckIn))
     }
 
     @MainActor

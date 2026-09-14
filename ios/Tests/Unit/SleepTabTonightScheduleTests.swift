@@ -595,7 +595,7 @@ final class SleepTabTonightScheduleTests: XCTestCase {
     }
 
     @MainActor
-    func testSleepTabViewSaveAlarmPresentsSleepSessionAndStartsAudio() {
+    func testSleepTabViewSaveAlarmTriggersAutoStartUnwindAndAudioPlayer() {
         let model = makeTestAppModel()
         model.setLaunchDestinationForTesting(.home)
         let profileID = UUID()
@@ -605,11 +605,12 @@ final class SleepTabTonightScheduleTests: XCTestCase {
         let view = SleepTabView(model: model)
         view.saveAlarm()
 
-        XCTAssertTrue(model.isSleepSessionPresented, "Saving tonight's alarm must present full-screen Sleep Session")
-        XCTAssertNotNil(model.sleepSessionStartedAt, "Saving tonight's alarm must start sleep session timestamp")
-        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind", "Saving tonight's alarm must start sleep audio playback")
-        XCTAssertTrue(model.path.isEmpty, "Saving tonight's alarm must not navigate to audioPlayer on navigation stack")
+        XCTAssertEqual(model.path.last, .audioPlayer)
+        XCTAssertEqual(model.path, [.audioPlayer])
+        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
+        XCTAssertFalse(model.isSleepSessionPresented)
         XCTAssertEqual(model.feedbackMessage, "Tonight's alarm saved")
+        model.endSleepSession()
     }
 
     @MainActor

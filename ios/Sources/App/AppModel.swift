@@ -71,6 +71,12 @@ final class AppModel {
     var tonightSchedule: AlarmSchedule? {
         guard !alarmSchedules.isEmpty else { return nil }
 
+        if let tonightScheduleID,
+           let existingTonight = alarmSchedules.first(where: { $0.id == tonightScheduleID })
+        {
+            return existingTonight
+        }
+
         let now = Date()
         let calendar = Calendar.current
         let todayLocalDate = AlarmLocalDate(date: now, calendar: calendar)
@@ -108,12 +114,6 @@ final class AppModel {
         if let primary = matchingEnabled.first {
             tonightScheduleID = primary.id
             return primary
-        }
-
-        if let tonightScheduleID,
-           let existingTonight = alarmSchedules.first(where: { $0.id == tonightScheduleID })
-        {
-            return existingTonight
         }
 
         if let enabledSleep = alarmSchedules.first(where: { $0.isEnabled && $0.kind == .sleep }) {
@@ -235,6 +235,7 @@ final class AppModel {
     @ObservationIgnored private var recordingLimitTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRecordingClipID: UUID?
     @ObservationIgnored private var alarmSchedulingStates: [UUID: AlarmScheduleSchedulingState] = [:]
+    @ObservationIgnored private var sleepSessionSourceTab: AppTab = .sleep
 
     init(
         environment: AppEnvironment,
@@ -844,6 +845,20 @@ final class AppModel {
         var draft = tonightScheduleUIModel
         draft.isEnabled = enabled
         saveTonightScheduleDraft(draft, immediate: true)
+    }
+
+    func setTonightSchedule(_ schedule: ScheduleUIModel) {
+        guard profileID != nil, userID != nil else { return }
+        // If the selected schedule is disabled, enable it so it's active tonight
+        if !schedule.isEnabled {
+            var updated = schedule
+            updated.isEnabled = true
+            guard saveScheduleUI(updated) else { return }
+        } else {
+            updateLegacyScheduleSummary()
+        }
+        tonightScheduleID = schedule.id
+        feedbackMessage = "\"\(schedule.name)\" set for tonight"
     }
 
     func flushTonightScheduleSave() {
@@ -1467,6 +1482,7 @@ final class AppModel {
 
     func startSleepSession(startAudio: Bool = false) {
         guard launchDestination == .home else { return }
+        sleepSessionSourceTab = selectedTab
         let startedAt = sleepSessionStartedAt ?? Date()
         sleepSessionStartedAt = startedAt
         isSleepSessionPresented = true
@@ -1489,8 +1505,8 @@ final class AppModel {
     }
 
     func minimizeSleepSession() {
-        guard sleepSessionStartedAt != nil else { return }
         isSleepSessionPresented = false
+        selectedTab = sleepSessionSourceTab
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
@@ -1503,6 +1519,7 @@ final class AppModel {
     func endSleepSession() {
         sleepSessionStartedAt = nil
         isSleepSessionPresented = false
+        selectedTab = sleepSessionSourceTab
         UserDefaults.standard.removeObject(forKey: Self.sleepSessionStartedAtKey)
         UIApplication.shared.isIdleTimerDisabled = false
         stopForegroundAlarmMonitoring()
@@ -1743,7 +1760,6 @@ final class AppModel {
 
         // Stopping alarm immediately presents the morning questionnaire
         selectedTab = .sleep
-        open(.morningCheckIn)
     }
 
     func startForegroundAlarmMonitoring() {
@@ -1777,6 +1793,16 @@ final class AppModel {
     func playDefaultSleepAudio() {
         let defaultSleep = settings?.defaultSleepSupport ?? .quickSleep
         let trackID = defaultSleep == .longSleepAid ? "slow-unwind" : "quick-unwind"
+
+        if case let .paused(id) = playbackState, id == "quick-unwind" || id == "slow-unwind" {
+            catalogAudioPlayer.resume()
+            playbackState = .playing(id)
+            if selectedCatalogAsset?.id != id {
+                selectedCatalogAsset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == id })
+            }
+            updateSleepSessionLiveActivityForPlayback()
+            return
+        }
 
         let isUnwindActive = switch playbackState {
         case let .playing(id), let .paused(id):
@@ -1849,12 +1875,14 @@ final class AppModel {
             playCalmingSecondSleepAudio()
 
         case .callPartner:
+            isSleepSessionPresented = false
             if let contact = partnerContact,
                let phoneURL = contact.phoneURL
             {
                 UIApplication.shared.open(phoneURL)
             } else {
                 open(.defaultSettings)
+                feedbackMessage = "Add a partner phone number in Settings to use Call Partner."
             }
         }
     }

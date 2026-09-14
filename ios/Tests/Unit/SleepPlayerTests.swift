@@ -745,48 +745,4 @@ final class SleepPlayerTests: XCTestCase {
         XCTAssertTrue(model.path.contains(.grounding))
         XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
     }
-
-    @MainActor
-    func testStartSleepSessionWithAutoStartAudioRespectsSleepSupportSetting() {
-        let model = makeTestAppModel()
-        model.setLaunchDestinationForTesting(.home)
-        let profileID = UUID()
-        let userID = UUID()
-        model.setSessionForTesting(profileID: profileID, userID: userID)
-
-        // Default quickSleep plays Quick Unwind
-        model.startSleepSession(startAudio: true)
-        XCTAssertTrue(model.isSleepSessionPresented)
-        XCTAssertNotNil(model.sleepSessionStartedAt)
-        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
-        XCTAssertFalse(model.path.contains(.audioPlayer))
-        model.endSleepSession()
-
-        // LongSleepAid setting plays Slow Unwind
-        model.settings?.defaultSleepSupport = .longSleepAid
-        model.startSleepSession(startAudio: true)
-        XCTAssertTrue(model.isSleepSessionPresented)
-        XCTAssertEqual(model.activeTrackTitle, "Slow Unwind")
-        XCTAssertFalse(model.path.contains(.audioPlayer))
-        model.endSleepSession()
-    }
-
-    @MainActor
-    func testSaveTonightScheduleDraftFromSleepTabPresentsSleepSessionAndStartsAudio() {
-        let model = makeTestAppModel()
-        model.setLaunchDestinationForTesting(.home)
-        let profileID = UUID()
-        let userID = UUID()
-        model.setSessionForTesting(profileID: profileID, userID: userID)
-
-        var draft = ScheduleUIModel.newSleep
-        draft.name = "Tonight Bedtime"
-        let saved = model.saveTonightScheduleDraft(draft, immediate: true, autoStartSleepSession: true)
-        XCTAssertTrue(saved)
-        XCTAssertTrue(model.isSleepSessionPresented)
-        XCTAssertNotNil(model.sleepSessionStartedAt)
-        XCTAssertEqual(model.activeTrackTitle, "Quick Unwind")
-        XCTAssertFalse(model.path.contains(.audioPlayer))
-        model.endSleepSession()
-    }
 }

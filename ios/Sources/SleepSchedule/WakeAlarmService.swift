@@ -511,9 +511,16 @@ private final class WakeAlarmServiceGate {
             textColor: .white,
             systemImageName: "stop.fill"
         )
+        let snoozeButton = AlarmButton(
+            text: "Snooze",
+            textColor: .white,
+            systemImageName: "moon.zzz.fill"
+        )
         let alert = AlarmPresentation.Alert(
             title: plan.role == .finalWake ? "Wake up" : "Gentle wake-up",
-            stopButton: stopButton
+            stopButton: stopButton,
+            secondaryButton: snoozeButton,
+            secondaryButtonBehavior: .countdown
         )
         let attributes = AlarmAttributes<WakeAlarmMetadata>(
             presentation: AlarmPresentation(alert: alert),
