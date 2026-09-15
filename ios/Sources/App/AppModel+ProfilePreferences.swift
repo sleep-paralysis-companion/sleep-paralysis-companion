@@ -151,6 +151,10 @@ extension AppModel {
     }
 
     func completeMorningCheckIn() {
+        alarmSnoozeTask?.cancel()
+        alarmSnoozeTask = nil
+        snoozeFireDate = nil
+        cancelPendingSnoozeBackupNotification()
         isMorningCheckInPresented = false
         selectedTab = .home
         path = []

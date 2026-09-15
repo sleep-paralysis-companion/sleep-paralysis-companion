@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import SwiftUI
 import UIKit
+import UserNotifications
 
 // AppModel is the single observable integration boundary for the active app shell.
 // swiftlint:disable file_length
@@ -47,6 +48,7 @@ final class AppModel {
     var isAlarmRinging: Bool = false
     private(set) var ringingAlarmSchedule: ScheduleUIModel?
     @ObservationIgnored var alarmSnoozeTask: Task<Void, Never>?
+    @ObservationIgnored var snoozeFireDate: Date?
     @ObservationIgnored var foregroundAlarmMonitorTask: Task<Void, Never>?
     @ObservationIgnored var firedAlarmMinuteKeys: Set<String> = []
     @ObservationIgnored private var tonightScheduleSaveTask: Task<Void, Never>?
@@ -308,6 +310,7 @@ final class AppModel {
     deinit {
         foregroundAlarmMonitorTask?.cancel()
         alarmSnoozeTask?.cancel()
+        cancelPendingSnoozeBackupNotification()
     }
 
     func activate(restoredState: String = "") {
@@ -1033,7 +1036,28 @@ final class AppModel {
         if phase == .active {
             startForegroundAlarmMonitoring()
             checkForegroundAlarmTriggers()
+            cancelPendingSnoozeBackupNotification()
+            if let fireDate = snoozeFireDate {
+                if Date() >= fireDate {
+                    alarmSnoozeTask?.cancel()
+                    alarmSnoozeTask = nil
+                    snoozeFireDate = nil
+                    triggerAlarmRinging(schedule: ringingAlarmSchedule, isSnooze: true)
+                } else if alarmSnoozeTask == nil || alarmSnoozeTask?.isCancelled == true {
+                    let remaining = fireDate.timeIntervalSinceNow
+                    alarmSnoozeTask = Task { @MainActor [weak self] in
+                        try? await Task.sleep(for: .seconds(remaining))
+                        guard !Task.isCancelled, let self else { return }
+                        self.snoozeFireDate = nil
+                        self.cancelPendingSnoozeBackupNotification()
+                        self.triggerAlarmRinging(schedule: self.ringingAlarmSchedule, isSnooze: true)
+                    }
+                }
+            }
         } else if phase == .background {
+            if snoozeFireDate != nil {
+                scheduleSnoozeBackupNotification()
+            }
             if sleepSessionStartedAt == nil {
                 stopForegroundAlarmMonitoring()
             }
@@ -1729,17 +1753,55 @@ final class AppModel {
             ?? SystemAudioAssets.bundledURL(for: SystemAudioAssets.defaultAlarmFileName)
     }
 
+    nonisolated static let snoozeBackupNotificationIdentifier = "sleepcompanion.alarm.snooze.backup"
+
+    func scheduleSnoozeBackupNotification() {
+        guard let fireDate = snoozeFireDate else { return }
+        let remainingSeconds = fireDate.timeIntervalSinceNow
+        guard remainingSeconds > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = ringingAlarmSchedule?.name.isEmpty == false
+            ? (ringingAlarmSchedule?.name ?? "Wake up")
+            : "Wake up"
+        content.body = "Your snooze alarm is ringing."
+        let soundName = UNNotificationSoundName(rawValue: SystemAudioAssets.defaultNotificationFileName)
+        content.sound = UNNotificationSound(named: soundName)
+
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: max(1, remainingSeconds),
+            repeats: false
+        )
+        let request = UNNotificationRequest(
+            identifier: Self.snoozeBackupNotificationIdentifier,
+            content: content,
+            trigger: trigger
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    nonisolated func cancelPendingSnoozeBackupNotification() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [Self.snoozeBackupNotificationIdentifier]
+        )
+    }
+
     func snoozeAlarm(minutes: Int? = nil) {
         audioController.stopPlayback()
         playbackState = .idle
         isAlarmRinging = false
         isMorningCheckInPresented = false
 
-        let duration = minutes ?? ringingAlarmSchedule?.snoozeMinutes ?? 9
+        let duration = minutes ?? ringingAlarmSchedule?.snoozeMinutes ?? 10
+        let fireDate = Date().addingTimeInterval(TimeInterval(duration * 60))
+        snoozeFireDate = fireDate
+
         alarmSnoozeTask?.cancel()
         alarmSnoozeTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(duration * 60))
             guard !Task.isCancelled, let self else { return }
+            self.snoozeFireDate = nil
+            self.cancelPendingSnoozeBackupNotification()
             self.triggerAlarmRinging(schedule: self.ringingAlarmSchedule, isSnooze: true)
         }
     }
@@ -1747,6 +1809,8 @@ final class AppModel {
     func stopAlarm() {
         alarmSnoozeTask?.cancel()
         alarmSnoozeTask = nil
+        snoozeFireDate = nil
+        cancelPendingSnoozeBackupNotification()
         audioController.stopPlayback()
         playbackState = .idle
         withAnimation(.easeInOut(duration: 0.35)) {

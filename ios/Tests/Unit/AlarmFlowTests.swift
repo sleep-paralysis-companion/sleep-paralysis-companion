@@ -638,4 +638,140 @@ final class AlarmFlowTests: XCTestCase {
         XCTAssertEqual(model.selectedTab, .home)
         XCTAssertTrue(model.path.isEmpty)
     }
+
+    @MainActor
+    func testDynamicMinutesSnoozeSetsTargetFireDate() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        let fifteenMinSchedule = ScheduleUIModel(
+            name: "Fifteen Min Snooze",
+            kind: .wakeOnly,
+            bedtimeHour: 0,
+            bedtimeMinute: 0,
+            wakeHour: 8,
+            wakeMinute: 0,
+            repeatWeekdaysMask: 0,
+            bedtimeReminderLeadMinutes: nil,
+            preWakeReminderLeadMinutes: nil,
+            wakeAudio: .bundled(id: SystemAudioAssets.defaultAlarmAssetID, title: "Gentle rise"),
+            isEnabled: true,
+            snoozeMinutes: 15
+        )
+
+        model.triggerAlarmRinging(schedule: fifteenMinSchedule)
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.snoozeAlarm()
+        XCTAssertFalse(model.isAlarmRinging)
+        guard let fireDate15 = model.snoozeFireDate else {
+            XCTFail("Expected snoozeFireDate to be set")
+            return
+        }
+        let diff15 = fireDate15.timeIntervalSinceNow
+        XCTAssertGreaterThan(diff15, 14 * 60)
+        XCTAssertLessThanOrEqual(diff15, 15 * 60 + 2)
+        XCTAssertNotNil(model.alarmSnoozeTask)
+
+        model.triggerAlarmRinging(schedule: fifteenMinSchedule)
+        model.snoozeAlarm(minutes: 5)
+        XCTAssertFalse(model.isAlarmRinging)
+        guard let fireDate5 = model.snoozeFireDate else {
+            XCTFail("Expected snoozeFireDate to be set")
+            return
+        }
+        let diff5 = fireDate5.timeIntervalSinceNow
+        XCTAssertGreaterThan(diff5, 4 * 60)
+        XCTAssertLessThanOrEqual(diff5, 5 * 60 + 2)
+
+        model.stopAlarm()
+    }
+
+    @MainActor
+    func testStopAlarmCancelsSnoozeDateAndBackup() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.snoozeAlarm()
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertNotNil(model.snoozeFireDate)
+        XCTAssertNotNil(model.alarmSnoozeTask)
+
+        model.stopAlarm()
+        XCTAssertNil(model.snoozeFireDate)
+        XCTAssertNil(model.alarmSnoozeTask)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+    }
+
+    @MainActor
+    func testActiveCatchUpOnExpiredSnoozeFireDate() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.snoozeAlarm(minutes: 5)
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertNotNil(model.snoozeFireDate)
+
+        // Simulate time advancing past snoozeFireDate
+        model.snoozeFireDate = Date().addingTimeInterval(-10)
+
+        // Transition scene to .active
+        model.handleScenePhase(.active)
+
+        // Snooze alarm must re-trigger immediately upon foregrounding
+        XCTAssertTrue(
+            model.isAlarmRinging,
+            "Snooze alarm must trigger immediately upon foregrounding after snoozeFireDate passed"
+        )
+        XCTAssertNil(model.snoozeFireDate, "snoozeFireDate should be cleared once triggered")
+
+        model.stopAlarm()
+    }
+
+    @MainActor
+    func testCompleteMorningCheckInClearsSnoozeState() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        model.snoozeAlarm()
+        XCTAssertNotNil(model.snoozeFireDate)
+        XCTAssertNotNil(model.alarmSnoozeTask)
+
+        model.completeMorningCheckIn()
+        XCTAssertNil(model.snoozeFireDate)
+        XCTAssertNil(model.alarmSnoozeTask)
+        XCTAssertFalse(model.isMorningCheckInPresented)
+        XCTAssertEqual(model.selectedTab, .home)
+    }
+
+    @MainActor
+    func testBackgroundTransitionWithActiveSnoozeSchedulesBackupNotification() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        model.snoozeAlarm(minutes: 10)
+        XCTAssertNotNil(model.snoozeFireDate)
+
+        // Transition to background
+        model.handleScenePhase(.background)
+        XCTAssertNotNil(model.snoozeFireDate)
+
+        // Transition back to active before fire date
+        model.handleScenePhase(.active)
+        XCTAssertFalse(
+            model.isAlarmRinging,
+            "Should still be snoozing since fire date is in future"
+        )
+        XCTAssertNotNil(model.snoozeFireDate)
+
+        model.stopAlarm()
+    }
 }

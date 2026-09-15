@@ -28,7 +28,7 @@ struct AppRootView: View {
                 set: { presented in
                     if !presented {
                         if model.isAlarmRinging {
-                            model.snoozeAlarm(minutes: 9)
+                            model.snoozeAlarm()
                         } else if model.isMorningCheckInPresented {
                             model.completeMorningCheckIn()
                         }
