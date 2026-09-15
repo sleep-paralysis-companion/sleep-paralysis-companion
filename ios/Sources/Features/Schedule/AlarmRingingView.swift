@@ -64,12 +64,12 @@ struct AlarmRingingView: View {
         VStack(spacing: 16) {
             Button {
                 AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
-                model.snoozeAlarm(minutes: 9)
+                model.snoozeAlarm(minutes: effectiveSnoozeMinutes)
             } label: {
                 VStack(spacing: 4) {
-                    Text("Snooze (9 min)")
+                    Text("Snooze (\(effectiveSnoozeMinutes) min)")
                         .font(AppFont.inter(size: 20, relativeTo: .headline, weight: .semibold))
-                    Text("Ring again in 9 minutes")
+                    Text("Ring again in \(effectiveSnoozeMinutes) minutes")
                         .font(AppFont.inter(size: 14, relativeTo: .footnote))
                         .foregroundStyle(Color.white.opacity(0.65))
                 }
@@ -82,8 +82,8 @@ struct AlarmRingingView: View {
                 }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Snooze (9 min)")
-            .accessibilityHint("Pauses the alarm and rings again in 9 minutes.")
+            .accessibilityLabel("Snooze (\(effectiveSnoozeMinutes) min)")
+            .accessibilityHint("Pauses the alarm and rings again in \(effectiveSnoozeMinutes) minutes.")
             .accessibilityIdentifier("alarm.snooze")
 
             Button {
@@ -131,5 +131,9 @@ struct AlarmRingingView: View {
             return schedule.name
         }
         return "Wake up"
+    }
+
+    private var effectiveSnoozeMinutes: Int {
+        model.ringingAlarmSchedule?.snoozeMinutes ?? 10
     }
 }
