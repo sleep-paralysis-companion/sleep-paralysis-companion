@@ -54,7 +54,7 @@ struct MeProfileView: View {
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Label("Free plan", systemImage: "circle.fill").foregroundStyle(.white); Spacer(); Text("No renewal")
+                Label("$0", systemImage: "circle.fill").foregroundStyle(.white); Spacer(); Text("No renewal")
                     .foregroundStyle(.white.opacity(0.58))
             }
             Text("Upgrade availability will appear here when subscriptions are configured.")
