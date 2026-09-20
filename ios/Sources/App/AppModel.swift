@@ -374,12 +374,14 @@ final class AppModel {
             path = []
 
             switch requestedRoute {
-            case "sleep", "home":
+            case "sleep":
                 selectedTab = .sleep
+            case "home":
+                selectedTab = .home
             case "journal":
-                selectedTab = .journal
+                selectedTab = .sleep
             case "activity":
-                selectedTab = .activity
+                selectedTab = .home
             case "me":
                 selectedTab = .me
             case "grounding":
@@ -401,7 +403,7 @@ final class AppModel {
                 selectedTab = .sleep
                 isMorningCheckInPresented = true
             case "check-in-detail":
-                selectedTab = .journal
+                selectedTab = .sleep
                 selectedCheckInID = checkIns.first?.id
                 path = [.checkInDetail]
             case "edit-questionnaire":

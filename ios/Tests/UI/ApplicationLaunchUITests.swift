@@ -306,28 +306,9 @@ final class ApplicationLaunchUITests: XCTestCase {
         app.buttons["sleepSession.end"].tap()
         XCTAssertTrue(app.buttons["sleepSession.start"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["home.manualEpisode"].exists)
-
-        let activityTab = app.buttons["Activity"]
-        XCTAssertTrue(activityTab.waitForExistence(timeout: 8))
-        makeHittable(activityTab, in: app)
-        activityTab.tap()
-        XCTAssertTrue(app.staticTexts["Activity is coming soon"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["Activity tracking is coming soon."].exists)
-        capture("16-activity-tab", app: app)
-
-        let homeTab = app.buttons["Home"]
-        XCTAssertTrue(homeTab.waitForExistence(timeout: 8))
-        makeHittable(homeTab, in: app)
-        homeTab.tap()
-        XCTAssertTrue(app.buttons["home.manualEpisode"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["Activity"].exists)
+        XCTAssertFalse(app.buttons["Journal"].exists)
         capture("17-home-tab", app: app)
-
-        let journalTab = app.buttons["Journal"]
-        XCTAssertTrue(journalTab.waitForExistence(timeout: 8))
-        makeHittable(journalTab, in: app)
-        journalTab.tap()
-        XCTAssertTrue(app.staticTexts["Journal is coming soon"].waitForExistence(timeout: 8))
-        capture("18-journal-coming-soon", app: app)
 
         let meTab = app.buttons["Me"]
         XCTAssertTrue(meTab.waitForExistence(timeout: 8))

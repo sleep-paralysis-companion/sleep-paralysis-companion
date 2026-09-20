@@ -7,13 +7,16 @@ nonisolated enum AppTab: String, CaseIterable, Codable, Hashable, Sendable {
     case activity
     case me
 
+    static let allCases: [AppTab] = [.sleep, .home, .me]
+    static let activeCases: [AppTab] = [.sleep, .home, .me]
+
     init(from decoder: any Decoder) throws {
         let rawValue = try decoder.singleValueContainer().decode(String.self)
         switch rawValue {
-        case "history":
-            self = .journal
-        case "report":
-            self = .activity
+        case "history", "journal":
+            self = .sleep
+        case "report", "activity":
+            self = .home
         case "settings":
             self = .me
         default:

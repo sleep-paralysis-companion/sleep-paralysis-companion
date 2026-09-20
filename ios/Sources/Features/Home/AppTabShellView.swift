@@ -8,20 +8,8 @@ struct AppTabShellView: View {
             switch model.selectedTab {
             case .sleep:
                 SleepTabView(model: model)
-            case .journal:
-                ComingSoonView(
-                    title: "Journal",
-                    message: "Your private journal is coming soon.",
-                    systemImage: "book.closed"
-                )
-            case .home:
+            case .home, .journal, .activity:
                 HomeView(model: model, showsSleepSessionAction: true)
-            case .activity:
-                ComingSoonView(
-                    title: "Activity",
-                    message: "Activity tracking is coming soon.",
-                    systemImage: "chart.line.uptrend.xyaxis"
-                )
             case .me:
                 SettingsView(model: model)
             }
@@ -57,7 +45,7 @@ private struct AppTabBar: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(AppTab.allCases, id: \.self) { tab in
+            ForEach(AppTab.activeCases, id: \.self) { tab in
                 Button {
                     selection = tab
                 } label: {
@@ -90,7 +78,7 @@ private struct AppTabBar: View {
             }
         }
         .padding(5)
-        .frame(maxWidth: 380, minHeight: 72)
+        .frame(maxWidth: 320, minHeight: 72)
         .background(HomeScreenPalette.cardSecondary)
         .clipShape(Capsule())
         .overlay {
