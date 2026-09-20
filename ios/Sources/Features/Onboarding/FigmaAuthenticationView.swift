@@ -292,15 +292,18 @@ private struct AuthenticationProviderButton: View {
                 Text(provider == .google ? "Google" : "Apple")
                     .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
             }
-            .foregroundStyle(AuthenticationPalette.secondaryText)
+            .foregroundStyle(provider == .apple ? Color.white : AuthenticationPalette.secondaryText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
-        .background(AuthenticationPalette.controlFill)
+        .background(provider == .apple ? Color.black : AuthenticationPalette.controlFill)
         .clipShape(RoundedRectangle(cornerRadius: expanded ? 27 : 21))
         .overlay {
             RoundedRectangle(cornerRadius: expanded ? 27 : 21)
-                .stroke(AuthenticationPalette.controlStroke, lineWidth: 1)
+                .stroke(
+                    provider == .apple ? Color.white.opacity(0.18) : AuthenticationPalette.controlStroke,
+                    lineWidth: 1
+                )
         }
         .frame(width: expanded ? 338 : 159, height: expanded ? 56 : 50)
         .opacity(isProcessing ? 0.72 : 1)
@@ -323,8 +326,8 @@ private struct AuthenticationProviderButton: View {
                 .frame(width: 18, height: 18)
         case .apple:
             Image(systemName: "apple.logo")
-                .font(.system(size: 25, weight: .medium))
-                .foregroundStyle(AuthenticationPalette.appleMark)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(.white)
         }
     }
 }

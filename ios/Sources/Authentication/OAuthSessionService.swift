@@ -135,17 +135,29 @@ nonisolated protocol SupabaseOAuthAuthenticating: Sendable {
 
 nonisolated struct DefaultSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticating {
     private let client: SupabaseClient
+    private let appleSignInHandler: any NativeAppleSignInHandling
 
-    init(client: SupabaseClient) {
+    init(
+        client: SupabaseClient,
+        appleSignInHandler: (any NativeAppleSignInHandling)? = nil
+    ) {
         self.client = client
+        self.appleSignInHandler = appleSignInHandler ?? NativeAppleSignInHandler()
     }
 
     func signInWithOAuth(provider: AuthenticationProvider) async throws -> Session {
         switch provider {
         case .apple:
-            try await client.auth.signInWithOAuth(provider: .apple)
+            let appleResult = try await appleSignInHandler.signIn()
+            return try await client.auth.signInWithIdToken(
+                credentials: OpenIDConnectCredentials(
+                    provider: .apple,
+                    idToken: appleResult.idToken,
+                    nonce: appleResult.rawNonce
+                )
+            )
         case .google:
-            try await client.auth.signInWithOAuth(provider: .google)
+            return try await client.auth.signInWithOAuth(provider: .google)
         }
     }
 }
@@ -171,13 +183,17 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         sessionStore: any SessionSecretStore,
         authRefresher: (any SupabaseAuthRefreshing)? = nil,
         oauthAuthenticator: (any SupabaseOAuthAuthenticating)? = nil,
+        appleSignInHandler: (any NativeAppleSignInHandling)? = nil,
         logger: (any PrivacySafeLogging)? = nil,
         clock: (any Phase1BClock)? = nil
     ) {
         self.client = client
         self.sessionStore = sessionStore
         self.authRefresher = authRefresher ?? DefaultSupabaseAuthRefresher(client: client)
-        self.oauthAuthenticator = oauthAuthenticator ?? DefaultSupabaseOAuthAuthenticator(client: client)
+        self.oauthAuthenticator = oauthAuthenticator ?? DefaultSupabaseOAuthAuthenticator(
+            client: client,
+            appleSignInHandler: appleSignInHandler
+        )
         self.logger = logger ?? NoOpPrivacySafeLogger()
         self.clock = clock ?? SystemPhase1BClock()
     }
@@ -408,6 +424,15 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             case .presentationContextNotProvided, .presentationContextInvalid:
                 return .externalProviderUnavailable
             @unknown default:
+                return .externalProviderUnavailable
+            }
+        }
+
+        if let asAuthError = error as? ASAuthorizationError {
+            switch asAuthError.code {
+            case .canceled:
+                return .cancelled
+            default:
                 return .externalProviderUnavailable
             }
         }
