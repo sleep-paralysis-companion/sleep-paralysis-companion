@@ -287,7 +287,7 @@ struct AlarmHistoryView: View {
         let today = Calendar.current.startOfDay(for: .now)
         let weekday = Calendar.current.component(.weekday, from: .now)
 
-        return localSchedules.first { schedule in
+        let matchingEnabled = localSchedules.filter { schedule in
             guard schedule.isEnabled else { return false }
             if schedule.isWakeOnly {
                 if let date = schedule.oneTimeDate {
@@ -297,6 +297,11 @@ struct AlarmHistoryView: View {
             }
             return schedule.includes(weekday: weekday)
         }
+
+        if let sleepSchedule = matchingEnabled.first(where: { !$0.isWakeOnly }) {
+            return sleepSchedule
+        }
+        return matchingEnabled.first
     }
 
     private func selectTonight(_ schedule: ScheduleUIModel) {
@@ -529,6 +534,18 @@ private struct ScheduleCompactCard: View {
                                 .font(AppFont.inter(size: 14, relativeTo: .footnote))
                                 .foregroundStyle(Color.white.opacity(0.48))
                                 .lineLimit(1)
+
+                            HStack(spacing: 5) {
+                                Image(systemName: "bell.fill")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(Color.white.opacity(0.44))
+                                    .accessibilityHidden(true)
+                                Text(reminderSummary(schedule))
+                                    .font(AppFont.inter(size: 13, relativeTo: .footnote))
+                                    .foregroundStyle(Color.white.opacity(0.48))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
                         }
 
                         Spacer(minLength: 4)
@@ -713,10 +730,16 @@ func weekdaySummary(_ mask: Int) -> String {
 }
 
 private func reminderSummary(_ schedule: ScheduleUIModel) -> String {
-    if let bedtime = schedule.bedtimeReminderLeadMinutes {
+    let bedtime = schedule.bedtimeReminderLeadMinutes
+    let preWake = schedule.preWakeReminderLeadMinutes
+
+    if let bedtime, let preWake {
+        return "\(bedtime) min before bedtime · \(preWake) min before wake"
+    }
+    if let bedtime {
         return "\(bedtime) min before bedtime"
     }
-    if let preWake = schedule.preWakeReminderLeadMinutes {
+    if let preWake {
         return "\(preWake) min before wake"
     }
     return "No reminder"
