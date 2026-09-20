@@ -407,16 +407,7 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         return .unclassified
     }
 
-    /// Sign-in failure classification (S2 contract):
-    /// - CancellationError / ASWebAuthenticationSessionError.canceledLogin → .cancelled.
-    /// - URLError / NSURLErrorDomain / CFNetwork / POSIX → .networkUnavailable.
-    /// - HTTP 400..499, AuthError keywords ("access_denied", "invalid_grant", …) → .serverRejected.
-    /// - Presentation context failures / 5xx / remaining network-less → .externalProviderUnavailable.
-    nonisolated static func classifySignInError(_ error: any Error) -> AuthenticationError {
-        if error is CancellationError {
-            return .cancelled
-        }
-
+    private nonisolated static func classifyInteractiveSessionError(_ error: any Error) -> AuthenticationError? {
         if let asError = error as? ASWebAuthenticationSessionError {
             switch asError.code {
             case .canceledLogin:
@@ -437,14 +428,10 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
             }
         }
 
-        if let authError = error as? AuthenticationError {
-            return authError
-        }
+        return nil
+    }
 
-        if isNetworkError(error) {
-            return .networkUnavailable
-        }
-
+    private nonisolated static func isServerRejection(_ error: any Error) -> Bool {
         let nsError = error as NSError
         let isHTTPCode = nsError.code >= 400 && nsError.code < 600 &&
             nsError.domain != NSPOSIXErrorDomain &&
@@ -477,10 +464,39 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         ]
 
         for keyword in rejectionKeywords where description.contains(keyword) {
-            return .serverRejected
+            return true
         }
 
         if let statusCode, statusCode >= 400, statusCode < 500 {
+            return true
+        }
+
+        return false
+    }
+
+    /// Sign-in failure classification (S2 contract):
+    /// - CancellationError / ASWebAuthenticationSessionError.canceledLogin → .cancelled.
+    /// - URLError / NSURLErrorDomain / CFNetwork / POSIX → .networkUnavailable.
+    /// - HTTP 400..499, AuthError keywords ("access_denied", "invalid_grant", …) → .serverRejected.
+    /// - Presentation context failures / 5xx / remaining network-less → .externalProviderUnavailable.
+    nonisolated static func classifySignInError(_ error: any Error) -> AuthenticationError {
+        if error is CancellationError {
+            return .cancelled
+        }
+
+        if let interactiveError = classifyInteractiveSessionError(error) {
+            return interactiveError
+        }
+
+        if let authError = error as? AuthenticationError {
+            return authError
+        }
+
+        if isNetworkError(error) {
+            return .networkUnavailable
+        }
+
+        if isServerRejection(error) {
             return .serverRejected
         }
 
