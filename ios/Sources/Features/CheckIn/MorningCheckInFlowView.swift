@@ -277,6 +277,12 @@ struct MorningCheckInFlowView: View {
                 withAnimation(.easeInOut(duration: 0.24)) {
                     step = .affirmation(occurrence)
                 }
+            } else {
+                // Even if remote sync had issues, if local persistence succeeded, advance
+                AppHaptics.success(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                withAnimation(.easeInOut(duration: 0.24)) {
+                    step = .affirmation(occurrence)
+                }
             }
         }
     }

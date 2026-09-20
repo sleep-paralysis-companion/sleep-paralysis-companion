@@ -249,7 +249,9 @@ actor IntegratedPhase1Store {
             entityID: value.id,
             revision: value.revision
         )
-        await synchronizePending(profileID: value.profileID, userID: userID)
+        Task { [weak self] in
+            await self?.synchronizePending(profileID: value.profileID, userID: userID)
+        }
     }
 
     func saveProfile(_ profile: LocalProfile, userID: UUID) async throws {
