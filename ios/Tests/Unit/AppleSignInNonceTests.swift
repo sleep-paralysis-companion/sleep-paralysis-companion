@@ -35,7 +35,7 @@ final class AppleSignInNonceTests: XCTestCase {
         let canceledError = NSError(
             domain: ASAuthorizationErrorDomain,
             code: ASAuthorizationError.canceled.rawValue,
-            userInfo: nil
+            userInfo: nil,
         )
         let mapped = NativeAppleSignInHandler.mapError(canceledError)
         XCTAssertEqual(mapped, .cancelled)
@@ -45,7 +45,7 @@ final class AppleSignInNonceTests: XCTestCase {
         let failedError = NSError(
             domain: ASAuthorizationErrorDomain,
             code: ASAuthorizationError.failed.rawValue,
-            userInfo: nil
+            userInfo: nil,
         )
         let mapped = NativeAppleSignInHandler.mapError(failedError)
         XCTAssertEqual(mapped, .externalProviderUnavailable)
@@ -53,7 +53,7 @@ final class AppleSignInNonceTests: XCTestCase {
         let invalidResponse = NSError(
             domain: ASAuthorizationErrorDomain,
             code: ASAuthorizationError.invalidResponse.rawValue,
-            userInfo: nil
+            userInfo: nil,
         )
         let mappedInvalid = NativeAppleSignInHandler.mapError(invalidResponse)
         XCTAssertEqual(mappedInvalid, .externalProviderUnavailable)
@@ -73,7 +73,7 @@ final class AppleSignInNonceTests: XCTestCase {
         let canceledError = NSError(
             domain: ASAuthorizationErrorDomain,
             code: ASAuthorizationError.canceled.rawValue,
-            userInfo: nil
+            userInfo: nil,
         )
         let classified = SupabaseOAuthSessionService.classifySignInError(canceledError)
         XCTAssertEqual(classified, .cancelled)
@@ -83,7 +83,7 @@ final class AppleSignInNonceTests: XCTestCase {
         let failedError = NSError(
             domain: ASAuthorizationErrorDomain,
             code: ASAuthorizationError.notHandled.rawValue,
-            userInfo: nil
+            userInfo: nil,
         )
         let classified = SupabaseOAuthSessionService.classifySignInError(failedError)
         XCTAssertEqual(classified, .externalProviderUnavailable)
@@ -99,19 +99,20 @@ final class AppleSignInNonceTests: XCTestCase {
                 }
                 return NativeAppleSignInResult(
                     idToken: "mock-id-token",
-                    rawNonce: "mock-raw-nonce"
+                    rawNonce: "mock-raw-nonce",
                 )
             }
         }
 
+        let baseURL = try XCTUnwrap(URL(string: "https://example.supabase.co"))
         let client = SupabaseClient(
-            supabaseURL: URL(string: "https://example.supabase.co")!,
-            supabaseKey: "test-anon-key"
+            supabaseURL: baseURL,
+            supabaseKey: "test-anon-key",
         )
         let mockHandler = MockAppleHandler(errorToThrow: AuthenticationError.cancelled)
         let authenticator = DefaultSupabaseOAuthAuthenticator(
             client: client,
-            appleSignInHandler: mockHandler
+            appleSignInHandler: mockHandler,
         )
 
         do {

@@ -17,7 +17,7 @@ struct NativeAppleSignInResult: Sendable, Equatable {
         idToken: String,
         rawNonce: String,
         fullName: PersonNameComponents? = nil,
-        email: String? = nil
+        email: String? = nil,
     ) {
         self.idToken = idToken
         self.rawNonce = rawNonce
@@ -141,7 +141,7 @@ private final class AppleSignInPresentationCoordinator: NSObject,
         }
     }
 
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+    func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
         for scene in UIApplication.shared.connectedScenes {
             guard let windowScene = scene as? UIWindowScene else { continue }
             if let window = windowScene.windows.first(where: \.isKeyWindow) {
@@ -155,7 +155,7 @@ private final class AppleSignInPresentationCoordinator: NSObject,
     }
 
     func authorizationController(
-        controller: ASAuthorizationController,
+        controller _: ASAuthorizationController,
         didCompleteWithAuthorization authorization: ASAuthorization
     ) {
         defer {
@@ -179,14 +179,14 @@ private final class AppleSignInPresentationCoordinator: NSObject,
             idToken: idToken,
             rawNonce: rawNonce,
             fullName: credential.fullName,
-            email: credential.email
+            email: credential.email,
         )
         continuation?.resume(returning: result)
         continuation = nil
     }
 
     func authorizationController(
-        controller: ASAuthorizationController,
+        controller _: ASAuthorizationController,
         didCompleteWithError error: any Error
     ) {
         defer {
