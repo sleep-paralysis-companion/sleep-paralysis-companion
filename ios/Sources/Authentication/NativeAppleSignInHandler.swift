@@ -7,7 +7,7 @@ import UIKit
 ///
 /// Encapsulates the verified Apple ID token, the raw nonce used during the cryptographic
 /// challenge, and any profile metadata returned on first authorization.
-struct NativeAppleSignInResult: Sendable, Equatable {
+nonisolated struct NativeAppleSignInResult: Sendable, Equatable {
     let idToken: String
     let rawNonce: String
     let fullName: PersonNameComponents?
@@ -27,7 +27,7 @@ struct NativeAppleSignInResult: Sendable, Equatable {
 }
 
 /// # Native Apple Sign In Handling Protocol
-protocol NativeAppleSignInHandling: Sendable {
+nonisolated protocol NativeAppleSignInHandling: Sendable {
     func signIn() async throws -> NativeAppleSignInResult
 }
 
@@ -36,7 +36,7 @@ protocol NativeAppleSignInHandling: Sendable {
 /// Coordinates native iOS Sign in with Apple using `AuthenticationServices` (`ASAuthorizationAppleIDProvider`).
 /// Generates a cryptographically secure 32-character raw nonce, passes its SHA-256 digest to Apple,
 /// presents the system authorization sheet, and returns the resulting identity token and raw nonce.
-struct NativeAppleSignInHandler: NativeAppleSignInHandling, Sendable {
+nonisolated struct NativeAppleSignInHandler: NativeAppleSignInHandling, Sendable {
     private let rawNonceGenerator: @Sendable () throws -> String
 
     init(rawNonceGenerator: (@Sendable () throws -> String)? = nil) {
@@ -142,8 +142,8 @@ private final class AppleSignInPresentationCoordinator: NSObject,
     }
 
     func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
-        for scene in UIApplication.shared.connectedScenes {
-            guard let windowScene = scene as? UIWindowScene else { continue }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        for windowScene in scenes {
             if let window = windowScene.windows.first(where: \.isKeyWindow) {
                 return window
             }
@@ -151,7 +151,10 @@ private final class AppleSignInPresentationCoordinator: NSObject,
                 return window
             }
         }
-        return UIWindow()
+        if let scene = scenes.first {
+            return UIWindow(windowScene: scene)
+        }
+        fatalError("No active UIWindowScene found for ASAuthorizationController presentation anchor")
     }
 
     func authorizationController(
