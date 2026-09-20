@@ -82,7 +82,8 @@ struct MeProfileView: View {
                     ))
             }
             Text(
-                "Building this for you, because I've been there too. I would like to hear about your experience and feedback directly"
+                "Building this for you, because I've been there too. " +
+                    "I would like to hear about your experience and feedback directly"
             )
             .font(AppFont.inter(size: 20, relativeTo: .title3)).foregroundStyle(.white.opacity(0.68))
             Button { openURL(LegalSupport.supportEmailURL) } label: {

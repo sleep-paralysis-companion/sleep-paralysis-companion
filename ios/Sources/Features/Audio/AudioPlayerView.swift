@@ -687,7 +687,9 @@ struct AudioPlayerView: View {
             if let asset = model.selectedCatalogAsset, asset.id == "quick-unwind" || asset.id == "slow-unwind" {
                 model.playCatalogAsset(asset)
             } else {
-                let preferredTrackID = model.settings?.defaultSleepSupport == .longSleepAid ? "slow-unwind" : "quick-unwind"
+                let preferredTrackID = model.settings?.defaultSleepSupport == .longSleepAid
+                    ? "slow-unwind"
+                    : "quick-unwind"
                 if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == preferredTrackID }) {
                     model.playCatalogAsset(asset)
                 }
