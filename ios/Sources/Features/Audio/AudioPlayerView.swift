@@ -56,6 +56,9 @@ struct AudioPlayerView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
+        .onAppear {
+            ensureUnwindTrackSelected()
+        }
     }
 
     // MARK: - Background
@@ -357,7 +360,7 @@ struct AudioPlayerView: View {
 
             Button {
                 AppHaptics.playbackToggle(hapticsEnabled: model.settings?.hapticsEnabled != false)
-                model.togglePlayback()
+                handleMainPlaybackToggle()
             } label: {
                 ZStack {
                     Circle()
@@ -634,10 +637,64 @@ struct AudioPlayerView: View {
     // MARK: - Helpers
 
     private var isPlaying: Bool {
-        if case .playing = model.playbackState {
+        switch model.playbackState {
+        case .playing("quick-unwind"), .playing("slow-unwind"):
             return true
+        default:
+            return false
         }
-        return false
+    }
+
+    // MARK: - Wind-Down Guard & Playback Safety
+
+    func ensureUnwindTrackSelected() {
+        let currentID = model.selectedCatalogAsset?.id
+        if currentID != "quick-unwind" && currentID != "slow-unwind" {
+            let isSecondSleepActive: Bool
+            switch model.playbackState {
+            case let .playing(id), let .paused(id):
+                isSecondSleepActive = (id == "second-sleep")
+            default:
+                isSecondSleepActive = (currentID == "second-sleep")
+            }
+
+            if isSecondSleepActive {
+                model.stopPlayback()
+            }
+
+            let preferredTrackID: String
+            switch model.playbackState {
+            case .playing("slow-unwind"), .paused("slow-unwind"):
+                preferredTrackID = "slow-unwind"
+            case .playing("quick-unwind"), .paused("quick-unwind"):
+                preferredTrackID = "quick-unwind"
+            default:
+                preferredTrackID = model.settings?.defaultSleepSupport == .longSleepAid ? "slow-unwind" : "quick-unwind"
+            }
+
+            if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == preferredTrackID }) {
+                model.selectCatalogAsset(asset)
+            }
+        }
+    }
+
+    func handleMainPlaybackToggle() {
+        ensureUnwindTrackSelected()
+        switch model.playbackState {
+        case .playing("quick-unwind"), .playing("slow-unwind"):
+            model.togglePlayback()
+        case .paused("quick-unwind"), .paused("slow-unwind"):
+            model.togglePlayback()
+        default:
+            if let asset = model.selectedCatalogAsset, asset.id == "quick-unwind" || asset.id == "slow-unwind" {
+                model.playCatalogAsset(asset)
+            } else {
+                let preferredTrackID = model.settings?.defaultSleepSupport == .longSleepAid ? "slow-unwind" : "quick-unwind"
+                if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == preferredTrackID }) {
+                    model.playCatalogAsset(asset)
+                }
+            }
+        }
     }
 
     private func isCurrentTrack(id: String) -> Bool {
