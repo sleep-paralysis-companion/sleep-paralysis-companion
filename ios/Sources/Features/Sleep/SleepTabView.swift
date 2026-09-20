@@ -252,15 +252,8 @@ struct SleepTabView: View {
                         Spacer()
                         Menu {
                             ForEach([0, 5, 10, 15, 30, 60], id: \.self) { minutes in
-                                Button {
+                                Button(minutes == 0 ? "Off" : "\(minutes) min before") {
                                     draft.bedtimeReminderLeadMinutes = minutes == 0 ? nil : minutes
-                                } label: {
-                                    HStack {
-                                        Text(minutes == 0 ? "Off" : "\(minutes) min before")
-                                        if (draft.bedtimeReminderLeadMinutes ?? 0) == minutes {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
                                 }
                             }
                         } label: {
@@ -334,15 +327,8 @@ struct SleepTabView: View {
                         Spacer()
                         Menu {
                             ForEach(model.scheduleAudioOptions) { option in
-                                Button {
+                                Button(option.title) {
                                     draft.wakeAudio = option
-                                } label: {
-                                    HStack {
-                                        Text(option.title)
-                                        if option.id == draft.wakeAudio.id {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
                                 }
                             }
                         } label: {
@@ -440,15 +426,8 @@ struct SleepTabView: View {
                         Spacer()
                         Menu {
                             ForEach(model.scheduleAudioOptions) { option in
-                                Button {
+                                Button(option.title) {
                                     draft.wakeAudio = option
-                                } label: {
-                                    HStack {
-                                        Text(option.title)
-                                        if option.id == draft.wakeAudio.id {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
                                 }
                             }
                         } label: {
@@ -551,15 +530,8 @@ struct SleepTabView: View {
             Spacer()
             Menu {
                 ForEach([5, 10, 15, 30], id: \.self) { minutes in
-                    Button {
+                    Button("\(minutes) min") {
                         draft.gentleWakeLeadMinutes = minutes
-                    } label: {
-                        HStack {
-                            Text("\(minutes) min")
-                            if (draft.gentleWakeLeadMinutes ?? 15) == minutes {
-                                Image(systemName: "checkmark")
-                            }
-                        }
                     }
                 }
             } label: {
