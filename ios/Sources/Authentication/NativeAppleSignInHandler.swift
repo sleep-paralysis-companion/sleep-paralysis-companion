@@ -17,7 +17,7 @@ struct NativeAppleSignInResult: Sendable, Equatable {
         idToken: String,
         rawNonce: String,
         fullName: PersonNameComponents? = nil,
-        email: String? = nil,
+        email: String? = nil
     ) {
         self.idToken = idToken
         self.rawNonce = rawNonce
@@ -179,7 +179,7 @@ private final class AppleSignInPresentationCoordinator: NSObject,
             idToken: idToken,
             rawNonce: rawNonce,
             fullName: credential.fullName,
-            email: credential.email,
+            email: credential.email
         )
         continuation?.resume(returning: result)
         continuation = nil

@@ -139,7 +139,7 @@ nonisolated struct DefaultSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticatin
 
     init(
         client: SupabaseClient,
-        appleSignInHandler: (any NativeAppleSignInHandling)? = nil,
+        appleSignInHandler: (any NativeAppleSignInHandling)? = nil
     ) {
         self.client = client
         self.appleSignInHandler = appleSignInHandler ?? NativeAppleSignInHandler()
@@ -153,8 +153,8 @@ nonisolated struct DefaultSupabaseOAuthAuthenticator: SupabaseOAuthAuthenticatin
                 credentials: OpenIDConnectCredentials(
                     provider: .apple,
                     idToken: appleResult.idToken,
-                    nonce: appleResult.rawNonce,
-                ),
+                    nonce: appleResult.rawNonce
+                )
             )
         case .google:
             return try await client.auth.signInWithOAuth(provider: .google)
@@ -185,14 +185,14 @@ actor SupabaseOAuthSessionService: OAuthSessionServicing {
         oauthAuthenticator: (any SupabaseOAuthAuthenticating)? = nil,
         appleSignInHandler: (any NativeAppleSignInHandling)? = nil,
         logger: (any PrivacySafeLogging)? = nil,
-        clock: (any Phase1BClock)? = nil,
+        clock: (any Phase1BClock)? = nil
     ) {
         self.client = client
         self.sessionStore = sessionStore
         self.authRefresher = authRefresher ?? DefaultSupabaseAuthRefresher(client: client)
         self.oauthAuthenticator = oauthAuthenticator ?? DefaultSupabaseOAuthAuthenticator(
             client: client,
-            appleSignInHandler: appleSignInHandler,
+            appleSignInHandler: appleSignInHandler
         )
         self.logger = logger ?? NoOpPrivacySafeLogger()
         self.clock = clock ?? SystemPhase1BClock()
