@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated enum LegalSupport {
-    static let founderName = "Preshit Rakshe"
+    static let founderName = "Preshit"
     static let supportEmail = "founder@sleepparalysis.app"
 
     static let privacyURL = requiredURL("https://sleepparalysis.app/privacy")

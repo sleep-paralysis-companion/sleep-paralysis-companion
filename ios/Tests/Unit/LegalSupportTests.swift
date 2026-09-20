@@ -16,7 +16,7 @@ final class LegalSupportTests: XCTestCase {
     }
 
     func testFounderIdentityAndSafetyCopyRemainCanonical() {
-        XCTAssertEqual(LegalSupport.founderName, "Preshit Rakshe")
+        XCTAssertEqual(LegalSupport.founderName, "Preshit")
         XCTAssertTrue(HelpLegalCopy.productBoundary.contains("nonmedical wellness companion"))
         XCTAssertTrue(HelpLegalCopy.productBoundary.contains("not an emergency service"))
         XCTAssertTrue(HelpLegalCopy.manualEpisodeBoundary.contains("never automatically infers an episode"))
