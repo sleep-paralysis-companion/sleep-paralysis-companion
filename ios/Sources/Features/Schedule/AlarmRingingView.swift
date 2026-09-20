@@ -180,7 +180,7 @@ struct SlideToStopControl: View {
                         DragGesture()
                             .onChanged { value in
                                 guard !isCompleted else { return }
-                                if !hasTriggeredInitialHaptic && value.translation.width > 4 {
+                                if !hasTriggeredInitialHaptic, value.translation.width > 4 {
                                     hasTriggeredInitialHaptic = true
                                     AppHaptics.selectionChanged(hapticsEnabled: hapticsEnabled)
                                 }
@@ -219,4 +219,3 @@ struct SlideToStopControl: View {
         .accessibilityIdentifier("alarm.stop")
     }
 }
-

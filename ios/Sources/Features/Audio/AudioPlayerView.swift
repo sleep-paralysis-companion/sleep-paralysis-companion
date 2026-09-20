@@ -639,9 +639,9 @@ struct AudioPlayerView: View {
     private var isPlaying: Bool {
         switch model.playbackState {
         case .playing("quick-unwind"), .playing("slow-unwind"):
-            return true
+            true
         default:
-            return false
+            false
         }
     }
 
@@ -649,27 +649,25 @@ struct AudioPlayerView: View {
 
     func ensureUnwindTrackSelected() {
         let currentID = model.selectedCatalogAsset?.id
-        if currentID != "quick-unwind" && currentID != "slow-unwind" {
-            let isSecondSleepActive: Bool
-            switch model.playbackState {
+        if currentID != "quick-unwind", currentID != "slow-unwind" {
+            let isSecondSleepActive = switch model.playbackState {
             case let .playing(id), let .paused(id):
-                isSecondSleepActive = (id == "second-sleep")
+                id == "second-sleep"
             default:
-                isSecondSleepActive = (currentID == "second-sleep")
+                currentID == "second-sleep"
             }
 
             if isSecondSleepActive {
                 model.stopPlayback()
             }
 
-            let preferredTrackID: String
-            switch model.playbackState {
+            let preferredTrackID = switch model.playbackState {
             case .playing("slow-unwind"), .paused("slow-unwind"):
-                preferredTrackID = "slow-unwind"
+                "slow-unwind"
             case .playing("quick-unwind"), .paused("quick-unwind"):
-                preferredTrackID = "quick-unwind"
+                "quick-unwind"
             default:
-                preferredTrackID = model.settings?.defaultSleepSupport == .longSleepAid ? "slow-unwind" : "quick-unwind"
+                model.settings?.defaultSleepSupport == .longSleepAid ? "slow-unwind" : "quick-unwind"
             }
 
             if let asset = CatalogAudioManifest.bundled.assets.first(where: { $0.id == preferredTrackID }) {
