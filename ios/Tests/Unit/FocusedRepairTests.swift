@@ -533,4 +533,63 @@ final class AlarmAndLockScreenCompanionFlowTests: XCTestCase {
         XCTAssertEqual(model.activeTrackSubtitle, "Gentle guided recovery session")
         XCTAssertEqual(model.selectedCatalogAsset?.id, "second-sleep")
     }
+
+    @MainActor
+    func testAlarmRingingViewHierarchyAndStopNavigation() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        let view = AlarmRingingView(model: model)
+        XCTAssertNotNil(view.body)
+
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.stopAlarm()
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+        XCTAssertEqual(model.selectedTab, .sleep)
+    }
+
+    @MainActor
+    func testStopAlarmDoubleTriggerSafetyAndIdempotency() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        // First stop
+        model.stopAlarm()
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+        XCTAssertEqual(model.selectedTab, .sleep)
+        XCTAssertNil(model.alarmSnoozeTask)
+
+        // Second stop (simulating double invocation)
+        model.stopAlarm()
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertTrue(model.isMorningCheckInPresented)
+        XCTAssertEqual(model.selectedTab, .sleep)
+        XCTAssertNil(model.alarmSnoozeTask)
+    }
+
+    @MainActor
+    func testSnoozeAlarmStateAndScheduledBackup() {
+        let model = makeTestAppModel()
+        model.setLaunchDestinationForTesting(.home)
+
+        model.triggerAlarmRinging()
+        XCTAssertTrue(model.isAlarmRinging)
+
+        model.snoozeAlarm(minutes: 8)
+        XCTAssertFalse(model.isAlarmRinging)
+        XCTAssertFalse(model.isMorningCheckInPresented)
+        XCTAssertNotNil(model.snoozeFireDate)
+        XCTAssertNotNil(model.alarmSnoozeTask)
+
+        model.alarmSnoozeTask?.cancel()
+        model.alarmSnoozeTask = nil
+        model.stopAlarm()
+    }
 }

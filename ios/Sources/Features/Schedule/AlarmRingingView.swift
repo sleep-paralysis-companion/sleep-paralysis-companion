@@ -3,8 +3,10 @@ import SwiftUI
 struct AlarmRingingView: View {
     @Bindable var model: AppModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var isPulsing = false
+    @State private var isActionTriggered = false
 
     var body: some View {
         ZStack {
@@ -60,39 +62,104 @@ struct AlarmRingingView: View {
         }
     }
 
+    @ViewBuilder
     private var actionButtons: some View {
-        VStack(spacing: 16) {
-            Button {
-                AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
-                model.snoozeAlarm(minutes: effectiveSnoozeMinutes)
-            } label: {
-                VStack(spacing: 4) {
-                    Text("Snooze (\(effectiveSnoozeMinutes) min)")
-                        .font(AppFont.inter(size: 20, relativeTo: .headline, weight: .semibold))
-                    Text("Ring again in \(effectiveSnoozeMinutes) minutes")
-                        .font(AppFont.inter(size: 14, relativeTo: .footnote))
-                        .foregroundStyle(Color.white.opacity(0.65))
-                }
-                .frame(maxWidth: .infinity, minHeight: 64)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.white.opacity(0.20), lineWidth: 1.2)
-                }
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 16) {
+                snoozeButton
+                stopButton
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Snooze (\(effectiveSnoozeMinutes) min)")
-            .accessibilityHint("Pauses the alarm and rings again in \(effectiveSnoozeMinutes) minutes.")
-            .accessibilityIdentifier("alarm.snooze")
+        } else {
+            HStack(spacing: 12) {
+                snoozeButton
+                stopButton
+            }
+        }
+    }
 
-            SlideToStopControl(
-                hapticsEnabled: model.settings?.hapticsEnabled != false,
-                onCompleted: {
-                    model.stopAlarm()
-                }
+    private var snoozeButton: some View {
+        Button {
+            guard !isActionTriggered else { return }
+            isActionTriggered = true
+            AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+            model.snoozeAlarm(minutes: effectiveSnoozeMinutes)
+        } label: {
+            VStack(spacing: 2) {
+                Text("Snooze")
+                    .font(AppFont.inter(size: 18, relativeTo: .headline, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                Text("\(effectiveSnoozeMinutes) min")
+                    .font(AppFont.inter(size: 13, relativeTo: .footnote))
+                    .foregroundStyle(Color.white.opacity(0.65))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .background(Color.white.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color.white.opacity(0.20), lineWidth: 1.2)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(isActionTriggered)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Snooze (\(effectiveSnoozeMinutes) min)")
+        .accessibilityHint("Pauses the alarm and rings again in \(effectiveSnoozeMinutes) minutes.")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("alarm.snooze")
+    }
+
+    private var stopButton: some View {
+        Button {
+            guard !isActionTriggered else { return }
+            isActionTriggered = true
+            let hapticsEnabled = model.settings?.hapticsEnabled != false
+            AppHaptics.primaryCTA(hapticsEnabled: hapticsEnabled)
+            AppHaptics.success(hapticsEnabled: hapticsEnabled)
+            model.stopAlarm()
+        } label: {
+            VStack(spacing: 2) {
+                Text("Stop")
+                    .font(AppFont.inter(size: 18, relativeTo: .headline, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                Text("Check-in")
+                    .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.45, green: 0.28, blue: 0.90),
+                        Color(red: 0.25, green: 0.40, blue: 0.95),
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(
+                color: Color(red: 0.45, green: 0.28, blue: 0.90).opacity(0.40),
+                radius: 8,
+                x: 0,
+                y: 4
             )
         }
+        .buttonStyle(.plain)
+        .disabled(isActionTriggered)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Stop alarm")
+        .accessibilityHint("Dismisses the alarm and immediately begins morning check-in.")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("alarm.stop")
     }
 
     private var currentTimeString: String {
@@ -108,114 +175,5 @@ struct AlarmRingingView: View {
 
     private var effectiveSnoozeMinutes: Int {
         model.ringingAlarmSchedule?.snoozeMinutes ?? 10
-    }
-}
-
-// MARK: - Slide To Stop Control
-
-struct SlideToStopControl: View {
-    var hapticsEnabled: Bool = true
-    var onCompleted: () -> Void
-
-    @State private var dragOffset: CGFloat = 0
-    @State private var hasTriggeredInitialHaptic = false
-    @State private var isCompleted = false
-
-    init(
-        hapticsEnabled: Bool = true,
-        onCompleted: @escaping () -> Void
-    ) {
-        self.hapticsEnabled = hapticsEnabled
-        self.onCompleted = onCompleted
-    }
-
-    var body: some View {
-        GeometryReader { geometry in
-            let totalWidth = geometry.size.width
-            let thumbSize: CGFloat = 56
-            let padding: CGFloat = 4
-            let maxDistance = max(0, totalWidth - thumbSize - (padding * 2))
-            let progress = maxDistance > 0 ? (dragOffset / maxDistance) : 0
-
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.12))
-                    .overlay {
-                        Capsule()
-                            .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
-                    }
-
-                VStack(spacing: 2) {
-                    Text("Slide to Stop")
-                        .font(AppFont.inter(size: 17, relativeTo: .headline, weight: .semibold))
-                        .foregroundStyle(Color.white.opacity(0.9))
-                    Text("Begin Morning Check-in")
-                        .font(AppFont.inter(size: 12, relativeTo: .footnote, weight: .medium))
-                        .foregroundStyle(Color(red: 0.90, green: 0.88, blue: 1).opacity(0.75))
-                }
-                .opacity(max(0, 1.0 - progress))
-                .frame(maxWidth: .infinity, alignment: .center)
-                .allowsHitTesting(false)
-
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white,
-                                Color(red: 0.90, green: 0.88, blue: 1),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: thumbSize, height: thumbSize)
-                    .overlay {
-                        Image(systemName: "chevron.right.2")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(Color(red: 0.35, green: 0.20, blue: 0.75))
-                    }
-                    .shadow(color: Color.black.opacity(0.25), radius: 4, x: 1, y: 2)
-                    .offset(x: padding + dragOffset)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                guard !isCompleted else { return }
-                                if !hasTriggeredInitialHaptic, value.translation.width > 4 {
-                                    hasTriggeredInitialHaptic = true
-                                    AppHaptics.selectionChanged(hapticsEnabled: hapticsEnabled)
-                                }
-                                let translation = max(0, min(value.translation.width, maxDistance))
-                                dragOffset = translation
-                            }
-                            .onEnded { _ in
-                                guard !isCompleted else { return }
-                                hasTriggeredInitialHaptic = false
-                                if dragOffset >= maxDistance * 0.85 {
-                                    isCompleted = true
-                                    withAnimation(.easeOut(duration: 0.15)) {
-                                        dragOffset = maxDistance
-                                    }
-                                    AppHaptics.success(hapticsEnabled: hapticsEnabled)
-                                    onCompleted()
-                                } else {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                        dragOffset = 0
-                                    }
-                                }
-                            }
-                    )
-            }
-        }
-        .frame(height: 64)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Slide to stop alarm")
-        .accessibilityHint("Double tap to dismiss the alarm and begin morning check-in.")
-        .accessibilityAction {
-            guard !isCompleted else { return }
-            isCompleted = true
-            AppHaptics.success(hapticsEnabled: hapticsEnabled)
-            onCompleted()
-        }
-        .accessibilityIdentifier("alarm.stop")
     }
 }
