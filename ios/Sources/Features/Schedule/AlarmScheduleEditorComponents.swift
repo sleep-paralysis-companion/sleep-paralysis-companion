@@ -7,11 +7,11 @@ struct ScheduleEditorCard<Content: View>: View {
         content
             .padding(17)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white.opacity(0.07))
+            .background(Color(red: 0.06, green: 0.05, blue: 0.18).opacity(0.85))
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    .stroke(Color(red: 0.28, green: 0.20, blue: 0.55).opacity(0.65), lineWidth: 1.2)
             }
     }
 }
@@ -115,6 +115,17 @@ struct ScheduleWheelColumn<Value: Hashable>: View {
                 endPoint: .bottom
             )
         )
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 0.14, green: 0.10, blue: 0.32).opacity(0.75))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color(red: 0.45, green: 0.38, blue: 0.96), lineWidth: 1.2)
+                }
+                .shadow(color: Color(red: 0.45, green: 0.38, blue: 0.96).opacity(0.35), radius: 6)
+                .frame(height: 48)
+                .allowsHitTesting(false)
+        }
         .accessibilityElement(children: .contain)
     }
 }

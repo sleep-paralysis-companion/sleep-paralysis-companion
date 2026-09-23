@@ -181,8 +181,8 @@ struct SleepTabView: View {
                     .background {
                         if mode == .sleep {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color(red: 0.50, green: 0.28, blue: 0.94))
-                                .shadow(color: Color(red: 0.50, green: 0.28, blue: 0.94).opacity(0.4), radius: 5, y: 2)
+                                .fill(Color(red: 0.45, green: 0.25, blue: 0.90))
+                                .shadow(color: Color(red: 0.45, green: 0.25, blue: 0.90).opacity(0.45), radius: 5, y: 2)
                         }
                     }
             }
@@ -202,8 +202,8 @@ struct SleepTabView: View {
                     .background {
                         if mode == .wakeOnly {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color(red: 0.50, green: 0.28, blue: 0.94))
-                                .shadow(color: Color(red: 0.50, green: 0.28, blue: 0.94).opacity(0.4), radius: 5, y: 2)
+                                .fill(Color(red: 0.45, green: 0.25, blue: 0.90))
+                                .shadow(color: Color(red: 0.45, green: 0.25, blue: 0.90).opacity(0.45), radius: 5, y: 2)
                         }
                     }
             }
@@ -243,7 +243,7 @@ struct SleepTabView: View {
                     ScheduleTimeWheelPicker(hour: $draft.bedtimeHour, minute: $draft.bedtimeMinute)
                         .accessibilityIdentifier("sleep.bedtimeWheel")
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     HStack {
                         Text("Bedtime reminder")
@@ -260,6 +260,9 @@ struct SleepTabView: View {
                             Text(reminderLabel(draft.bedtimeReminderLeadMinutes))
                                 .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .medium))
                                 .foregroundStyle(Color(red: 0.72, green: 0.58, blue: 1))
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 8)
+                                .contentShape(Rectangle())
                         }
                         .accessibilityIdentifier("sleep.bedtimeReminder")
                     }
@@ -286,7 +289,7 @@ struct SleepTabView: View {
                     ScheduleTimeWheelPicker(hour: $draft.wakeHour, minute: $draft.wakeMinute)
                         .accessibilityIdentifier("sleep.wakeWheel")
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     HStack {
                         Text("Quick adjust")
@@ -300,7 +303,7 @@ struct SleepTabView: View {
                         }
                     }
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     wakeUpWindowRow(identifier: "sleep.wakeUpWindow")
                 }
@@ -318,7 +321,7 @@ struct SleepTabView: View {
 
                     WeekdaySelector(mask: $draft.repeatWeekdaysMask)
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     HStack {
                         Text("Wake Sound")
@@ -335,6 +338,9 @@ struct SleepTabView: View {
                             Text("\(draft.wakeAudio.title) ›")
                                 .font(AppFont.inter(size: 13, relativeTo: .subheadline, weight: .medium))
                                 .foregroundStyle(Color(red: 0.72, green: 0.58, blue: 1))
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 8)
+                                .contentShape(Rectangle())
                         }
                         .accessibilityIdentifier("sleep.soundSelector")
                     }
@@ -350,7 +356,8 @@ struct SleepTabView: View {
                     .foregroundStyle(Color(red: 0.72, green: 0.58, blue: 1).opacity(0.9))
                     .underline()
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Manage sleep schedules")
@@ -386,7 +393,7 @@ struct SleepTabView: View {
                     ScheduleTimeWheelPicker(hour: $draft.wakeHour, minute: $draft.wakeMinute)
                         .accessibilityIdentifier("sleep.wakeOnlyWheel")
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     HStack {
                         Text("Quick adjust")
@@ -400,11 +407,11 @@ struct SleepTabView: View {
                         }
                     }
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     wakeUpWindowRow(identifier: "sleep.wakeUpWindow")
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     HStack {
                         Text("Occurrence")
@@ -417,7 +424,7 @@ struct SleepTabView: View {
                     }
                     .padding(.vertical, 2)
 
-                    Divider().overlay(Color.white.opacity(0.10))
+                    Divider().overlay(Color(red: 0.35, green: 0.28, blue: 0.60).opacity(0.30))
 
                     HStack {
                         Text("Alarm Sound")
@@ -434,6 +441,9 @@ struct SleepTabView: View {
                             Text("\(draft.wakeAudio.title) ›")
                                 .font(AppFont.inter(size: 13, relativeTo: .subheadline, weight: .medium))
                                 .foregroundStyle(Color(red: 0.72, green: 0.58, blue: 1))
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 8)
+                                .contentShape(Rectangle())
                         }
                         .accessibilityIdentifier("sleep.soundSelector")
                     }
@@ -453,7 +463,8 @@ struct SleepTabView: View {
                     .foregroundStyle(Color(red: 0.72, green: 0.58, blue: 1).opacity(0.9))
                     .underline()
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Manage sleep schedules")
@@ -492,6 +503,8 @@ struct SleepTabView: View {
                 .padding(.vertical, 5)
                 .background(Color.white.opacity(0.10))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("sleep.quickStep.\(delta > 0 ? "plus" : "minus")\(abs(delta))")
@@ -538,6 +551,9 @@ struct SleepTabView: View {
                 Text(wakeUpWindowLabel(draft.gentleWakeLeadMinutes))
                     .font(AppFont.inter(size: 13, relativeTo: .footnote, weight: .medium))
                     .foregroundStyle(Color(red: 0.72, green: 0.58, blue: 1))
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 8)
+                    .contentShape(Rectangle())
             }
             .accessibilityIdentifier(identifier)
         }
@@ -578,17 +594,26 @@ struct SleepTabView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 52)
-                .background(
-                    isSaveConfirmed
-                        ? Color(red: 0.20, green: 0.70, blue: 0.40)
-                        : Color(red: 0.50, green: 0.28, blue: 0.94)
-                )
+                .background {
+                    if isSaveConfirmed {
+                        Color(red: 0.20, green: 0.70, blue: 0.40)
+                    } else {
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.40, green: 0.28, blue: 0.83),
+                                Color(red: 0.20, green: 0.49, blue: 0.84),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    }
+                }
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(
                     color: (isSaveConfirmed
                         ? Color(red: 0.20, green: 0.70, blue: 0.40)
-                        : Color(red: 0.50, green: 0.28, blue: 0.94)).opacity(0.4),
+                        : Color(red: 0.40, green: 0.28, blue: 0.83)).opacity(0.40),
                     radius: 12,
                     y: 4
                 )
@@ -603,9 +628,9 @@ struct SleepTabView: View {
         .background {
             LinearGradient(
                 colors: [
-                    Color(red: 0.03, green: 0.02, blue: 0.09).opacity(0),
-                    Color(red: 0.03, green: 0.02, blue: 0.09).opacity(0.8),
-                    Color(red: 0.03, green: 0.02, blue: 0.09),
+                    Color(red: 0.04, green: 0.03, blue: 0.14).opacity(0),
+                    Color(red: 0.04, green: 0.03, blue: 0.14).opacity(0.8),
+                    Color(red: 0.04, green: 0.03, blue: 0.14),
                 ],
                 startPoint: .top,
                 endPoint: .bottom
