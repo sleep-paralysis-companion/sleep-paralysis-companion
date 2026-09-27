@@ -28,7 +28,7 @@ plutil -convert json -o - "$MANIFEST" | jq -e '
       ] | sort)
   and (.NSPrivacyAccessedAPITypes[] |
         select(.NSPrivacyAccessedAPIType == "NSPrivacyAccessedAPICategoryDiskSpace") |
-        .NSPrivacyAccessedAPITypeReasons == ["3B52.1"])
+        .NSPrivacyAccessedAPITypeReasons == ["E174.1"])
   and (.NSPrivacyAccessedAPITypes[] |
         select(.NSPrivacyAccessedAPIType == "NSPrivacyAccessedAPICategoryFileTimestamp") |
         .NSPrivacyAccessedAPITypeReasons == ["C617.1"])
