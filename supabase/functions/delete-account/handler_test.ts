@@ -174,6 +174,34 @@ Deno.test("deletes verified user and records a content-free bound audit", async 
   });
 });
 
+Deno.test("handles uppercase UUID request_id from iOS client against lowercase Postgres audit rows", async () => {
+  const upperRequestID = REQUEST_ID.toUpperCase();
+  const lowerRequestID = REQUEST_ID.toLowerCase();
+  const binding = await requestBinding(lowerRequestID, USER_ID);
+  const runtime = fakeRuntime([
+    new Response("[]", { status: 200 }),
+    new Response(null, { status: 201 }),
+    new Response(null, { status: 204 }),
+    new Response(
+      JSON.stringify([{
+        request_id: lowerRequestID,
+        request_binding: binding,
+        outcome: "completed",
+      }]),
+      { status: 200 },
+    ),
+  ]);
+  const result = await handleDeleteAccount(
+    requestWithAccess({ request_id: upperRequestID }),
+    runtime,
+  );
+  assertEquals(result.status, 200);
+  const body = await result.json();
+  assertEquals(body.status, "completed");
+  assertEquals(body.request_id, upperRequestID);
+  assertNotEquals(body.retry_token, undefined);
+});
+
 Deno.test("recoverable deletion retry remains bound and reuses the request", async () => {
   const binding = await requestBinding(REQUEST_ID, USER_ID);
   const runtime = fakeRuntime([

@@ -67,6 +67,8 @@ export async function handleDeleteAccount(
     return response(400, { error: "invalid_request" });
   }
 
+  const rawRequestID = body.request_id;
+  const requestID = rawRequestID.toLowerCase();
   const bearerToken = authorization.slice("Bearer ".length);
   let userID: string;
   let retryToken: string;
@@ -74,7 +76,7 @@ export async function handleDeleteAccount(
   if (typeof body.retry_token === "string") {
     const retryAuthorization = await verifyRetryToken(
       body.retry_token,
-      body.request_id,
+      requestID,
       runtime.requestBindingSecret,
     );
     if (!retryAuthorization) {
@@ -89,7 +91,7 @@ export async function handleDeleteAccount(
     }
     userID = claims.sub;
     retryToken = await makeRetryToken(
-      body.request_id,
+      requestID,
       userID,
       runtime.requestBindingSecret,
     );
@@ -97,18 +99,18 @@ export async function handleDeleteAccount(
 
   const requestBinding = await sha256Hex(retryToken);
   const existing = await runtime.fetch(
-    `${runtime.supabaseURL}/rest/v1/account_deletion_audit?request_id=eq.${body.request_id}` +
+    `${runtime.supabaseURL}/rest/v1/account_deletion_audit?request_id=eq.${requestID}` +
       "&select=request_id,request_binding,outcome",
     serviceRoleRequest(runtime.serviceRoleKey),
   );
   if (!existing.ok) {
-    return recoverableResponse(body.request_id, retryToken);
+    return recoverableResponse(rawRequestID, retryToken);
   }
 
   const existingRows = await existing.json() as AuditRow[];
   if (
     existingRows.some((row) =>
-      row.request_id === body.request_id &&
+      matchesRequestID(row.request_id, requestID) &&
       row.request_binding !== requestBinding
     )
   ) {
@@ -116,14 +118,14 @@ export async function handleDeleteAccount(
   }
   if (
     existingRows.some((row) =>
-      row.request_id === body.request_id &&
+      matchesRequestID(row.request_id, requestID) &&
       row.request_binding === requestBinding &&
       row.outcome === "completed"
     )
   ) {
     return response(200, {
       status: "completed",
-      request_id: body.request_id,
+      request_id: rawRequestID,
       retry_token: retryToken,
     });
   }
@@ -142,7 +144,7 @@ export async function handleDeleteAccount(
           ...serviceRoleHeaders(runtime.serviceRoleKey),
         },
         body: JSON.stringify({
-          request_id: body.request_id,
+          request_id: requestID,
           request_binding: requestBinding,
           completed_at: runtime.now().toISOString(),
           outcome: "failed_recoverable",
@@ -152,7 +154,7 @@ export async function handleDeleteAccount(
       },
     );
     if (!checkpoint.ok) {
-      return recoverableResponse(body.request_id, retryToken);
+      return recoverableResponse(rawRequestID, retryToken);
     }
   }
 
@@ -164,13 +166,13 @@ export async function handleDeleteAccount(
     },
   );
   if (!deletion.ok && deletion.status !== 404) {
-    return recoverableResponse(body.request_id, retryToken);
+    return recoverableResponse(rawRequestID, retryToken);
   }
 
   const completedAt = runtime.now();
   const audit = await runtime.fetch(
     `${runtime.supabaseURL}/rest/v1/account_deletion_audit` +
-      `?request_id=eq.${body.request_id}&request_binding=eq.${requestBinding}`,
+      `?request_id=eq.${requestID}&request_binding=eq.${requestBinding}`,
     {
       method: "PATCH",
       headers: {
@@ -187,22 +189,22 @@ export async function handleDeleteAccount(
     },
   );
   if (!audit.ok) {
-    return recoverableResponse(body.request_id, retryToken);
+    return recoverableResponse(rawRequestID, retryToken);
   }
   const completedRows = await audit.json() as AuditRow[];
   if (
     !completedRows.some((row) =>
-      row.request_id === body.request_id &&
+      matchesRequestID(row.request_id, requestID) &&
       row.request_binding === requestBinding &&
       row.outcome === "completed"
     )
   ) {
-    return recoverableResponse(body.request_id, retryToken);
+    return recoverableResponse(rawRequestID, retryToken);
   }
 
   return response(200, {
     status: "completed",
-    request_id: body.request_id,
+    request_id: rawRequestID,
     retry_token: retryToken,
   });
 }
@@ -235,12 +237,21 @@ function hasRecentProviderReauthentication(
   );
 }
 
+function matchesRequestID(
+  rowID: string | undefined,
+  targetID: string,
+): boolean {
+  return typeof rowID === "string" &&
+    rowID.toLowerCase() === targetID.toLowerCase();
+}
+
 async function makeRetryToken(
   requestID: string,
   userID: string,
   secret: string,
 ): Promise<string> {
-  const payload = `${requestID}.${userID}`;
+  const normalizedID = requestID.toLowerCase();
+  const payload = `${normalizedID}.${userID}`;
   const signature = await hmacHex(payload, secret);
   return `${payload}.${signature}`;
 }
@@ -256,7 +267,7 @@ async function verifyRetryToken(
   }
   const [requestID, userID, signature] = pieces;
   if (
-    requestID !== expectedRequestID ||
+    requestID.toLowerCase() !== expectedRequestID.toLowerCase() ||
     !isUUID(requestID) ||
     !isUUID(userID) ||
     !/^[0-9a-f]{64}$/.test(signature)
@@ -270,13 +281,14 @@ async function verifyRetryToken(
     false,
     ["verify"],
   );
+  const normalizedID = requestID.toLowerCase();
   const valid = await crypto.subtle.verify(
     "HMAC",
     key,
     hexBuffer(signature),
-    new TextEncoder().encode(`${requestID}.${userID}`),
+    new TextEncoder().encode(`${normalizedID}.${userID}`),
   );
-  return valid ? { requestID, userID } : null;
+  return valid ? { requestID: normalizedID, userID } : null;
 }
 
 async function hmacHex(value: string, secret: string): Promise<string> {
