@@ -92,6 +92,8 @@ targets:
         buildPhase: resources
         excludes:
           - Info.plist
+      - path: Configuration/Products.storekit
+        buildPhase: resources
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -145,6 +147,8 @@ targets:
     platform: iOS
     sources:
       - path: Tests/Unit
+      - path: Configuration/Products.storekit
+        buildPhase: resources
     dependencies:
       - target: SleepParalysisCompanion
       - package: GRDB
@@ -179,6 +183,7 @@ schemes:
         SPCUITests: [test]
     run:
       config: Development
+      storeKitConfiguration: Configuration/Products.storekit
       commandLineArguments:
         "-SPCEnvironment development": true
     test:

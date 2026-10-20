@@ -5,11 +5,17 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SOURCE_ROOT="$REPOSITORY_ROOT/ios/Sources"
 RESOURCE_ROOT="$REPOSITORY_ROOT/ios/Resources"
 
-FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|StoreKit|HealthKit|AdSupport)|try!|as!'
+FORBIDDEN_SOURCE='@unchecked[[:space:]]+Sendable|nonisolated\(unsafe\)|Task\.detached|DispatchSemaphore|import[[:space:]]+(RevenueCat|HealthKit|AdSupport)|try!|as!'
 FORBIDDEN_RESOURCE='NSHealthShareUsageDescription|NSHealthUpdateUsageDescription|NSUserTrackingUsageDescription'
 
 if grep -R -n -E "$FORBIDDEN_SOURCE" "$SOURCE_ROOT"; then
-  echo "Forbidden Phase 1B source pattern found." >&2
+  echo "Forbidden source pattern found." >&2
+  exit 1
+fi
+
+if grep -R -l -E 'import[[:space:]]+StoreKit' "$SOURCE_ROOT" \
+  | grep -v -E '/(Subscriptions/|Domain/SubscriptionModels\.swift$)'; then
+  echo "StoreKit import escaped the subscriptions boundary." >&2
   exit 1
 fi
 

@@ -179,15 +179,18 @@ func makeTestPhase1Store(namespace: String = "test-\(UUID().uuidString)") -> Int
 func makeTestAppModel(
     authService: any OAuthSessionServicing = UnavailableOAuthSessionService(),
     store: IntegratedPhase1Store? = nil,
-    reminders: SleepReminderService? = nil
+    reminders: SleepReminderService? = nil,
+    subscriptionService: (any SubscriptionServiceProtocol)? = nil
 ) -> AppModel {
     let resolvedStore = store ?? makeTestPhase1Store(namespace: "test-auth-\(UUID().uuidString)")
     let resolvedReminders = reminders ?? SleepReminderService(scheduler: NoOpReminderScheduler())
+    let resolvedSubscription = subscriptionService ?? MockSubscriptionService()
     return AppModel(
         environment: .development,
         accessPolicy: AccessPolicy(),
         store: resolvedStore,
         authentication: authService,
+        subscriptionService: resolvedSubscription,
         reminders: resolvedReminders,
         logger: NoOpPrivacySafeLogger()
     )

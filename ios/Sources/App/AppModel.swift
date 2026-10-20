@@ -17,6 +17,12 @@ final class AppModel {
     var isMorningCheckInPresented = false
     var presentedSheet: AppSheet?
     var feedbackMessage: String?
+    var subscriptionEntitlement: SubscriptionEntitlementStatus = .inactive
+    var isPaywallPresented: Bool = false
+    var isPurchasing: Bool = false
+    var isRestoring: Bool = false
+    var availableProducts: [SubscriptionProductTier] = []
+    var purchaseErrorMessage: String?
     private(set) var authenticationState = AuthenticationPresentationState.ready
     private(set) var accountAccessState = AccountAccessState.signedOut
     private(set) var profileID: UUID?
@@ -216,6 +222,7 @@ final class AppModel {
 
     let store: IntegratedPhase1Store
     let authentication: any OAuthSessionServicing
+    let subscriptionService: any SubscriptionServiceProtocol
     private let accountDeletionGateway: (any AccountDeletionGateway)?
     private let accountDeletionIdentifier: any IdentifierGenerating
     private let accountDeletionClock: any Phase1BClock
@@ -234,6 +241,7 @@ final class AppModel {
     @ObservationIgnored private var accountDeletionCoordinator: AccountDeletionCoordinator?
     @ObservationIgnored private var pendingAccountDeletionSession: ReauthenticatedSession?
     @ObservationIgnored private var activationTask: Task<Void, Never>?
+    @ObservationIgnored private var entitlementUpdatesTask: Task<Void, Never>?
     @ObservationIgnored private var recordingLimitTask: Task<Void, Never>?
     @ObservationIgnored private var pendingRecordingClipID: UUID?
     @ObservationIgnored private var alarmSchedulingStates: [UUID: AlarmScheduleSchedulingState] = [:]
@@ -244,6 +252,7 @@ final class AppModel {
         accessPolicy: AccessPolicy,
         store: IntegratedPhase1Store,
         authentication: any OAuthSessionServicing,
+        subscriptionService: any SubscriptionServiceProtocol = MockSubscriptionService(),
         accountDeletionGateway: (any AccountDeletionGateway)? = nil,
         accountDeletionIdentifier: any IdentifierGenerating = SystemIdentifierGenerator(),
         accountDeletionClock: any Phase1BClock = SystemPhase1BClock(),
@@ -261,6 +270,7 @@ final class AppModel {
         self.accessPolicy = accessPolicy
         self.store = store
         self.authentication = authentication
+        self.subscriptionService = subscriptionService
         self.accountDeletionGateway = accountDeletionGateway
         self.accountDeletionIdentifier = accountDeletionIdentifier
         self.accountDeletionClock = accountDeletionClock
@@ -308,6 +318,7 @@ final class AppModel {
     }
 
     deinit {
+        entitlementUpdatesTask?.cancel()
         foregroundAlarmMonitorTask?.cancel()
         alarmSnoozeTask?.cancel()
         cancelPendingSnoozeBackupNotification()
@@ -315,12 +326,29 @@ final class AppModel {
 
     func activate(restoredState: String = "") {
         activationTask?.cancel()
+        entitlementUpdatesTask?.cancel()
+
+        entitlementUpdatesTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let stream = await self.subscriptionService.entitlementUpdates
+            for await update in stream {
+                guard !Task.isCancelled else { break }
+                self.subscriptionEntitlement = update
+            }
+        }
 
         #if DEBUG
             if ProcessInfo.processInfo.environment["SPC_UI_TEST_OPEN_AUDIO_LIBRARY"] == "1" {
                 launchDestination = .home
                 selectedTab = .me
                 path = [.curatedAudioLibrary]
+                return
+            }
+            if ProcessInfo.processInfo.environment["SPC_UI_TEST_OPEN_ME"] == "1" {
+                launchDestination = .home
+                selectedTab = .me
+                path = []
+                availableProducts = SubscriptionProductTier.allCases
                 return
             }
         #endif
@@ -334,6 +362,14 @@ final class AppModel {
             )
             await configureCatalogAudioServiceIfAvailable()
             reminderAuthorization = await reminders.authorizationState()
+            self.subscriptionEntitlement = await self.subscriptionService.refreshEntitlements()
+            do {
+                let products = try await self.subscriptionService.loadProducts()
+                let tiers = products.compactMap { SubscriptionProductTier(productID: $0.id) }
+                self.availableProducts = tiers.isEmpty ? SubscriptionProductTier.allCases : tiers
+            } catch {
+                self.availableProducts = SubscriptionProductTier.allCases
+            }
             do {
                 guard let restoreResult = try await authentication.restore() else {
                     launchDestination = .splash
@@ -2446,6 +2482,119 @@ final class AppModel {
     private func cleanupAllStructuredExports() async {
         cleanupStructuredExport()
         try? FileManager.default.removeItem(at: structuredExportDirectory)
+    }
+
+    // MARK: - Subscriptions & Access Gating
+
+    func presentPaywall() {
+        isPaywallPresented = true
+    }
+
+    func dismissPaywall() {
+        isPaywallPresented = false
+    }
+
+    private func userFacingErrorMessage(for error: SubscriptionError) -> String {
+        switch error {
+        case .productNotFound:
+            return "The selected subscription option is currently unavailable. Please try again later."
+        case .unverifiedTransaction:
+            return "We could not verify this transaction with the App Store. Please try again."
+        case .purchaseFailed:
+            return "The purchase could not be completed. Please try again."
+        case .restoreFailed(let message):
+            let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty || trimmed.contains("0x") || trimmed.contains("eyJ") || trimmed.contains("Token") {
+                return "We were unable to restore your purchases. Please try again later."
+            }
+            return trimmed
+        case .networkError:
+            return "A connection error occurred. Please check your internet connection and try again."
+        case .userCancelled:
+            return "The purchase was cancelled."
+        case .unknown:
+            return "An unexpected error occurred. Please try again."
+        }
+    }
+
+    func purchase(tier: SubscriptionProductTier) async {
+        isPurchasing = true
+        purchaseErrorMessage = nil
+        defer { isPurchasing = false }
+
+        do {
+            let outcome = try await subscriptionService.purchase(tier: tier)
+            if outcome.isSuccess {
+                isPaywallPresented = false
+                purchaseErrorMessage = nil
+            } else {
+                switch outcome {
+                case .pending:
+                    purchaseErrorMessage = "Your purchase is pending approval."
+                case .userCancelled:
+                    break
+                case .failed(let error):
+                    purchaseErrorMessage = userFacingErrorMessage(for: error)
+                case .success, .mockSuccess:
+                    break
+                }
+            }
+        } catch let error as SubscriptionError {
+            purchaseErrorMessage = userFacingErrorMessage(for: error)
+        } catch {
+            purchaseErrorMessage = "The purchase could not be completed. Please try again."
+        }
+    }
+
+    func restorePurchases() async {
+        isRestoring = true
+        purchaseErrorMessage = nil
+        defer { isRestoring = false }
+
+        do {
+            let status = try await subscriptionService.restorePurchases()
+            self.subscriptionEntitlement = status
+            if status.isActive {
+                isPaywallPresented = false
+                purchaseErrorMessage = nil
+            } else {
+                purchaseErrorMessage = "No active subscription found to restore."
+            }
+        } catch let error as SubscriptionError {
+            purchaseErrorMessage = userFacingErrorMessage(for: error)
+        } catch {
+            purchaseErrorMessage = "We were unable to restore your purchases. Please try again later."
+        }
+    }
+
+    func checkAccess(
+        for capability: ProductCapability,
+        platform: PlatformCapabilities = .all,
+        release: ReleaseGates = .all,
+        external: ExternalAvailability = .all
+    ) -> Bool {
+        accessPolicy.decision(
+            for: capability,
+            platform: platform,
+            release: release,
+            premium: subscriptionEntitlement.premiumAccess,
+            external: external
+        ) == .allowed
+    }
+
+    func checkAccess(for utility: AppUtility) -> Bool {
+        accessPolicy.decision(
+            for: utility,
+            premium: subscriptionEntitlement.premiumAccess
+        ) == .allowed
+    }
+
+    func executeGated(capability: ProductCapability, action: () -> Void) {
+        if checkAccess(for: capability) {
+            action()
+        } else {
+            presentPaywall()
+        }
     }
 }
 

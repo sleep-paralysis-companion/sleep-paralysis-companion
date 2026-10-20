@@ -45,25 +45,219 @@ struct MeProfileView: View {
             Text("Hi, \(model.profile?.displayName ?? "")")
                 .font(AppFont.latoBold(size: 34, relativeTo: .largeTitle)).lineLimit(1)
             Spacer(minLength: 0)
-            Text("FREE").font(AppTypographyRole.label).foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1))
-                .padding(.horizontal, 14).padding(.vertical, 9)
-                .overlay { Capsule().stroke(Color.purple.opacity(0.8)) }
+            headerBadge
+        }
+    }
+
+    @ViewBuilder
+    private var headerBadge: some View {
+        let entitlement = model.subscriptionEntitlement
+        if entitlement.hasLifetimeAccess {
+            Text("LIFETIME")
+                .font(AppTypographyRole.label)
+                .fontWeight(.bold)
+                .foregroundStyle(Color(red: 1.0, green: 0.84, blue: 0.0))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.15), in: Capsule())
+                .overlay { Capsule().stroke(Color(red: 1.0, green: 0.84, blue: 0.0).opacity(0.8), lineWidth: 1.5) }
+                .accessibilityIdentifier("me.badge.lifetime")
+        } else if entitlement.isActive {
+            if entitlement.isInTrial {
+                Text("TRIAL")
+                    .font(AppTypographyRole.label)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.cyan)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.cyan.opacity(0.15), in: Capsule())
+                    .overlay { Capsule().stroke(Color.cyan.opacity(0.8), lineWidth: 1.5) }
+                    .accessibilityIdentifier("me.badge.trial")
+            } else {
+                Text("PREMIUM")
+                    .font(AppTypographyRole.label)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1.0))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.purple.opacity(0.25), in: Capsule())
+                    .overlay { Capsule().stroke(Color.purple.opacity(0.8), lineWidth: 1.5) }
+                    .accessibilityIdentifier("me.badge.premium")
+            }
+        } else {
+            Text("FREE")
+                .font(AppTypographyRole.label)
+                .foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1.0))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .overlay { Capsule().stroke(Color.purple.opacity(0.6), lineWidth: 1) }
+                .accessibilityIdentifier("me.badge.free")
         }
     }
 
     private var planCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let entitlement = model.subscriptionEntitlement
+        return VStack(alignment: .leading, spacing: 16) {
+            if entitlement.isActive {
+                activePlanContent(entitlement: entitlement)
+            } else {
+                freePlanContent
+            }
+        }
+        .padding(20)
+        .background(Color.indigo.opacity(0.24), in: RoundedRectangle(cornerRadius: 28))
+        .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.indigo.opacity(0.65)) }
+    }
+
+    private func activePlanContent(entitlement: SubscriptionEntitlementStatus) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("$0", systemImage: "circle.fill").foregroundStyle(.white); Spacer(); Text("No renewal")
+                HStack(spacing: 8) {
+                    if entitlement.hasLifetimeAccess {
+                        Image(systemName: "crown.fill")
+                            .foregroundStyle(Color(red: 1.0, green: 0.84, blue: 0.0))
+                        Text("Lifetime Access")
+                            .font(AppTypographyRole.cardTitle)
+                            .foregroundStyle(.white)
+                    } else if entitlement.activeTier == .annual {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1.0))
+                        Text("Annual Premium")
+                            .font(AppTypographyRole.cardTitle)
+                            .foregroundStyle(.white)
+                    } else {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1.0))
+                        Text("Monthly Premium")
+                            .font(AppTypographyRole.cardTitle)
+                            .foregroundStyle(.white)
+                    }
+                }
+                Spacer()
+                Text(entitlement.hasLifetimeAccess ? "One-Time" : (entitlement.isInTrial ? "3-Day Trial" : "Active"))
+                    .font(AppTypographyRole.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.green)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.15), in: Capsule())
+            }
+
+            if entitlement.hasLifetimeAccess {
+                Text("Unlimited lifetime access to all soundscapes, personal comfort voice recordings, and sleep check-ins.")
+                    .font(AppTypographyRole.supporting)
+                    .foregroundStyle(.white.opacity(0.72))
+            } else if let expiration = entitlement.expirationDate {
+                if entitlement.isInTrial {
+                    Text("Free trial active until \(formattedDate(expiration)). Renews automatically.")
+                        .font(AppTypographyRole.supporting)
+                        .foregroundStyle(.white.opacity(0.72))
+                } else if entitlement.isAutoRenewOn {
+                    Text("Renews automatically on \(formattedDate(expiration)). Cancel anytime.")
+                        .font(AppTypographyRole.supporting)
+                        .foregroundStyle(.white.opacity(0.72))
+                } else {
+                    Text("Access active through \(formattedDate(expiration)). Auto-renewal is off.")
+                        .font(AppTypographyRole.supporting)
+                        .foregroundStyle(.white.opacity(0.72))
+                }
+            } else {
+                Text("Full access to all soundscapes, custom comfort recordings, and morning check-in history.")
+                    .font(AppTypographyRole.supporting)
+                    .foregroundStyle(.white.opacity(0.72))
+            }
+
+            HStack {
+                Button("View all plans") {
+                    model.presentPaywall()
+                }
+                .font(AppTypographyRole.footnote)
+                .foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1.0))
+
+                Spacer()
+
+                if !entitlement.hasLifetimeAccess {
+                    Button("Manage subscription") {
+                        confirmCancellation = true
+                    }
+                    .font(AppTypographyRole.control)
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .accessibilityIdentifier("me.manageSubscription")
+                }
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private var freePlanContent: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "moon.stars.fill")
+                        .foregroundStyle(Color.purple.opacity(0.9))
+                    Text("Free Plan")
+                        .font(AppTypographyRole.cardTitle)
+                        .foregroundStyle(.white)
+                }
+                Spacer()
+                Text("Standard Access")
+                    .font(AppTypographyRole.caption)
                     .foregroundStyle(.white.opacity(0.58))
             }
-            Text("Upgrade availability will appear here when subscriptions are configured.")
+
+            Text("Upgrade to unlock unlimited curated soundscapes, personal comfort voice recordings, and sleep check-in history.")
                 .font(AppTypographyRole.supporting)
-                .foregroundStyle(.white.opacity(0.6))
-            Button("Manage subscription", role: .destructive) { confirmCancellation = true }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-        }.padding(20).background(Color.indigo.opacity(0.24), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.indigo.opacity(0.65)) }
+                .foregroundStyle(.white.opacity(0.72))
+
+            Button {
+                AppHaptics.primaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                model.presentPaywall()
+            } label: {
+                Text("Upgrade to Premium")
+                    .font(AppTypographyRole.control)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.purple.opacity(0.85), Color.blue.opacity(0.85)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 20)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("me.upgrade")
+
+            Button {
+                AppHaptics.secondaryCTA(hapticsEnabled: model.settings?.hapticsEnabled != false)
+                Task {
+                    await model.restorePurchases()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    if model.isRestoring {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                    Text("Restore Purchases")
+                        .font(AppTypographyRole.footnote)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .disabled(model.isRestoring)
+            .accessibilityIdentifier("me.restorePurchases")
+        }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 
     private var founderCard: some View {

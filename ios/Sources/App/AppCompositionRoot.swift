@@ -106,11 +106,23 @@ enum AppCompositionRoot {
             )
         #endif
 
+        let subscriptionService: any SubscriptionServiceProtocol
+        #if DEBUG
+            if ProcessInfo.processInfo.environment["SPC_UI_TEST_PREMIUM_ACTIVE"] == "1" {
+                subscriptionService = MockSubscriptionService(initialStatus: .active)
+            } else {
+                subscriptionService = StoreKitSubscriptionService.live()
+            }
+        #else
+            subscriptionService = StoreKitSubscriptionService.live()
+        #endif
+
         return AppModel(
             environment: environment,
             accessPolicy: AccessPolicy(),
             store: store,
             authentication: authentication,
+            subscriptionService: subscriptionService,
             accountDeletionGateway: accountDeletionGateway,
             catalogAudioConfiguration: catalogAudioConfiguration,
             logger: logger

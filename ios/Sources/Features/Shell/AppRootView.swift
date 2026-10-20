@@ -38,6 +38,14 @@ struct AppRootView: View {
         ) {
             MorningAlarmFlowContainerView(model: model)
         }
+        .sheet(
+            isPresented: Binding(
+                get: { model.isPaywallPresented },
+                set: { if !$0 { model.dismissPaywall() } }
+            )
+        ) {
+            PaywallView(model: model)
+        }
         .task {
             model.activate(restoredState: restoredNavigation)
             attemptManualEpisodeHandoff()

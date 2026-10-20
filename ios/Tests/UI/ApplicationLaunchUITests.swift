@@ -314,8 +314,40 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(meTab.waitForExistence(timeout: 8))
         makeHittable(meTab, in: app)
         meTab.tap()
-        XCTAssertTrue(app.buttons["Manage subscription"].waitForExistence(timeout: 8))
-        capture("19-me-settings", app: app)
+
+        let isEntitled = ProcessInfo.processInfo.environment["SPC_UI_TEST_PREMIUM_ACTIVE"] == "1"
+        if isEntitled {
+            let manageButton = app.buttons["me.manageSubscription"]
+            let fallbackButton = app.buttons["Manage subscription"]
+            XCTAssertTrue(manageButton.waitForExistence(timeout: 8) || fallbackButton.waitForExistence(timeout: 1))
+            capture("19-me-settings", app: app)
+        } else {
+            let upgradeButton = app.buttons["me.upgrade"]
+            let fallbackUpgrade = app.buttons["Upgrade to Premium"]
+            XCTAssertTrue(upgradeButton.waitForExistence(timeout: 8) || fallbackUpgrade.waitForExistence(timeout: 1))
+            capture("19-me-settings", app: app)
+
+            if upgradeButton.exists {
+                upgradeButton.tap()
+            } else {
+                fallbackUpgrade.tap()
+            }
+
+            let paywallAnnual = app.buttons["paywall.tier.annual"]
+            let paywallPurchase = app.buttons["paywall.purchase"]
+            XCTAssertTrue(paywallAnnual.waitForExistence(timeout: 8) || paywallPurchase.waitForExistence(timeout: 1))
+            XCTAssertTrue(app.buttons["paywall.tier.monthly"].exists)
+            XCTAssertTrue(app.buttons["paywall.tier.lifetime"].exists)
+
+            let dismissButton = app.buttons["paywall.dismiss"]
+            XCTAssertTrue(dismissButton.waitForExistence(timeout: 4))
+            dismissButton.tap()
+
+            let paywallDismissed = NSPredicate(format: "exists == false")
+            let dismissExpectation = XCTNSPredicateExpectation(predicate: paywallDismissed, object: dismissButton)
+            _ = XCTWaiter.wait(for: [dismissExpectation], timeout: 5)
+            XCTAssertFalse(app.buttons["paywall.dismiss"].exists)
+        }
         app.terminate()
 
         captureRoute(
@@ -484,6 +516,95 @@ final class ApplicationLaunchUITests: XCTestCase {
             makeHittable(action, in: app)
             app.terminate()
         }
+    }
+
+    @MainActor
+    func testPaywallPresentationAndTierInteractions() {
+        let app = authenticatedApplication()
+        app.launchEnvironment["SPC_UI_TEST_OPEN_ME"] = "1"
+        app.launch()
+
+        let meTab = app.buttons["Me"]
+        if meTab.waitForExistence(timeout: 8) {
+            makeHittable(meTab, in: app)
+            meTab.tap()
+        }
+
+        let upgradeButton = app.buttons["me.upgrade"]
+        let fallbackUpgrade = app.buttons["Upgrade to Premium"]
+        XCTAssertTrue(upgradeButton.waitForExistence(timeout: 8) || fallbackUpgrade.waitForExistence(timeout: 1))
+        if upgradeButton.exists {
+            upgradeButton.tap()
+        } else {
+            fallbackUpgrade.tap()
+        }
+
+        let paywallAnnual = app.buttons["paywall.tier.annual"]
+        XCTAssertTrue(paywallAnnual.waitForExistence(timeout: 8))
+
+        // Select Monthly tier -> verifies CTA says "Start 3-Day Free Trial"
+        let monthlyTier = app.buttons["paywall.tier.monthly"]
+        XCTAssertTrue(monthlyTier.waitForExistence(timeout: 4))
+        monthlyTier.tap()
+        let purchaseButton = app.buttons["paywall.purchase"]
+        XCTAssertTrue(purchaseButton.waitForExistence(timeout: 4))
+        XCTAssertTrue(
+            purchaseButton.staticTexts["Start 3-Day Free Trial"].exists
+                || purchaseButton.label.contains("Start 3-Day Free Trial")
+                || app.staticTexts["Start 3-Day Free Trial"].exists
+        )
+
+        // Select Lifetime tier -> verifies CTA says "Unlock Lifetime Access"
+        let lifetimeTier = app.buttons["paywall.tier.lifetime"]
+        XCTAssertTrue(lifetimeTier.waitForExistence(timeout: 4))
+        lifetimeTier.tap()
+        XCTAssertTrue(
+            purchaseButton.staticTexts["Unlock Lifetime Access"].exists
+                || purchaseButton.label.contains("Unlock Lifetime Access")
+                || app.staticTexts["Unlock Lifetime Access"].exists
+        )
+
+        // Select Annual tier -> verifies CTA says "Start 3-Day Free Trial"
+        paywallAnnual.tap()
+        XCTAssertTrue(
+            purchaseButton.staticTexts["Start 3-Day Free Trial"].exists
+                || purchaseButton.label.contains("Start 3-Day Free Trial")
+                || app.staticTexts["Start 3-Day Free Trial"].exists
+        )
+
+        // Verifies "Restore Purchases" button exists
+        let restoreButton = app.buttons["paywall.restore"]
+        let fallbackRestore = app.buttons["Restore Purchases"]
+        XCTAssertTrue(restoreButton.waitForExistence(timeout: 4) || fallbackRestore.waitForExistence(timeout: 1))
+
+        // Verifies Terms and Privacy links exist
+        let termsLink = app.buttons["paywall.terms"]
+        let fallbackTerms = app.links["Terms of Use (EULA)"]
+        XCTAssertTrue(
+            termsLink.waitForExistence(timeout: 4)
+                || fallbackTerms.waitForExistence(timeout: 1)
+                || app.links["paywall.terms"].exists
+        )
+
+        let privacyLink = app.buttons["paywall.privacy"]
+        let fallbackPrivacy = app.links["Privacy Policy"]
+        XCTAssertTrue(
+            privacyLink.waitForExistence(timeout: 4)
+                || fallbackPrivacy.waitForExistence(timeout: 1)
+                || app.links["paywall.privacy"].exists
+        )
+
+        // Taps dismiss button
+        let dismissButton = app.buttons["paywall.dismiss"]
+        XCTAssertTrue(dismissButton.waitForExistence(timeout: 4))
+        dismissButton.tap()
+
+        let paywallDismissed = NSPredicate(format: "exists == false")
+        let dismissExpectation = XCTNSPredicateExpectation(predicate: paywallDismissed, object: dismissButton)
+        _ = XCTWaiter.wait(for: [dismissExpectation], timeout: 5)
+        XCTAssertFalse(app.buttons["paywall.dismiss"].exists)
+
+        app.terminate()
     }
 
     @MainActor

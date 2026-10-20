@@ -12,7 +12,7 @@ nonisolated enum AppUtility: Hashable, CaseIterable, Sendable {
     case accessStatus
 }
 
-nonisolated enum ProductCapability: Hashable, Sendable {
+nonisolated enum ProductCapability: Hashable, CaseIterable, Sendable {
     case grounding
     case preparation
     case history
@@ -26,14 +26,20 @@ nonisolated enum PremiumAccess: Equatable, Sendable {
 
 nonisolated struct PlatformCapabilities: Equatable, Sendable {
     var supported: Set<ProductCapability>
+
+    static let all = PlatformCapabilities(supported: Set(ProductCapability.allCases))
 }
 
 nonisolated struct ReleaseGates: Equatable, Sendable {
     var enabled: Set<ProductCapability>
+
+    static let all = ReleaseGates(enabled: Set(ProductCapability.allCases))
 }
 
 nonisolated struct ExternalAvailability: Equatable, Sendable {
     var available: Set<ProductCapability>
+
+    static let all = ExternalAvailability(available: Set(ProductCapability.allCases))
 }
 
 nonisolated enum AccessDecision: Equatable, Sendable {
@@ -45,7 +51,7 @@ nonisolated enum AccessDecision: Equatable, Sendable {
 nonisolated struct AccessPolicy: Sendable {
     func decision(
         for utility: AppUtility,
-        premium: PremiumAccess
+        premium: PremiumAccess = .unknown
     ) -> AccessDecision {
         _ = utility
         _ = premium
@@ -54,10 +60,10 @@ nonisolated struct AccessPolicy: Sendable {
 
     func decision(
         for capability: ProductCapability,
-        platform: PlatformCapabilities,
-        release: ReleaseGates,
+        platform: PlatformCapabilities = .all,
+        release: ReleaseGates = .all,
         premium: PremiumAccess,
-        external: ExternalAvailability
+        external: ExternalAvailability = .all
     ) -> AccessDecision {
         guard platform.supported.contains(capability),
               release.enabled.contains(capability),
