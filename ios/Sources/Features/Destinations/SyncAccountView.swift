@@ -30,10 +30,7 @@ struct AccountView: View {
                     confirmAccountDeletion = true
                 }
             } footer: {
-                Text(
-                    "Deleting the Supabase account is distinct from deleting local app data. " +
-                        "Neither action cancels an Apple subscription."
-                )
+                Text("Deleting the Supabase account is distinct from deleting local app data.")
             }
         }
         .navigationTitle("Account")

@@ -314,7 +314,7 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(meTab.waitForExistence(timeout: 8))
         makeHittable(meTab, in: app)
         meTab.tap()
-        XCTAssertTrue(app.buttons["Manage subscription"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Connect to the founder"].waitForExistence(timeout: 8))
         capture("19-me-settings", app: app)
         app.terminate()
 

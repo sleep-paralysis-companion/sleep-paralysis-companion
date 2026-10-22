@@ -37,7 +37,7 @@ struct DataPrivacyView: View {
             } footer: {
                 Text(
                     "This removes this device’s Sleep Paralysis Companion data and local personal audio. " +
-                        "It is distinct from deleting the Supabase account and does not cancel an Apple subscription."
+                        "It is distinct from deleting the Supabase account."
                 )
             }
         }

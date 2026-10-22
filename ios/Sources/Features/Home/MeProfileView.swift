@@ -4,26 +4,16 @@ import UIKit
 struct MeProfileView: View {
     @Bindable var model: AppModel
     @Environment(\.openURL) private var openURL
-    @State private var confirmCancellation = false
     @State private var confirmLogOut = false
 
     var body: some View {
         NightScreen {
             VStack(alignment: .leading, spacing: 28) {
                 header
-                planCard
                 founderCard
                 menu
             }
             .padding(.bottom, 24)
-        }
-        .confirmationDialog("Manage subscription?", isPresented: $confirmCancellation) {
-            Button("Open subscription settings") {
-                openURL(URL(string: "https://apps.apple.com/account/subscriptions")!)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Apple manages subscriptions and cancellation.")
         }
         .confirmationDialog("Log Out?", isPresented: $confirmLogOut) {
             Button("Log Out", role: .destructive) {
@@ -44,26 +34,8 @@ struct MeProfileView: View {
             }
             Text("Hi, \(model.profile?.displayName ?? "")")
                 .font(AppFont.latoBold(size: 34, relativeTo: .largeTitle)).lineLimit(1)
-            Spacer(minLength: 0)
-            Text("FREE").font(AppTypographyRole.label).foregroundStyle(Color(red: 0.72, green: 0.61, blue: 1))
-                .padding(.horizontal, 14).padding(.vertical, 9)
-                .overlay { Capsule().stroke(Color.purple.opacity(0.8)) }
+            Spacer()
         }
-    }
-
-    private var planCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Label("$0", systemImage: "circle.fill").foregroundStyle(.white); Spacer(); Text("No renewal")
-                    .foregroundStyle(.white.opacity(0.58))
-            }
-            Text("Upgrade availability will appear here when subscriptions are configured.")
-                .font(AppTypographyRole.supporting)
-                .foregroundStyle(.white.opacity(0.6))
-            Button("Manage subscription", role: .destructive) { confirmCancellation = true }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-        }.padding(20).background(Color.indigo.opacity(0.24), in: RoundedRectangle(cornerRadius: 28))
-            .overlay { RoundedRectangle(cornerRadius: 28).stroke(Color.indigo.opacity(0.65)) }
     }
 
     private var founderCard: some View {
