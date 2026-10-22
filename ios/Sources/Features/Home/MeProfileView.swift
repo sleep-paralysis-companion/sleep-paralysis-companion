@@ -74,6 +74,7 @@ struct MeProfileView: View {
                     in: RoundedRectangle(cornerRadius: 26)
                 )
             }
+            .accessibilityLabel("Connect to the founder")
         }.padding(28).background(Color.indigo.opacity(0.24), in: RoundedRectangle(cornerRadius: 32))
             .overlay { RoundedRectangle(cornerRadius: 32).stroke(.cyan.opacity(0.45)) }
     }

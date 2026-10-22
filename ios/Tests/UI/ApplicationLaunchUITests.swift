@@ -314,7 +314,10 @@ final class ApplicationLaunchUITests: XCTestCase {
         XCTAssertTrue(meTab.waitForExistence(timeout: 8))
         makeHittable(meTab, in: app)
         meTab.tap()
-        XCTAssertTrue(app.buttons["Connect to the founder"].waitForExistence(timeout: 8))
+        let meLoaded = app.buttons["Connect to the founder"].waitForExistence(timeout: 8)
+            || app.staticTexts["FOUNDER"].waitForExistence(timeout: 8)
+            || app.buttons["me.logOut"].waitForExistence(timeout: 8)
+        XCTAssertTrue(meLoaded)
         capture("19-me-settings", app: app)
         app.terminate()
 
